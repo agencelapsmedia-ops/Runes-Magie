@@ -3,7 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Button from '../ui/Button';
 
-const HERO_IMAGES = Array.from({ length: 7 }, (_, i) => `/images/hero/hero-${i + 1}.png`);
+const HERO_IMAGES = [
+  '/images/hero/hero-7.png',
+  '/images/hero/hero-1.png',
+  '/images/hero/hero-2.png',
+  '/images/hero/hero-3.png',
+  '/images/hero/hero-4.png',
+  '/images/hero/hero-5.png',
+  '/images/hero/hero-6.png',
+];
 const SLIDE_INTERVAL = 6000;
 const CROSSFADE_DURATION = 1500;
 

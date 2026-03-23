@@ -162,7 +162,7 @@ export default function HomePage() {
           {/* Left — image */}
           <div className="relative aspect-[3/4] max-w-md mx-auto lg:max-w-none rounded-sm overflow-hidden border border-violet-royal/20">
             <Image
-              src="/images/about/noctura-capuche.jpg"
+              src="/images/about/noctura-carte.png"
               alt="Noctura Anna, votre sorci&egrave;re"
               fill
               sizes="(max-width: 1024px) 90vw, 45vw"

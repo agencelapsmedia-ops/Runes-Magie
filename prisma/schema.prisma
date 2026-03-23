@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model BookingService {
+  id              String              @id @default(cuid())
+  name            String
+  slug            String              @unique
+  description     String
+  durationMinutes Int
+  bufferMinutes   Int                 @default(15)
+  price           Float?
+  colorHex        String              @default("#6B3FA0")
+  emoji           String              @default("*")
+  isActive        Boolean             @default(true)
+  maxPerSlot      Int                 @default(1)
+  appointments    Appointment[]
+  availabilityRules AvailabilityRule[]
+  createdAt       DateTime            @default(now())
+}
+
+model AvailabilityRule {
+  id        String          @id @default(cuid())
+  serviceId String?
+  service   BookingService? @relation(fields: [serviceId], references: [id])
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isActive  Boolean         @default(true)
+}
+
+model AvailabilityException {
+  id        String   @id @default(cuid())
+  date      DateTime
+  isOpen    Boolean
+  startTime String?
+  endTime   String?
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Appointment {
+  id                String         @id @default(cuid())
+  serviceId         String
+  service           BookingService @relation(fields: [serviceId], references: [id])
+  clientName        String
+  clientEmail       String
+  clientPhone       String?
+  date              DateTime
+  startTime         String
+  endTime           String
+  status            String         @default("pending")
+  notes             String?
+  googleEventId     String?
+  confirmationToken String         @unique @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model AdminUser {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  hashedPassword String
+  name           String
+  createdAt      DateTime @default(now())
+}
+
+model BookingSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

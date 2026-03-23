@@ -74,13 +74,13 @@ export default function Navbar() {
               className="flex items-center gap-3 group"
               aria-label="Runes & Magie - Accueil"
             >
-              <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-or-ancien/50 transition-all duration-300 group-hover:ring-or-ancien group-hover:shadow-[0_0_12px_rgba(201,168,76,0.4)]">
+              <div className="relative h-14 w-14 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(201,168,76,0.5)]">
                 <Image
-                  src="/images/logo/logo-rm.jpg"
+                  src="/images/logo/logo-rm.png"
                   alt="Logo Runes & Magie"
-                  width={40}
-                  height={40}
-                  className="h-full w-full object-cover"
+                  width={56}
+                  height={56}
+                  className="h-full w-full object-contain"
                 />
               </div>
               <span className="font-cinzel-decorative text-lg font-bold text-gradient-gold hidden sm:block">

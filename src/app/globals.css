@@ -98,6 +98,12 @@ body {
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  cursor: url('/images/cursors/wand-cursor.png') 24 24, auto;
+}
+
+/* Curseur boule de cristal sur les éléments cliquables */
+a, button, [role="button"], input[type="submit"], select, label[for], summary {
+  cursor: url('/images/cursors/wand-cursor.png') 24 24, pointer !important;
 }
 
 /* ============================================

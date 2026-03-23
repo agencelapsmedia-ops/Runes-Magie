@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charte Graphique - Runes & Magie</title>
+    <link href="https://fonts.googleapis.com/css2?family=Arizonia&family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Philosopher:ital,wght@0,400;0,700;1,400&family=MedievalSharp&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* === PALETTE PRINCIPALE === */
+            --violet-profond: #2D1B4E;
+            --violet-royal: #4A2D7A;
+            --violet-mystique: #6B3FA0;
+            --pourpre-sorciere: #8B2F8B;
+
+            /* === PALETTE SECONDAIRE === */
+            --teal-magique: #1A8A7D;
+            --teal-profond: #0D5C54;
+            --turquoise-cristal: #2EC4B6;
+
+            /* === ACCENTS === */
+            --magenta-rituel: #C41D6E;
+            --fuchsia-enchante: #D4447C;
+            --or-ancien: #C9A84C;
+            --or-clair: #E8D48B;
+            --bronze-rune: #B8860B;
+
+            /* === NEUTRES === */
+            --noir-nuit: #0A0A12;
+            --charbon-mystere: #1A1A2E;
+            --gris-fumee: #2D2D44;
+            --parchemin: #F5F0E8;
+            --parchemin-vieilli: #E8DCC8;
+            --blanc-lune: #F8F6F2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--noir-nuit);
+            color: var(--parchemin);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+        /* ===== HERO / COUVERTURE ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(107, 63, 160, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(26, 138, 125, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(196, 29, 110, 0.08) 0%, transparent 40%),
+                linear-gradient(180deg, var(--noir-nuit) 0%, var(--charbon-mystere) 100%);
+            padding: 60px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1.5px 1.5px at 15% 85%, rgba(201, 168, 76, 0.6), transparent),
+                radial-gradient(1.5px 1.5px at 85% 15%, rgba(201, 168, 76, 0.4), transparent);
+            animation: twinkle 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--or-ancien) 0%, var(--or-clair) 40%, var(--or-ancien) 60%, var(--bronze-rune) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 6px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 60px rgba(201, 168, 76, 0.3);
+        }
+
+        .hero .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: var(--turquoise-cristal);
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+
+        .hero .tagline {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 1.3rem;
+            color: rgba(245, 240, 232, 0.6);
+            max-width: 500px;
+        }
+
+        .divider {
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--or-ancien), transparent);
+            margin: 50px auto;
+        }
+
+        .divider-ornament {
+            text-align: center;
+            margin: 60px auto;
+            color: var(--or-ancien);
+            font-size: 1.5rem;
+            letter-spacing: 20px;
+            opacity: 0.5;
+        }
+
+        /* ===== SECTIONS ===== */
+        section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 40px;
+        }
+
+        .section-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--or-ancien), var(--or-clair));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-family: 'Philosopher', sans-serif;
+            font-style: italic;
+            color: rgba(245, 240, 232, 0.5);
+            margin-bottom: 60px;
+            font-size: 1.1rem;
+        }
+
+        /* ===== PALETTE DE COULEURS ===== */
+        .palette-group {
+            margin-bottom: 60px;
+        }
+
+        .palette-group-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            color: var(--or-ancien);
+            margin-bottom: 25px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border-left: 3px solid var(--or-ancien);
+            padding-left: 20px;
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .color-card {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--charbon-mystere);
+            border: 1px solid rgba(201, 168, 76, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .color-swatch {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-info {
+            padding: 18px;
+        }
+
+        .color-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--parchemin);
+            margin-bottom: 5px;
+        }
+
+        .color-hex {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.9rem;
+            color: rgba(245, 240, 232, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .color-usage {
+            font-size: 0.8rem;
+            color: rgba(245, 240, 232, 0.35);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* ===== TYPOGRAPHIE ===== */
+        .typo-showcase {
+            margin-bottom: 50px;
+            padding: 50px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--charbon-mystere) 0%, rgba(45, 27, 78, 0.3) 100%);
+            border: 1px solid rgba(201, 168, 76, 0.1);
+        }
+
+        .typo-label {
+            font-family: 'Philosopher', sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--turquoise-cristal);
+            margin-bottom: 15px;
+        }
+
+        .typo-sample-decorative {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--or-ancien), var(--or-clair));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .typo-sample-heading {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 600;
+            color: var(--parchemin);
+            margin-bottom: 5px;
+        }
+
+        .typo-sample-subheading {
+            font-family: 'Philosopher', sans-serif;
+            font-size: 1.4rem;
+            color: var(--turquoise-cristal);
+            margin-bottom: 5px;
+        }
+
+        .typo-sample-body {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            color: rgba(245, 240, 232, 0.8);
+            line-height: 1.8;
+            max-width: 700px;
+        }
+
+        .typo-sample-accent {
+            font-family: 'MedievalSharp', cursive;
+            font-size: 1.6rem;
+            color: var(--or-ancien);
+        }
+
+        .typo-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(245, 240, 232, 0.1);
+        }
+
+        .typo-details p {
+            font-size: 0.85rem;
+            color: rgba(245, 240, 232, 0.4);
+        }
+
+        /* ===== FONT TABLE ===== */
+        .font-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 40px;
+        }
+
+        .font-table th {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--or-ancien);
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+        }
+
+        .font-table td {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(245, 240, 232, 0.05);
+            color: rgba(245, 240, 232, 0.7);
+            font-size: 0.95rem;
+        }
+
+        .font-table tr:hover td {
+            background: rgba(201, 168, 76, 0.03);
+        }
+
+        /* ===== BOUTONS ===== */
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .button-example {
+            text-align: center;
+            padding: 40px;
+            background: var(--charbon-mystere);
+            border-radius: 12px;
+            border: 1px solid rgba(201, 168, 76, 0.08);
+        }
+
+        .button-example-label {
+            font-family: 'Philosopher', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: rgba(245, 240, 232, 0.4);
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 16px 40px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-decoration: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--violet-royal) 0%, var(--violet-mystique) 100%);
+            color: var(--or-clair);
+            border: 1px solid rgba(201, 168, 76, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--violet-mystique) 0%, var(--pourpre-sorciere) 100%);
+            box-shadow: 0 0 30px rgba(107, 63, 160, 0.4), 0 0 60px rgba(107, 63, 160, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--or-ancien);
+            border: 1px solid var(--or-ancien);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(201, 168, 76, 0.1);
+            box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+        }
+
+        .btn-cta {
+            background: linear-gradient(135deg, var(--magenta-rituel) 0%, var(--pourpre-sorciere) 100%);
+            color: var(--blanc-lune);
+            border: none;
+        }
+
+        .btn-cta:hover {
+            box-shadow: 0 0 30px rgba(196, 29, 110, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-mystique {
+            background: linear-gradient(135deg, var(--teal-profond) 0%, var(--teal-magique) 100%);
+            color: var(--blanc-lune);
+            border: 1px solid rgba(46, 196, 182, 0.3);
+        }
+
+        .btn-mystique:hover {
+            box-shadow: 0 0 30px rgba(26, 138, 125, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* ===== GRADIENTS ===== */
+        .gradients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .gradient-card {
+            height: 180px;
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-end;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gradient-card span {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .gradient-card small {
+            display: block;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+        }
+
+        /* ===== MOOD SECTION ===== */
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .mood-card {
+            padding: 40px 30px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(201, 168, 76, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .mood-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(201, 168, 76, 0.3);
+        }
+
+        .mood-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .mood-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--or-ancien);
+            margin-bottom: 10px;
+        }
+
+        .mood-desc {
+            font-size: 0.9rem;
+            color: rgba(245, 240, 232, 0.5);
+            line-height: 1.6;
+        }
+
+        /* ===== ICONOGRAPHIE ===== */
+        .icons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .icon-card {
+            text-align: center;
+            padding: 30px 15px;
+            background: var(--charbon-mystere);
+            border-radius: 12px;
+            border: 1px solid rgba(201, 168, 76, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .icon-card:hover {
+            border-color: var(--violet-mystique);
+            box-shadow: 0 0 20px rgba(107, 63, 160, 0.15);
+        }
+
+        .icon-symbol {
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .icon-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: rgba(245, 240, 232, 0.5);
+        }
+
+        /* ===== MISE EN PAGE EXEMPLE ===== */
+        .layout-demo {
+            margin-top: 40px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(201, 168, 76, 0.15);
+        }
+
+        .demo-header {
+            background: linear-gradient(180deg, var(--noir-nuit) 0%, var(--charbon-mystere) 100%);
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+        }
+
+        .demo-logo {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.4rem;
+            background: linear-gradient(135deg, var(--or-ancien), var(--or-clair));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .demo-nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        .demo-nav a {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(245, 240, 232, 0.6);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .demo-nav a:hover {
+            color: var(--or-ancien);
+        }
+
+        .demo-hero-section {
+            background:
+                radial-gradient(ellipse at 30% 50%, rgba(107, 63, 160, 0.2) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(26, 138, 125, 0.1) 0%, transparent 60%),
+                var(--charbon-mystere);
+            padding: 100px 40px;
+            text-align: center;
+        }
+
+        .demo-hero-section h2 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--or-ancien), var(--or-clair));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .demo-hero-section p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            color: rgba(245, 240, 232, 0.6);
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+
+        .demo-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 50px 40px;
+            background: var(--noir-nuit);
+        }
+
+        .demo-product-card {
+            background: var(--charbon-mystere);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(201, 168, 76, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .demo-product-card:hover {
+            border-color: rgba(201, 168, 76, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .demo-product-img {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .demo-product-info {
+            padding: 20px;
+        }
+
+        .demo-product-info h4 {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            color: var(--parchemin);
+            margin-bottom: 5px;
+        }
+
+        .demo-product-info .price {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--or-ancien);
+            font-size: 1.1rem;
+        }
+
+        .demo-footer {
+            background: var(--noir-nuit);
+            padding: 30px 40px;
+            text-align: center;
+            border-top: 1px solid rgba(201, 168, 76, 0.1);
+        }
+
+        .demo-footer p {
+            font-family: 'Philosopher', sans-serif;
+            font-size: 0.8rem;
+            color: rgba(245, 240, 232, 0.3);
+            letter-spacing: 2px;
+        }
+
+        /* ===== REGLES ===== */
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .rule-card {
+            padding: 30px;
+            border-radius: 12px;
+            border-left: 3px solid;
+        }
+
+        .rule-do {
+            background: rgba(26, 138, 125, 0.08);
+            border-color: var(--teal-magique);
+        }
+
+        .rule-dont {
+            background: rgba(196, 29, 110, 0.08);
+            border-color: var(--magenta-rituel);
+        }
+
+        .rule-card h4 {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .rule-do h4 { color: var(--turquoise-cristal); }
+        .rule-dont h4 { color: var(--fuchsia-enchante); }
+
+        .rule-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .rule-card li {
+            padding: 6px 0;
+            font-size: 0.95rem;
+            color: rgba(245, 240, 232, 0.65);
+        }
+
+        .rule-do li::before {
+            content: "\2713 ";
+            color: var(--turquoise-cristal);
+            margin-right: 8px;
+        }
+
+        .rule-dont li::before {
+            content: "\2717 ";
+            color: var(--fuchsia-enchante);
+            margin-right: 8px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            section { padding: 50px 20px; }
+            .mood-grid { grid-template-columns: 1fr; }
+            .demo-nav { display: none; }
+            .demo-cards { grid-template-columns: 1fr; }
+            .demo-hero-section h2 { font-size: 1.8rem; }
+            .font-table { font-size: 0.85rem; }
+            .font-table th, .font-table td { padding: 10px; }
+        }
+
+        /* ===== PRINT ===== */
+        @media print {
+            body { background: white; color: #1a1a1a; }
+            .hero { min-height: auto; background: none; padding: 40px; }
+            .color-swatch { border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============================================ -->
+<!-- COUVERTURE -->
+<!-- ============================================ -->
+<div class="hero">
+    <div class="hero-content">
+        <h1>Runes & Magie</h1>
+        <p class="subtitle">Boutique - École</p>
+        <div class="divider"></div>
+        <p class="tagline">Charte Graphique & Identité Visuelle</p>
+        <br>
+        <p style="font-size: 0.9rem; color: rgba(245,240,232,0.3); letter-spacing: 3px; font-family: 'Philosopher', sans-serif;">
+            Annabelle Dionne &mdash; Guide Spirituelle
+        </p>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- 1. PALETTE DE COULEURS -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Palette de Couleurs</h2>
+    <p class="section-subtitle">Les couleurs sacrées de l'univers Runes & Magie</p>
+
+    <!-- Couleurs Principales -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Couleurs Principales</h3>
+        <div class="colors-grid">
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #2D1B4E, #3D2565);"></div>
+                <div class="color-info">
+                    <p class="color-name">Violet Profond</p>
+                    <p class="color-hex">#2D1B4E</p>
+                    <p class="color-usage">Fond principal, en-tête</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #4A2D7A, #5A3D8A);"></div>
+                <div class="color-info">
+                    <p class="color-name">Violet Royal</p>
+                    <p class="color-hex">#4A2D7A</p>
+                    <p class="color-usage">Boutons, sections actives</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #6B3FA0, #7B4FB0);"></div>
+                <div class="color-info">
+                    <p class="color-name">Violet Mystique</p>
+                    <p class="color-hex">#6B3FA0</p>
+                    <p class="color-usage">Accents, survols, liens</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #8B2F8B, #9B3F9B);"></div>
+                <div class="color-info">
+                    <p class="color-name">Pourpre Sorcière</p>
+                    <p class="color-hex">#8B2F8B</p>
+                    <p class="color-usage">Transitions, dégradés</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Couleurs Secondaires -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Couleurs Secondaires</h3>
+        <div class="colors-grid">
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #0D5C54, #1A7A70);"></div>
+                <div class="color-info">
+                    <p class="color-name">Teal Profond</p>
+                    <p class="color-hex">#0D5C54</p>
+                    <p class="color-usage">Fond secondaire, pieds de page</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #1A8A7D, #2A9A8D);"></div>
+                <div class="color-info">
+                    <p class="color-name">Teal Magique</p>
+                    <p class="color-hex">#1A8A7D</p>
+                    <p class="color-usage">Éléments interactifs, icônes</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #2EC4B6, #3ED4C6);"></div>
+                <div class="color-info">
+                    <p class="color-name">Turquoise Cristal</p>
+                    <p class="color-hex">#2EC4B6</p>
+                    <p class="color-usage">Sous-titres, badges, texte lumineux</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accents -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Couleurs d'Accent</h3>
+        <div class="colors-grid">
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #C41D6E, #D42D7E);"></div>
+                <div class="color-info">
+                    <p class="color-name">Magenta Rituel</p>
+                    <p class="color-hex">#C41D6E</p>
+                    <p class="color-usage">CTA, alertes, promotions</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #D4447C, #E4548C);"></div>
+                <div class="color-info">
+                    <p class="color-name">Fuchsia Enchanté</p>
+                    <p class="color-hex">#D4447C</p>
+                    <p class="color-usage">Badges, étiquettes spéciales</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #C9A84C, #E8D48B);"></div>
+                <div class="color-info">
+                    <p class="color-name">Or Ancien</p>
+                    <p class="color-hex">#C9A84C</p>
+                    <p class="color-usage">Titres, bordures, luxe</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: linear-gradient(135deg, #B8860B, #C8960B);"></div>
+                <div class="color-info">
+                    <p class="color-name">Bronze Rune</p>
+                    <p class="color-hex">#B8860B</p>
+                    <p class="color-usage">Symboles runiques, ornements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Neutres -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Neutres & Fonds</h3>
+        <div class="colors-grid">
+            <div class="color-card">
+                <div class="color-swatch" style="background: #0A0A12;"></div>
+                <div class="color-info">
+                    <p class="color-name">Noir Nuit</p>
+                    <p class="color-hex">#0A0A12</p>
+                    <p class="color-usage">Fond principal du site</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: #1A1A2E;"></div>
+                <div class="color-info">
+                    <p class="color-name">Charbon Mystère</p>
+                    <p class="color-hex">#1A1A2E</p>
+                    <p class="color-usage">Cartes, sections surélevées</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: #F5F0E8;">
+                    <span style="color: #2D1B4E; font-family: 'Cinzel', serif; font-size: 0.9rem;">Aa</span>
+                </div>
+                <div class="color-info">
+                    <p class="color-name">Parchemin</p>
+                    <p class="color-hex">#F5F0E8</p>
+                    <p class="color-usage">Texte principal, sections claires</p>
+                </div>
+            </div>
+            <div class="color-card">
+                <div class="color-swatch" style="background: #E8DCC8;">
+                    <span style="color: #2D1B4E; font-family: 'Cinzel', serif; font-size: 0.9rem;">Aa</span>
+                </div>
+                <div class="color-info">
+                    <p class="color-name">Parchemin Vieilli</p>
+                    <p class="color-hex">#E8DCC8</p>
+                    <p class="color-usage">Arrière-plans alternatifs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 2. TYPOGRAPHIE -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Typographie</h2>
+    <p class="section-subtitle">Des polices qui évoquent l'ancien et le mystique</p>
+
+    <!-- Font Display -->
+    <div class="typo-showcase">
+        <p class="typo-label">Police Titre / Logo</p>
+        <p class="typo-sample-decorative">Cinzel Decorative</p>
+        <p style="font-family: 'Cinzel Decorative'; font-size: 1.8rem; color: rgba(245,240,232,0.4);">Runes & Magie</p>
+        <div class="typo-details">
+            <p>Google Fonts &bull; Poids: 400, 700, 900 &bull; Inspirée des inscriptions romaines antiques</p>
+            <p>Usage: Logo, titres principaux, noms de sections héroïques</p>
+        </div>
+    </div>
+
+    <div class="typo-showcase">
+        <p class="typo-label">Police Sous-titres / Navigation</p>
+        <p class="typo-sample-heading">Cinzel Regular</p>
+        <p style="font-family: 'Cinzel'; font-size: 1.3rem; color: rgba(245,240,232,0.5); letter-spacing: 3px;">BOUTIQUE &bull; COURS &bull; SOINS &bull; GUIDANCE</p>
+        <div class="typo-details">
+            <p>Google Fonts &bull; Poids: 400, 500, 600, 700 &bull; Version épurée de Cinzel Decorative</p>
+            <p>Usage: Navigation, sous-titres, noms de produits, boutons</p>
+        </div>
+    </div>
+
+    <div class="typo-showcase">
+        <p class="typo-label">Police Corps de Texte</p>
+        <p class="typo-sample-body">
+            Cormorant Garamond apporte une élégance classique au corps de texte.
+            Ses empattements délicats et ses courbes gracieuses évoquent les manuscrits anciens
+            tout en restant parfaitement lisible sur écran. C'est la police idéale pour les
+            descriptions de produits, les textes de rituels et les contenus éducatifs.
+        </p>
+        <div class="typo-details">
+            <p>Google Fonts &bull; Poids: 300, 400, 500, 600, 700 + italiques &bull; Serif élégante</p>
+            <p>Usage: Paragraphes, descriptions, contenus longs, citations</p>
+        </div>
+    </div>
+
+    <div class="typo-showcase">
+        <p class="typo-label">Police Accent / Atmosphère</p>
+        <p class="typo-sample-subheading">Philosopher</p>
+        <p style="font-family: 'Philosopher'; font-size: 1.1rem; color: rgba(245,240,232,0.5); font-style: italic;">
+            &laquo; La magie est partout pour qui sait la voir &raquo;
+        </p>
+        <div class="typo-details">
+            <p>Google Fonts &bull; Poids: 400, 700 + italiques &bull; Sans-serif philosophique</p>
+            <p>Usage: Citations, sous-titres secondaires, labels, catégories</p>
+        </div>
+    </div>
+
+    <div class="typo-showcase">
+        <p class="typo-label">Police Spéciale / Runique</p>
+        <p class="typo-sample-accent">MedievalSharp &mdash; Runes & Sorcellerie</p>
+        <div class="typo-details">
+            <p>Google Fonts &bull; Poids: 400 &bull; Évocation médiévale et mystique</p>
+            <p>Usage: Éléments décoratifs, titres de sections spéciales, effet parchemin</p>
+        </div>
+    </div>
+
+    <div class="typo-showcase">
+        <p class="typo-label">Police Cursive / Élégante</p>
+        <p style="font-family: 'Arizonia', cursive; font-size: 2.2rem; color: rgba(245,240,232,0.5);">Arizonia &mdash; Runes & Magie</p>
+        <div class="typo-details">
+            <p>Google Fonts &bull; Poids: 400 &bull; Cursive élégante et fluide</p>
+            <p>Usage: Signatures, citations mises en valeur, accents décoratifs, noms propres stylisés</p>
+        </div>
+    </div>
+
+    <!-- Tableau récapitulatif -->
+    <table class="font-table">
+        <thead>
+            <tr>
+                <th>Rôle</th>
+                <th>Police</th>
+                <th>Poids</th>
+                <th>Taille</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Logo / H1 Héro</td>
+                <td style="font-family: 'Cinzel Decorative'">Cinzel Decorative</td>
+                <td>700 - 900</td>
+                <td>48 - 80px</td>
+            </tr>
+            <tr>
+                <td>H2 Sections</td>
+                <td style="font-family: 'Cinzel'">Cinzel</td>
+                <td>600 - 700</td>
+                <td>32 - 48px</td>
+            </tr>
+            <tr>
+                <td>H3 Sous-sections</td>
+                <td style="font-family: 'Cinzel'">Cinzel</td>
+                <td>400 - 500</td>
+                <td>22 - 28px</td>
+            </tr>
+            <tr>
+                <td>Navigation</td>
+                <td style="font-family: 'Cinzel'">Cinzel</td>
+                <td>400</td>
+                <td>13 - 15px</td>
+            </tr>
+            <tr>
+                <td>Corps de texte</td>
+                <td style="font-family: 'Cormorant Garamond'">Cormorant Garamond</td>
+                <td>400 - 500</td>
+                <td>18 - 20px</td>
+            </tr>
+            <tr>
+                <td>Labels / Catégories</td>
+                <td style="font-family: 'Philosopher'">Philosopher</td>
+                <td>400</td>
+                <td>12 - 14px</td>
+            </tr>
+            <tr>
+                <td>Boutons</td>
+                <td style="font-family: 'Cinzel'">Cinzel</td>
+                <td>500 - 600</td>
+                <td>13 - 16px</td>
+            </tr>
+            <tr>
+                <td>Éléments spéciaux</td>
+                <td style="font-family: 'MedievalSharp'">MedievalSharp</td>
+                <td>400</td>
+                <td>20 - 32px</td>
+            </tr>
+            <tr>
+                <td>Signatures / Accents cursifs</td>
+                <td style="font-family: 'Arizonia'">Arizonia</td>
+                <td>400</td>
+                <td>24 - 40px</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 3. BOUTONS -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Boutons & Interactions</h2>
+    <p class="section-subtitle">Chaque clic est un sortilège</p>
+
+    <div class="buttons-grid">
+        <div class="button-example">
+            <p class="button-example-label">Bouton Principal</p>
+            <button class="btn btn-primary">Découvrir la Boutique</button>
+        </div>
+        <div class="button-example">
+            <p class="button-example-label">Bouton Secondaire</p>
+            <button class="btn btn-secondary">En Savoir Plus</button>
+        </div>
+        <div class="button-example">
+            <p class="button-example-label">Appel à l'Action</p>
+            <button class="btn btn-cta">Réserver un Soin</button>
+        </div>
+        <div class="button-example">
+            <p class="button-example-label">Bouton Mystique</p>
+            <button class="btn btn-mystique">Consulter les Runes</button>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 4. DÉGRADÉS -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Dégradés Magiques</h2>
+    <p class="section-subtitle">Les transitions de couleurs pour créer l'atmosphère</p>
+
+    <div class="gradients-grid">
+        <div class="gradient-card" style="background: linear-gradient(135deg, #2D1B4E 0%, #6B3FA0 50%, #8B2F8B 100%);">
+            <div>
+                <span>Nuit Violette</span>
+                <small>Héro, arrière-plans principaux</small>
+            </div>
+        </div>
+        <div class="gradient-card" style="background: linear-gradient(135deg, #0D5C54 0%, #1A8A7D 50%, #2EC4B6 100%);">
+            <div>
+                <span>Forêt Enchantée</span>
+                <small>Sections nature, cristaux</small>
+            </div>
+        </div>
+        <div class="gradient-card" style="background: linear-gradient(135deg, #4A2D7A 0%, #C41D6E 100%);">
+            <div>
+                <span>Sortilège</span>
+                <small>CTA, éléments mis en avant</small>
+            </div>
+        </div>
+        <div class="gradient-card" style="background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%);">
+            <div>
+                <span style="color: #2D1B4E;">Or Antique</span>
+                <small style="color: rgba(45,27,78,0.6);">Titres, ornements, filets</small>
+            </div>
+        </div>
+        <div class="gradient-card" style="background: linear-gradient(180deg, #0A0A12 0%, #2D1B4E 50%, #0D5C54 100%);">
+            <div>
+                <span>Crépuscule Mystique</span>
+                <small>Fond de page complet</small>
+            </div>
+        </div>
+        <div class="gradient-card" style="background: linear-gradient(135deg, #C41D6E 0%, #D4447C 50%, #E8D48B 100%);">
+            <div>
+                <span>Rituel de Feu</span>
+                <small>Promotions, événements spéciaux</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 5. AMBIANCE & MOOD -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Ambiance & Univers</h2>
+    <p class="section-subtitle">Les piliers visuels du monde Runes & Magie</p>
+
+    <div class="mood-grid">
+        <div class="mood-card" style="background: linear-gradient(135deg, rgba(45,27,78,0.3), rgba(107,63,160,0.1));">
+            <span class="mood-icon">&#9789;</span>
+            <h4 class="mood-title">Mystère Nocturne</h4>
+            <p class="mood-desc">Fonds sombres avec des lueurs subtiles. Étoiles, lune, constellations. L'obscurité révèle la lumière intérieure.</p>
+        </div>
+        <div class="mood-card" style="background: linear-gradient(135deg, rgba(13,92,84,0.2), rgba(46,196,182,0.08));">
+            <span class="mood-icon">&#9883;</span>
+            <h4 class="mood-title">Nature Sacrée</h4>
+            <p class="mood-desc">Plumes, herbes, cristaux, bois. Textures organiques et éléments naturels qui ancrent la magie dans le réel.</p>
+        </div>
+        <div class="mood-card" style="background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(184,134,11,0.08));">
+            <span class="mood-icon">&#5765;</span>
+            <h4 class="mood-title">Héritage Ancien</h4>
+            <p class="mood-desc">Runes vikings, parchemins, encres rituelles. Le savoir ancestral se transmet à travers les symboles.</p>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 6. ICONOGRAPHIE -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Iconographie & Symboles</h2>
+    <p class="section-subtitle">Les symboles sacrés à utiliser sur le site</p>
+
+    <div class="icons-grid">
+        <div class="icon-card">
+            <span class="icon-symbol">&#9789;</span>
+            <p class="icon-name">Lune</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#10017;</span>
+            <p class="icon-name">Pentacle</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#9883;</span>
+            <p class="icon-name">Atome / Énergie</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#10036;</span>
+            <p class="icon-name">Étoile</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#5765;</span>
+            <p class="icon-name">Rune</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#9830;</span>
+            <p class="icon-name">Cristal</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#10045;</span>
+            <p class="icon-name">Fleur de vie</p>
+        </div>
+        <div class="icon-card">
+            <span class="icon-symbol">&#9829;</span>
+            <p class="icon-name">Soin</p>
+        </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 30px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.1);">
+        <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px;">Style d'icônes recommandé</p>
+        <p style="color: rgba(245,240,232,0.6); font-size: 0.95rem;">
+            Utiliser des icônes en style <strong>line art fin</strong> (trait de 1.5px), couleur or ou turquoise sur fond sombre.
+            Privilégier les jeux d'icônes : <strong>Phosphor Icons</strong> (style thin), <strong>Tabler Icons</strong>, ou des icônes SVG personnalisées
+            inspirées de symboles ésotériques (triquetra, noeud celtique, arbre de vie, oeil, chat mystique).
+        </p>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 7. MISE EN PAGE EXEMPLE -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Aperçu du Site</h2>
+    <p class="section-subtitle">Exemple de mise en page avec la charte appliquée</p>
+
+    <div class="layout-demo">
+        <!-- Header -->
+        <div class="demo-header">
+            <span class="demo-logo">Runes & Magie</span>
+            <nav class="demo-nav">
+                <a href="#">Boutique</a>
+                <a href="#">Cours</a>
+                <a href="#">Soins</a>
+                <a href="#">Guidance</a>
+                <a href="#">Contact</a>
+            </nav>
+        </div>
+
+        <!-- Hero -->
+        <div class="demo-hero-section">
+            <h2>Bienvenue dans l'Univers Mystique</h2>
+            <p>Cristaux, runes, tarot & magie naturelle</p>
+            <button class="btn btn-primary">Explorer la Boutique</button>
+        </div>
+
+        <!-- Products -->
+        <div class="demo-cards">
+            <div class="demo-product-card">
+                <div class="demo-product-img" style="background: linear-gradient(135deg, rgba(107,63,160,0.2), rgba(45,27,78,0.4));">
+                    &#9830;
+                </div>
+                <div class="demo-product-info">
+                    <h4>Cristaux de Protection</h4>
+                    <p class="price">45,00 $</p>
+                </div>
+            </div>
+            <div class="demo-product-card">
+                <div class="demo-product-img" style="background: linear-gradient(135deg, rgba(13,92,84,0.3), rgba(26,138,125,0.2));">
+                    &#5765;
+                </div>
+                <div class="demo-product-info">
+                    <h4>Set de Runes Vikings</h4>
+                    <p class="price">65,00 $</p>
+                </div>
+            </div>
+            <div class="demo-product-card">
+                <div class="demo-product-img" style="background: linear-gradient(135deg, rgba(196,29,110,0.2), rgba(139,47,139,0.2));">
+                    &#9789;
+                </div>
+                <div class="demo-product-info">
+                    <h4>Cours de Tarologie</h4>
+                    <p class="price">120,00 $</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="demo-footer">
+            <p>RUNES & MAGIE &mdash; BOUTIQUE-ÉCOLE &mdash; ANNABELLE DIONNE</p>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 8. RÈGLES D'UTILISATION -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Règles d'Utilisation</h2>
+    <p class="section-subtitle">Maintenir la cohérence de l'identité visuelle</p>
+
+    <div class="rules-grid">
+        <div class="rule-card rule-do">
+            <h4>&#10003; À Faire</h4>
+            <ul>
+                <li>Toujours utiliser le fond sombre comme base principale</li>
+                <li>Appliquer les dégradés or sur les titres importants</li>
+                <li>Conserver un fort contraste texte/fond pour la lisibilité</li>
+                <li>Utiliser les violet/teal comme couleurs dominantes</li>
+                <li>Incorporer des éléments naturels dans les visuels (plumes, cristaux, herbes)</li>
+                <li>Garder une atmosphère mystique mais accueillante</li>
+                <li>Utiliser le magenta/fuchsia avec parcimonie comme accent</li>
+                <li>Laisser beaucoup d'espace négatif (respiration)</li>
+            </ul>
+        </div>
+        <div class="rule-card rule-dont">
+            <h4>&#10007; À Éviter</h4>
+            <ul>
+                <li>Ne jamais utiliser de fond blanc pur (#FFFFFF)</li>
+                <li>Ne pas mélanger plus de 3 couleurs dans un même bloc</li>
+                <li>Éviter les polices sans-serif génériques (Arial, Helvetica)</li>
+                <li>Ne pas utiliser de couleurs néon ou trop saturées</li>
+                <li>Éviter les images de stock génériques (bougies clichés)</li>
+                <li>Ne pas surcharger avec trop de symboles ésotériques</li>
+                <li>Éviter les backgrounds trop clairs qui cassent l'ambiance</li>
+                <li>Ne pas utiliser de bordures épaisses ou arrondies excessives</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- 9. ANALYSE CONCURRENTIELLE -->
+<!-- ============================================ -->
+<section>
+    <h2 class="section-title">Positionnement</h2>
+    <p class="section-subtitle">Ce qui différencie Runes & Magie de la concurrence</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px;">
+        <div style="padding: 35px; background: linear-gradient(135deg, rgba(45,27,78,0.3), rgba(10,10,18,0.8)); border-radius: 12px; border: 1px solid rgba(201,168,76,0.1);">
+            <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 15px; font-size: 1.1rem;">La Concurrence Fait</p>
+            <ul style="list-style: none; padding: 0; color: rgba(245,240,232,0.5); font-size: 0.95rem;">
+                <li style="padding: 5px 0;">&#8226; Templates e-commerce standards (PrestaShop, Divi)</li>
+                <li style="padding: 5px 0;">&#8226; Fonds blancs ou noirs sans nuance</li>
+                <li style="padding: 5px 0;">&#8226; Polices génériques (Open Sans, Arial)</li>
+                <li style="padding: 5px 0;">&#8226; Palette limitée (violet OU teal, rarement les deux)</li>
+                <li style="padding: 5px 0;">&#8226; Peu d'animations ou d'interactions</li>
+            </ul>
+        </div>
+        <div style="padding: 35px; background: linear-gradient(135deg, rgba(26,138,125,0.15), rgba(10,10,18,0.8)); border-radius: 12px; border: 1px solid rgba(46,196,182,0.15);">
+            <p style="font-family: 'Cinzel', serif; color: var(--turquoise-cristal); margin-bottom: 15px; font-size: 1.1rem;">Runes & Magie Se Démarque Par</p>
+            <ul style="list-style: none; padding: 0; color: rgba(245,240,232,0.5); font-size: 0.95rem;">
+                <li style="padding: 5px 0;">&#10022; Palette riche violet + teal + magenta + or</li>
+                <li style="padding: 5px 0;">&#10022; Typographies serif élégantes et uniques</li>
+                <li style="padding: 5px 0;">&#10022; Dégradés subtils et effets lumineux</li>
+                <li style="padding: 5px 0;">&#10022; Identité visuelle forte (chat mystique)</li>
+                <li style="padding: 5px 0;">&#10022; Atmosphère immersive, pas un simple catalogue</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- 10. RECOMMANDATIONS UI/UX PRO MAX -->
+<!-- ============================================ -->
+<section style="background: linear-gradient(180deg, transparent, rgba(45,27,78,0.15), transparent); padding-top: 100px;">
+    <h2 class="section-title">Recommandations UI/UX Pro</h2>
+    <p class="section-subtitle">Intelligence design issue du skill UI/UX Pro Max</p>
+
+    <!-- Style UI Recommandé -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Style UI Recommandé</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+            <div style="padding: 35px; background: linear-gradient(135deg, rgba(10,10,18,0.9), rgba(45,27,78,0.4)); border-radius: 16px; border: 1px solid rgba(201,168,76,0.15);">
+                <p style="font-family: 'Philosopher', sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 4px; color: var(--turquoise-cristal); margin-bottom: 12px;">Style Primaire</p>
+                <p style="font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--or-ancien); margin-bottom: 15px;">Dark Mode OLED + Luxury</p>
+                <p style="color: rgba(245,240,232,0.6); font-size: 0.95rem; line-height: 1.7;">
+                    Fond noir profond (#0A0A12) avec accents lumineux dorés et violets.
+                    Contraste WCAG AAA pour une lisibilité parfaite. Effets de lueur subtils
+                    (text-shadow, box-shadow) pour l'atmosphère mystique. Optimisé OLED
+                    pour économie de batterie sur mobile.
+                </p>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(245,240,232,0.1);">
+                    <p style="font-size: 0.8rem; color: rgba(245,240,232,0.35);">Performance: Excellent | Accessibilité: WCAG AAA | Complexité: Basse</p>
+                </div>
+            </div>
+            <div style="padding: 35px; background: linear-gradient(135deg, rgba(10,10,18,0.9), rgba(13,92,84,0.2)); border-radius: 16px; border: 1px solid rgba(46,196,182,0.1);">
+                <p style="font-family: 'Philosopher', sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 4px; color: var(--turquoise-cristal); margin-bottom: 12px;">Style Secondaire</p>
+                <p style="font-family: 'Cinzel', serif; font-size: 1.4rem; color: var(--or-ancien); margin-bottom: 15px;">Liquid Glass + Glassmorphism</p>
+                <p style="color: rgba(245,240,232,0.6); font-size: 0.95rem; line-height: 1.7;">
+                    Effets de verre translucide pour les cartes produits et les modales.
+                    backdrop-filter: blur(15px) avec bordures subtiles rgba.
+                    Crée une sensation de profondeur magique et de luxe premium.
+                    Parfait pour les cartes produits et les overlays.
+                </p>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(245,240,232,0.1);">
+                    <p style="font-size: 0.8rem; color: rgba(245,240,232,0.35);">Performance: Modérée | Accessibilité: WCAG AA | Complexité: Moyenne</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Palette Pro -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Palette Validée par l'IA</h3>
+        <p style="color: rgba(245,240,232,0.5); margin-bottom: 25px; font-size: 0.95rem;">
+            Croisement de l'analyse des images d'Annabelle, des sites concurrents, et des recommandations
+            UI/UX Pro Max pour e-commerce luxury + spirituel.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 20px;">
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #0A0A12; border-radius: 8px; border: 1px solid rgba(245,240,232,0.1);"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">Background<br>#0A0A12</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #2D1B4E; border-radius: 8px;"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">Primary<br>#2D1B4E</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #6B3FA0; border-radius: 8px;"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">Secondary<br>#6B3FA0</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #1A8A7D; border-radius: 8px;"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">Accent 1<br>#1A8A7D</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #C41D6E; border-radius: 8px;"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">Accent 2<br>#C41D6E</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #C9A84C; border-radius: 8px;"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">CTA / Or<br>#C9A84C</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="height: 80px; background: #F5F0E8; border-radius: 8px;"></div>
+                <p style="font-size: 0.7rem; color: rgba(245,240,232,0.4); margin-top: 8px;">Texte<br>#F5F0E8</p>
+            </div>
+        </div>
+        <div style="padding: 20px; background: rgba(201,168,76,0.05); border-radius: 8px; border: 1px solid rgba(201,168,76,0.1);">
+            <p style="font-size: 0.85rem; color: rgba(245,240,232,0.5); line-height: 1.7;">
+                <strong style="color: var(--or-ancien);">Stratégie couleur :</strong>
+                Inspiration croisée entre Theater/Cinema (#1E1B4B + #CA8A04) et Church/Spiritual (#7C3AED + #CA8A04)
+                avec le violet profond et le teal tirés des images de la marque. L'or comme CTA crée une association
+                avec la valeur, le sacré et le premium.
+            </p>
+        </div>
+    </div>
+
+    <!-- Typography Pro -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Pairings Typographiques Validés</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div style="padding: 30px; background: var(--charbon-mystere); border-radius: 12px; border: 2px solid rgba(201,168,76,0.2); position: relative;">
+                <span style="position: absolute; top: 12px; right: 15px; font-family: 'Philosopher'; font-size: 0.65rem; background: var(--or-ancien); color: var(--noir-nuit); padding: 3px 10px; border-radius: 20px; letter-spacing: 1px;">RECOMMANDÉ</span>
+                <p style="font-family: 'Philosopher'; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 3px; color: var(--turquoise-cristal); margin-bottom: 12px;">Pairing #1</p>
+                <p style="font-family: 'Cinzel Decorative', serif; font-size: 1.6rem; background: linear-gradient(135deg, var(--or-ancien), var(--or-clair)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px;">Cinzel Decorative</p>
+                <p style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: rgba(245,240,232,0.7); margin-bottom: 15px;">+ Cormorant Garamond</p>
+                <p style="font-size: 0.8rem; color: rgba(245,240,232,0.4); line-height: 1.6;">
+                    Notre choix principal. Cinzel Decorative évoque les inscriptions antiques,
+                    Cormorant apporte l'élégance serif pour le corps. Pairing validé "Luxury Serif"
+                    par UI/UX Pro Max.
+                </p>
+            </div>
+            <div style="padding: 30px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Philosopher'; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 3px; color: var(--turquoise-cristal); margin-bottom: 12px;">Alternative #2</p>
+                <p style="font-family: 'Cinzel', serif; font-size: 1.6rem; color: var(--or-ancien); margin-bottom: 5px;">Cinzel</p>
+                <p style="font-family: 'Philosopher', sans-serif; font-size: 1.1rem; color: rgba(245,240,232,0.7); margin-bottom: 15px;">+ Josefin Sans</p>
+                <p style="font-size: 0.8rem; color: rgba(245,240,232,0.4); line-height: 1.6;">
+                    Pairing "Real Estate Luxury". Cinzel pour les titres, Josefin Sans pour
+                    un corps plus moderne et aéré. Bon pour les pages avec beaucoup de texte.
+                </p>
+            </div>
+            <div style="padding: 30px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Philosopher'; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 3px; color: var(--turquoise-cristal); margin-bottom: 12px;">Alternative #3</p>
+                <p style="font-size: 1.6rem; color: var(--or-ancien); font-family: serif; font-weight: 700; margin-bottom: 5px;">Playfair Display</p>
+                <p style="font-family: 'Philosopher', sans-serif; font-size: 1.1rem; color: rgba(245,240,232,0.7); margin-bottom: 15px;">+ Inter</p>
+                <p style="font-size: 0.8rem; color: rgba(245,240,232,0.4); line-height: 1.6;">
+                    Pairing "Classic Elegant". Playfair pour un look éditorial sophistiqué,
+                    Inter ultra-lisible pour le corps. Idéal pour le blog et les contenus éducatifs.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Landing Page Structure -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Structure de Page Recommandée</h3>
+        <div style="padding: 40px; background: var(--charbon-mystere); border-radius: 16px; border: 1px solid rgba(201,168,76,0.1);">
+            <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 8px; font-size: 1.1rem;">
+                Pattern: Immersive Experience + Hero-Centric + Social Proof
+            </p>
+            <p style="color: rgba(245,240,232,0.5); font-size: 0.9rem; margin-bottom: 30px;">
+                Combinaison de patterns optimisée pour une boutique ésotérique haut de gamme
+            </p>
+
+            <div style="display: grid; grid-template-columns: 50px 1fr; gap: 0; align-items: stretch;">
+                <!-- Section 1 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--violet-royal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--or-clair); flex-shrink: 0;">1</div>
+                    <div style="width: 2px; flex-grow: 1; background: linear-gradient(180deg, var(--violet-royal), var(--violet-mystique));"></div>
+                </div>
+                <div style="padding: 5px 0 30px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">Hero Immersif Plein Écran</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Vidéo/image de fond atmosphérique avec particules d'étoiles. Logo doré animé. CTA "Explorer la Boutique" + "Réserver une Guidance". Effet parallax au scroll.</p>
+                </div>
+
+                <!-- Section 2 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--violet-mystique); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--or-clair); flex-shrink: 0;">2</div>
+                    <div style="width: 2px; flex-grow: 1; background: linear-gradient(180deg, var(--violet-mystique), var(--teal-profond));"></div>
+                </div>
+                <div style="padding: 5px 0 30px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">Services & Spécialités</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Grille 3-4 colonnes avec icônes line-art dorées. Cristaux, Runes & Tarot, Cours de Sorcellerie, Soins & Guidance, Mariages & Cérémonies. Cards glassmorphism au hover.</p>
+                </div>
+
+                <!-- Section 3 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--teal-profond); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--or-clair); flex-shrink: 0;">3</div>
+                    <div style="width: 2px; flex-grow: 1; background: linear-gradient(180deg, var(--teal-profond), var(--teal-magique));"></div>
+                </div>
+                <div style="padding: 5px 0 30px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">Boutique - Produits Vedettes</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Carousel ou grille de produits avec effet de carte en verre. Photos de qualité avec fond sombre. Prix en or. Badge "Nouveau" en magenta. Animation fade-in au scroll.</p>
+                </div>
+
+                <!-- Section 4 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--teal-magique); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--or-clair); flex-shrink: 0;">4</div>
+                    <div style="width: 2px; flex-grow: 1; background: linear-gradient(180deg, var(--teal-magique), var(--pourpre-sorciere));"></div>
+                </div>
+                <div style="padding: 5px 0 30px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">À Propos - Annabelle Dionne</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Section portrait avec photo et texte de présentation. Fond dégradé violet/teal. Citation inspirante en Cormorant italic. Lien vers la page complète.</p>
+                </div>
+
+                <!-- Section 5 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--pourpre-sorciere); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--or-clair); flex-shrink: 0;">5</div>
+                    <div style="width: 2px; flex-grow: 1; background: linear-gradient(180deg, var(--pourpre-sorciere), var(--magenta-rituel));"></div>
+                </div>
+                <div style="padding: 5px 0 30px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">Témoignages & Avis</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Carousel de témoignages avec étoiles dorées. Photo + nom + avis. Cards avec bordure dorée subtile. Augmente la confiance de 40% (Social Proof pattern).</p>
+                </div>
+
+                <!-- Section 6 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--magenta-rituel); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--or-clair); flex-shrink: 0;">6</div>
+                    <div style="width: 2px; flex-grow: 1; background: linear-gradient(180deg, var(--magenta-rituel), var(--or-ancien));"></div>
+                </div>
+                <div style="padding: 5px 0 30px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">Cours & Ateliers</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Calendrier des prochains cours avec cards. Sorcellerie, Magie Liminale, Talents Psychiques, Runologie, Tarologie. CTA "S'inscrire" en dégradé magenta.</p>
+                </div>
+
+                <!-- Section 7 -->
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 36px; height: 36px; background: var(--or-ancien); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel'; font-size: 0.8rem; color: var(--noir-nuit); flex-shrink: 0;">7</div>
+                </div>
+                <div style="padding: 5px 0 10px 20px;">
+                    <p style="font-family: 'Cinzel', serif; color: var(--parchemin); font-size: 1rem;">Contact & Réservation</p>
+                    <p style="color: rgba(245,240,232,0.45); font-size: 0.85rem;">Formulaire élégant sur fond sombre. Champs avec bordures dorées au focus. Carte Google Maps en mode sombre. Téléphone (514) 348-7705. Liens réseaux sociaux.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSS Techniques -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Effets CSS Clés</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">Glassmorphism Cards</p>
+                <pre style="font-size: 0.75rem; color: var(--turquoise-cristal); background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; overflow-x: auto; line-height: 1.6;"><code>background: rgba(26, 26, 46, 0.6);
+backdrop-filter: blur(15px);
+-webkit-backdrop-filter: blur(15px);
+border: 1px solid rgba(201, 168, 76, 0.1);
+border-radius: 12px;</code></pre>
+            </div>
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">Lueur Mystique (Glow)</p>
+                <pre style="font-size: 0.75rem; color: var(--turquoise-cristal); background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; overflow-x: auto; line-height: 1.6;"><code>text-shadow: 0 0 20px rgba(201, 168, 76, 0.3);
+box-shadow:
+  0 0 15px rgba(107, 63, 160, 0.2),
+  0 0 40px rgba(107, 63, 160, 0.1);</code></pre>
+            </div>
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">Titre Doré Dégradé</p>
+                <pre style="font-size: 0.75rem; color: var(--turquoise-cristal); background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; overflow-x: auto; line-height: 1.6;"><code>background: linear-gradient(
+  135deg, #C9A84C, #E8D48B, #C9A84C
+);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;</code></pre>
+            </div>
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">Hover Product Card</p>
+                <pre style="font-size: 0.75rem; color: var(--turquoise-cristal); background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; overflow-x: auto; line-height: 1.6;"><code>.card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(201, 168, 76, 0.25);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- UX Guidelines -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Bonnes Pratiques UX</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">Navigation</p>
+                <ul style="list-style: none; padding: 0; font-size: 0.85rem; color: rgba(245,240,232,0.55);">
+                    <li style="padding: 5px 0;">&#10003; Nav sticky avec padding-top compensé</li>
+                    <li style="padding: 5px 0;">&#10003; Max 6-7 items dans le menu</li>
+                    <li style="padding: 5px 0;">&#10003; Logo cliquable vers l'accueil</li>
+                    <li style="padding: 5px 0;">&#10003; Menu hamburger sur mobile</li>
+                    <li style="padding: 5px 0;">&#10003; CTA visible dans le header</li>
+                </ul>
+            </div>
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">Animations</p>
+                <ul style="list-style: none; padding: 0; font-size: 0.85rem; color: rgba(245,240,232,0.55);">
+                    <li style="padding: 5px 0;">&#10003; Transitions 200-300ms maximum</li>
+                    <li style="padding: 5px 0;">&#10003; Hover = changement curseur + visuel</li>
+                    <li style="padding: 5px 0;">&#10003; Click/tap pour actions primaires</li>
+                    <li style="padding: 5px 0;">&#10007; Pas d'animations infinies décoratives</li>
+                    <li style="padding: 5px 0;">&#10003; prefers-reduced-motion respecté</li>
+                </ul>
+            </div>
+            <div style="padding: 25px; background: var(--charbon-mystere); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+                <p style="font-family: 'Cinzel', serif; color: var(--or-ancien); margin-bottom: 10px; font-size: 0.95rem;">E-commerce</p>
+                <ul style="list-style: none; padding: 0; font-size: 0.85rem; color: rgba(245,240,232,0.55);">
+                    <li style="padding: 5px 0;">&#10003; Photos produits fond sombre uniforme</li>
+                    <li style="padding: 5px 0;">&#10003; Prix en couleur or, bien visible</li>
+                    <li style="padding: 5px 0;">&#10003; Bouton "Ajouter au panier" contrasté</li>
+                    <li style="padding: 5px 0;">&#10003; Filtres par catégorie clairs</li>
+                    <li style="padding: 5px 0;">&#10003; Avis clients avec étoiles dorées</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tailwind Config -->
+    <div class="palette-group">
+        <h3 class="palette-group-title">Configuration Tailwind CSS (si applicable)</h3>
+        <div style="padding: 25px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(201,168,76,0.08);">
+            <pre style="font-size: 0.78rem; color: var(--turquoise-cristal); line-height: 1.7; overflow-x: auto;"><code>// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        'violet-profond': '#2D1B4E',
+        'violet-royal': '#4A2D7A',
+        'violet-mystique': '#6B3FA0',
+        'pourpre': '#8B2F8B',
+        'teal-magique': '#1A8A7D',
+        'teal-profond': '#0D5C54',
+        'turquoise': '#2EC4B6',
+        'magenta': '#C41D6E',
+        'fuchsia': '#D4447C',
+        'or': '#C9A84C',
+        'or-clair': '#E8D48B',
+        'bronze': '#B8860B',
+        'nuit': '#0A0A12',
+        'charbon': '#1A1A2E',
+        'parchemin': '#F5F0E8',
+      },
+      fontFamily: {
+        'logo': ['Cinzel Decorative', 'serif'],
+        'heading': ['Cinzel', 'serif'],
+        'body': ['Cormorant Garamond', 'serif'],
+        'accent': ['Philosopher', 'sans-serif'],
+        'rune': ['MedievalSharp', 'cursive'],
+        'cursive': ['Arizonia', 'cursive'],
+      },
+      borderRadius: {
+        'card': '12px',
+        'button': '4px',
+      },
+    },
+  },
+}</code></pre>
+        </div>
+    </div>
+</section>
+
+<div class="divider-ornament">&#10042; &#10042; &#10042;</div>
+
+<!-- ============================================ -->
+<!-- FOOTER -->
+<!-- ============================================ -->
+<div style="text-align: center; padding: 80px 20px 40px;">
+    <div class="divider"></div>
+    <p style="font-family: 'Cinzel Decorative', serif; font-size: 1.5rem; background: linear-gradient(135deg, var(--or-ancien), var(--or-clair)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 15px;">
+        Runes & Magie
+    </p>
+    <p style="font-family: 'Philosopher', sans-serif; font-size: 0.8rem; color: rgba(245,240,232,0.3); letter-spacing: 3px;">
+        CHARTE GRAPHIQUE &mdash; 2026
+    </p>
+    <p style="font-family: 'Cormorant Garamond', serif; font-size: 0.85rem; color: rgba(245,240,232,0.2); margin-top: 30px;">
+        Document confidentiel &mdash; Annabelle Dionne &mdash; Runes & Magie Boutique-École
+    </p>
+</div>
+
+</body>
+</html>
