@@ -169,6 +169,8 @@ export const products: Product[] = [
     longDescription:
       "Cette magnifique pointe d'amethyste naturelle provient des gisements sacres du Bresil. Reconnue depuis l'Antiquite comme la pierre des sages et des mystiques, l'amethyste ouvre le troisieme oeil et renforce l'intuition. Placee pres de votre lit, elle favorise les reves prophetiques et protege contre les energies negatives. Chaque piece est unique, selectionnee a la main pour la purete de sa couleur violette et l'intensite de sa vibration.",
     category: 'cristaux',
+    subcategory: 'pointes',
+    stone: 'amethyste',
     image: '/images/products/amethyste-pointe.jpg',
     images: [
       '/images/products/amethyste-pointe.jpg',
@@ -188,6 +190,8 @@ export const products: Product[] = [
     longDescription:
       "Le quartz rose est la pierre de l'amour universel par excellence. Ce specimen brut degage une energie douce et enveloppante qui ouvre le chakra du coeur, favorise l'amour de soi et attire les relations harmonieuses. Utilise en meditation, il dissout les blocages emotionnels et guerit les blessures du passe. Placez-le dans votre espace de vie pour creer une atmosphere de paix et de tendresse.",
     category: 'cristaux',
+    subcategory: 'autres-formes',
+    stone: 'quartz',
     image: '/images/products/quartz-rose-brut.jpg',
     images: [
       '/images/products/quartz-rose-brut.jpg',
@@ -207,6 +211,8 @@ export const products: Product[] = [
     longDescription:
       "L'obsidienne noire miroir est une pierre volcanique d'une puissance remarquable. Utilisee par les chamans et les sorciers depuis des millenaires, elle agit comme un bouclier psychique impenetrable contre les energies negatives, les attaques spirituelles et les maledictions. Son pouvoir de miroir revele les verites cachees et aide a confronter ses ombres interieures. Pierre indispensable pour tout praticien de la magie, elle ancre profondement dans la terre tout en protegeant l'aura.",
     category: 'cristaux',
+    subcategory: 'pierres-roulees',
+    stone: 'obsidienne',
     image: '/images/products/obsidienne-noire.jpg',
     images: [
       '/images/products/obsidienne-noire.jpg',
