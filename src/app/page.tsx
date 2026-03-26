@@ -6,6 +6,7 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import RuneDivider from '@/components/ui/RuneDivider';
 import ProductCard from '@/components/boutique/ProductCard';
 import Button from '@/components/ui/Button';
+import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { products } from '@/data/products';
 import { services } from '@/data/services';
 import { formatPrice } from '@/lib/utils';
@@ -160,17 +161,26 @@ export default function HomePage() {
       <section className="px-4 py-16 md:py-24 max-w-7xl mx-auto">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
           {/* Left — image */}
-          <div className="relative aspect-[3/4] max-w-md mx-auto lg:max-w-none rounded-sm overflow-hidden border border-violet-royal/20">
+          <div className="relative max-w-md mx-auto lg:max-w-none rounded-lg overflow-hidden border-2 border-or-ancien/60 shadow-[0_0_25px_rgba(201,168,76,0.3),0_0_50px_rgba(201,168,76,0.1)]">
             <Image
-              src="/images/about/noctura-carte.png"
-              alt="Noctura Anna, votre sorci&egrave;re"
-              fill
-              sizes="(max-width: 1024px) 90vw, 45vw"
-              className="object-cover"
+              src="/images/about/noctura-anna.jpg"
+              alt="Noctura Anna, votre sorcière"
+              width={2312}
+              height={1042}
+              className="w-full h-auto brightness-110 contrast-110 saturate-110"
+              priority
             />
-            {/* Soft gradient overlay at bottom */}
+            {/* Vignette mystique — assombrit les bords */}
             <div
-              className="absolute inset-x-0 bottom-0 h-1/3"
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(ellipse at center, transparent 35%, rgba(10,10,18,0.55) 100%)',
+              }}
+            />
+            {/* Gradient bas pour fondu */}
+            <div
+              className="absolute inset-x-0 bottom-0 h-1/3 pointer-events-none"
               style={{
                 background:
                   'linear-gradient(to top, rgba(10,10,18,0.7), transparent)',
@@ -207,6 +217,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════════ TESTIMONIALS ═══════════════════ */}
+      <RuneDivider symbols="ᚷ ᛗ ᛊ" />
+
+      <TestimonialsSection />
 
       {/* ═══════════════════ RUNES PREVIEW ═══════════════════ */}
       <RuneDivider symbols="ᚠ ᚦ ᛏ" />

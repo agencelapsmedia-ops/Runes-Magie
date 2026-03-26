@@ -18,6 +18,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'Runes Vikings', href: '/runes-vikings' },
   { label: '\u00C0 Propos', href: '/a-propos' },
   { label: 'Contact', href: '/contact' },
+  { label: 'R\u00E9server', href: '/reserver' },
 ];
 
 export default function Navbar() {
@@ -74,13 +75,13 @@ export default function Navbar() {
               className="flex items-center gap-3 group"
               aria-label="Runes & Magie - Accueil"
             >
-              <div className="relative h-14 w-14 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(201,168,76,0.5)]">
+              <div className="relative h-12 w-8 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(46,196,182,0.5)]">
                 <Image
-                  src="/images/logo/logo-rm.png"
+                  src="/images/logo/logo-icon.png"
                   alt="Logo Runes & Magie"
-                  width={56}
-                  height={56}
-                  className="h-full w-full object-contain"
+                  width={108}
+                  height={200}
+                  className="h-full w-auto object-contain"
                 />
               </div>
               <span className="font-cinzel-decorative text-lg font-bold text-gradient-gold hidden sm:block">
@@ -118,6 +119,17 @@ export default function Navbar() {
 
             {/* Actions droites */}
             <div className="flex items-center gap-3">
+              {/* Bouton Connexion */}
+              <Link
+                href="/admin/login"
+                className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-xs tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70 hover:shadow-[0_0_10px_rgba(201,168,76,0.2)]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+                Connexion
+              </Link>
+
               {/* Icone panier */}
               <Link
                 href="/panier"

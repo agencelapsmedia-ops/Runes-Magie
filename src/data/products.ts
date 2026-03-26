@@ -8,6 +8,11 @@ export type Category =
   | 'orgonites'
   | 'baguettes-magiques';
 
+export interface Subcategory {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -16,12 +21,77 @@ export interface Product {
   description: string;
   longDescription: string;
   category: Category;
+  subcategory?: string;
+  stone?: string;
   image: string;
   images: string[];
   inStock: boolean;
   featured: boolean;
   tags: string[];
 }
+
+// Liste des noms de pierres (pour la catégorie Pierres et Cristaux)
+export const stoneNames: Subcategory[] = [
+  { id: 'lapis-lazuli', name: 'Lapis lazuli' },
+  { id: 'obsidienne', name: 'Obsidienne' },
+  { id: 'oeil-de-tigre', name: 'Oeil de tigre' },
+  { id: 'cornaline', name: 'Cornaline' },
+  { id: 'citrine', name: 'Citrine' },
+  { id: 'amethyste', name: 'Améthyste' },
+  { id: 'quartz', name: 'Quartz' },
+  { id: 'labradorite', name: 'Labradorite' },
+  { id: 'fluorite', name: 'Fluorite' },
+  { id: 'selenite', name: 'Sélénite' },
+  { id: 'turquoise', name: 'Turquoise' },
+  { id: 'tourmaline', name: 'Tourmaline' },
+  { id: 'opale-de-feu', name: 'Opale de feu' },
+  { id: 'aventurine', name: 'Aventurine' },
+  { id: 'pierre-de-sang', name: 'Pierre de sang' },
+];
+
+export const categorySubcategories: Record<Category, Subcategory[]> = {
+  cristaux: [
+    { id: 'lampes', name: 'Lampes' },
+    { id: 'ensembles-combinaisons', name: 'Ensembles et combinaisons' },
+    { id: 'tranches', name: 'Tranches' },
+    { id: 'pepites', name: 'Pépites' },
+    { id: 'sables', name: 'Sables' },
+    { id: 'geodes', name: 'Géodes' },
+    { id: 'spheres', name: 'Sphères' },
+    { id: 'pyramides', name: 'Pyramides' },
+    { id: 'tours', name: 'Tours' },
+    { id: 'athames-dagues', name: 'Athamés/dagues' },
+    { id: 'pierres-tantriques', name: 'Pierres tantriques' },
+    { id: 'animaux-creatures', name: 'Animaux/créatures' },
+    { id: 'pierres-roulees', name: 'Pierres roulées' },
+    { id: 'pierres-blacklight', name: 'Pierres Blacklight' },
+    { id: 'plaques', name: 'Plaques' },
+    { id: 'pierres-gravees', name: 'Pierres gravées' },
+    { id: 'creations-originales', name: 'Créations originales' },
+    { id: 'autres-formes', name: 'Autres formes' },
+    { id: 'pierres-pouces', name: 'Pierres pouces' },
+    { id: 'piliers', name: 'Piliers' },
+    { id: 'cabochons', name: 'Cabochons' },
+    { id: 'flammes', name: 'Flammes' },
+    { id: 'baguettes', name: 'Baguettes' },
+    { id: 'fleurs-de-cristal', name: 'Fleurs de cristal' },
+    { id: 'raretes', name: 'Raretés' },
+    { id: 'pointes', name: 'Pointes' },
+    { id: 'oeufs', name: 'Oeufs' },
+    { id: 'yoni-feminin-sacre', name: 'Yoni/Féminin sacré' },
+    { id: 'lunes-etoiles', name: 'Lunes/étoiles' },
+    { id: 'bols', name: 'Bols' },
+    { id: 'des', name: 'Dés' },
+    { id: 'mobilier-bains-lavabos', name: 'Mobilier/bains/lavabos' },
+  ],
+  runes: [],
+  tarot: [],
+  'herbes-encens': [],
+  bougies: [],
+  bijoux: [],
+  orgonites: [],
+  'baguettes-magiques': [],
+};
 
 export const categories: {
   id: Category;
@@ -31,7 +101,7 @@ export const categories: {
 }[] = [
   {
     id: 'cristaux',
-    name: 'Cristaux',
+    name: 'Pierres et Cristaux',
     icon: 'diamond',
     description:
       'Pierres et cristaux naturels choisis pour leurs vibrations uniques et leurs vertus de guerison ancestrale.',

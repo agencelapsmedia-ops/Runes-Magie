@@ -1,224 +1,416 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 
-interface BookingService {
+interface Service {
   id: string;
-  name: string;
-  slug: string;
-  description: string;
-  durationMinutes: number;
-  bufferMinutes: number;
-  price: number | null;
-  colorHex: string;
   emoji: string;
-  isActive: boolean;
+  name: string;
+  description: string;
+  duration: number;
+  buffer: number;
+  price: number;
+  color: string;
   maxPerSlot: number;
+  active: boolean;
 }
 
-const DURATIONS = [30, 45, 60, 75, 90, 120];
+const emptyService: Omit<Service, 'id'> = {
+  emoji: '✨',
+  name: '',
+  description: '',
+  duration: 60,
+  buffer: 15,
+  price: 0,
+  color: '#7c3aed',
+  maxPerSlot: 1,
+  active: true,
+};
 
-export default function AdminServicesPage() {
-  const [services, setServices] = useState<BookingService[]>([]);
+export default function ServicesPage() {
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<BookingService | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [form, setForm] = useState<Omit<Service, 'id'>>(emptyService);
+  const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async () => {
-    const res = await fetch('/api/admin/services');
-    if (res.ok) setServices(await res.json());
-    setLoading(false);
+  useEffect(() => {
+    fetchServices();
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  function mapFromApi(s: Record<string, unknown>): Service {
+    return {
+      id: s.id as string,
+      emoji: (s.emoji as string) || '✨',
+      name: s.name as string,
+      description: s.description as string,
+      duration: (s.durationMinutes ?? s.duration) as number,
+      buffer: (s.bufferMinutes ?? s.buffer) as number,
+      price: (s.price ?? 0) as number,
+      color: (s.colorHex ?? s.color ?? '#7c3aed') as string,
+      maxPerSlot: (s.maxPerSlot ?? 1) as number,
+      active: (s.isActive ?? s.active ?? false) as boolean,
+    };
+  }
 
-  const toggleActive = async (id: string, isActive: boolean) => {
-    await fetch(`/api/admin/services/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive }),
+  function mapToApi(f: Omit<Service, 'id'>) {
+    return {
+      emoji: f.emoji,
+      name: f.name,
+      description: f.description,
+      durationMinutes: f.duration,
+      bufferMinutes: f.buffer,
+      price: f.price,
+      colorHex: f.color,
+      maxPerSlot: f.maxPerSlot,
+      isActive: f.active,
+    };
+  }
+
+  function fetchServices() {
+    setLoading(true);
+    fetch('/api/admin/services')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.services || data || [];
+        setServices(list.map(mapFromApi));
+      })
+      .catch(() => setServices([]))
+      .finally(() => setLoading(false));
+  }
+
+  function openCreate() {
+    setEditingService(null);
+    setForm(emptyService);
+    setModalOpen(true);
+  }
+
+  function openEdit(service: Service) {
+    setEditingService(service);
+    setForm({
+      emoji: service.emoji,
+      name: service.name,
+      description: service.description,
+      duration: service.duration,
+      buffer: service.buffer,
+      price: service.price,
+      color: service.color,
+      maxPerSlot: service.maxPerSlot,
+      active: service.active,
     });
-    load();
-  };
+    setModalOpen(true);
+  }
 
-  const handleSave = async (data: Partial<BookingService>) => {
-    if (editing) {
-      await fetch(`/api/admin/services/${editing.id}`, {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const url = editingService
+        ? `/api/admin/services/${editingService.id}`
+        : '/api/admin/services';
+      const method = editingService ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mapToApi(form)),
+      });
+
+      if (res.ok) {
+        setModalOpen(false);
+        fetchServices();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Supprimer ce service ?')) return;
+    try {
+      const res = await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setServices((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
+  async function toggleActive(service: Service) {
+    try {
+      const res = await fetch(`/api/admin/services/${service.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ isActive: !service.active }),
       });
-    } else {
-      await fetch('/api/admin/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      if (res.ok) {
+        setServices((prev) =>
+          prev.map((s) => (s.id === service.id ? { ...s, active: !s.active } : s))
+        );
+      }
+    } catch {
+      // silently fail
     }
-    setShowForm(false);
-    setEditing(null);
-    load();
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Services</h1>
         <button
-          onClick={() => { setEditing(null); setShowForm(true); }}
-          className="px-4 py-2 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 transition-colors"
+          onClick={openCreate}
+          className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
-          + Nouveau service
+          Nouveau service
         </button>
       </div>
 
-      {/* Service Form Modal */}
-      {showForm && (
-        <ServiceForm
-          initial={editing}
-          onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditing(null); }}
-        />
-      )}
-
-      {/* Services Grid */}
-      {loading ? (
-        <p className="text-gray-400 text-sm">Chargement...</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className={`bg-white rounded-xl border p-5 transition-opacity ${
-                service.isActive ? 'border-gray-200' : 'border-gray-100 opacity-60'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-2xl">{service.emoji}</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={service.isActive}
-                    onChange={(e) => toggleActive(service.id, e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-violet-300 rounded-full peer-checked:bg-violet-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
-                </label>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">{service.name}</h3>
-              <p className="text-xs text-gray-500 line-clamp-2 mb-3">{service.description}</p>
-              <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-                <span>{service.durationMinutes} min</span>
-                {service.price && (
-                  <>
-                    <span>|</span>
-                    <span>{service.price.toFixed(2).replace('.', ',')} $</span>
-                  </>
-                )}
-              </div>
+      {/* Service cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {services.map((service) => (
+          <div
+            key={service.id}
+            className={`bg-white rounded-xl border border-gray-200 p-5 transition-opacity ${
+              !service.active ? 'opacity-60' : ''
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div
-                  className="w-4 h-4 rounded-full border border-gray-200"
-                  style={{ backgroundColor: service.colorHex }}
+                <span className="text-2xl">{service.emoji}</span>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                  <p className="text-xs text-gray-500">
+                    {service.duration} min &middot; {service.price.toFixed(2)} $
+                  </p>
+                </div>
+              </div>
+              <div
+                className="w-4 h-4 rounded-full flex-shrink-0"
+                style={{ backgroundColor: service.color }}
+              />
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+              {service.description}
+            </p>
+
+            <div className="flex items-center justify-between">
+              {/* Toggle active */}
+              <button
+                onClick={() => toggleActive(service)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  service.active ? 'bg-violet-600' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    service.active ? 'translate-x-6' : 'translate-x-1'
+                  }`}
                 />
+              </button>
+
+              <div className="flex gap-2">
                 <button
-                  onClick={() => { setEditing(service); setShowForm(true); }}
-                  className="text-xs text-violet-600 hover:text-violet-700"
+                  onClick={() => openEdit(service)}
+                  className="text-xs text-gray-500 hover:text-violet-600 font-medium"
                 >
                   Modifier
                 </button>
+                <button
+                  onClick={() => handleDelete(service.id)}
+                  className="text-xs text-gray-500 hover:text-red-600 font-medium"
+                >
+                  Supprimer
+                </button>
               </div>
             </div>
-          ))}
+          </div>
+        ))}
+
+        {services.length === 0 && (
+          <div className="col-span-full text-center py-12 text-gray-400 text-sm">
+            Aucun service configure. Cliquez sur &quot;Nouveau service&quot; pour commencer.
+          </div>
+        )}
+      </div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {editingService ? 'Modifier le service' : 'Nouveau service'}
+              </h2>
+            </div>
+
+            <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+              {/* Emoji */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Emoji
+                </label>
+                <input
+                  type="text"
+                  value={form.emoji}
+                  onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center text-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                />
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 resize-none"
+                />
+              </div>
+
+              {/* Duration + Buffer */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Duree (min)
+                  </label>
+                  <select
+                    value={form.duration}
+                    onChange={(e) =>
+                      setForm({ ...form, duration: parseInt(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  >
+                    <option value={30}>30 min</option>
+                    <option value={45}>45 min</option>
+                    <option value={60}>60 min</option>
+                    <option value={75}>75 min</option>
+                    <option value={90}>90 min</option>
+                    <option value={120}>120 min</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tampon (min)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.buffer}
+                    onChange={(e) =>
+                      setForm({ ...form, buffer: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              {/* Price + Color */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prix ($)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    required
+                    value={form.price}
+                    onChange={(e) =>
+                      setForm({ ...form, price: parseFloat(e.target.value) || 0 })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Couleur
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={form.color}
+                      onChange={(e) => setForm({ ...form, color: e.target.value })}
+                      className="h-9 w-9 rounded border border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={form.color}
+                      onChange={(e) => setForm({ ...form, color: e.target.value })}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Max per slot */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max par creneau
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.maxPerSlot}
+                  onChange={(e) =>
+                    setForm({ ...form, maxPerSlot: parseInt(e.target.value) || 1 })
+                  }
+                  className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function ServiceForm({
-  initial,
-  onSave,
-  onClose,
-}: {
-  initial: BookingService | null;
-  onSave: (data: Partial<BookingService>) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(initial?.name || '');
-  const [emoji, setEmoji] = useState(initial?.emoji || '*');
-  const [description, setDescription] = useState(initial?.description || '');
-  const [durationMinutes, setDurationMinutes] = useState(initial?.durationMinutes || 60);
-  const [bufferMinutes, setBufferMinutes] = useState(initial?.bufferMinutes || 15);
-  const [price, setPrice] = useState(initial?.price?.toString() || '');
-  const [colorHex, setColorHex] = useState(initial?.colorHex || '#6B3FA0');
-  const [maxPerSlot, setMaxPerSlot] = useState(initial?.maxPerSlot || 1);
-
-  return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">
-          {initial ? 'Modifier le service' : 'Nouveau service'}
-        </h2>
-        <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
-            <div>
-              <label className="text-xs font-medium text-gray-600">Emoji</label>
-              <input value={emoji} onChange={(e) => setEmoji(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 text-center text-xl" />
-            </div>
-            <div className="col-span-3">
-              <label className="text-xs font-medium text-gray-600">Nom</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-600">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 resize-none" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-gray-600">Duree (min)</label>
-              <select value={durationMinutes} onChange={(e) => setDurationMinutes(parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900">
-                {DURATIONS.map((d) => <option key={d} value={d}>{d} min</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600">Buffer (min)</label>
-              <input type="number" value={bufferMinutes} onChange={(e) => setBufferMinutes(parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-medium text-gray-600">Prix ($)</label>
-              <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Optionnel" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600">Couleur</label>
-              <input type="color" value={colorHex} onChange={(e) => setColorHex(e.target.value)} className="w-full h-[38px] border border-gray-300 rounded-lg cursor-pointer" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600">Max/creneau</label>
-              <input type="number" min={1} value={maxPerSlot} onChange={(e) => setMaxPerSlot(parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
-            Annuler
-          </button>
-          <button
-            onClick={() => onSave({
-              name, emoji, description, durationMinutes, bufferMinutes,
-              price: price ? parseFloat(price) : null,
-              colorHex, maxPerSlot,
-            })}
-            disabled={!name || !description}
-            className="flex-1 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700 transition-colors disabled:opacity-50"
-          >
-            {initial ? 'Enregistrer' : 'Creer'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

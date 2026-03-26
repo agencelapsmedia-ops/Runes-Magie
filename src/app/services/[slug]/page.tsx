@@ -131,7 +131,7 @@ export default async function ServiceDetailPage({
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Button href="/contact" variant="cta" size="lg">
+              <Button href="/reserver" variant="cta" size="lg">
                 Reserver ce Service
               </Button>
 

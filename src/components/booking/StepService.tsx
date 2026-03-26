@@ -22,10 +22,8 @@ export default function StepService({ selected, onSelect }: Props) {
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="inline-block text-4xl animate-glow-pulse text-or-ancien select-none">*</div>
-        <p className="mt-4 text-parchemin-vieilli/60 font-philosopher italic">
-          Chargement des services...
-        </p>
+        <div className="inline-block text-4xl animate-glow-pulse text-or-ancien select-none">&#10022;</div>
+        <p className="mt-4 text-parchemin-vieilli/60 font-philosopher italic">Chargement des services...</p>
       </div>
     );
   }
@@ -33,14 +31,9 @@ export default function StepService({ selected, onSelect }: Props) {
   return (
     <div>
       <div className="text-center mb-10">
-        <h2 className="font-cinzel-decorative text-2xl md:text-3xl text-gradient-gold">
-          Choisissez votre seance
-        </h2>
-        <p className="mt-3 text-parchemin-vieilli/70 font-philosopher italic">
-          Selectionnez le service qui resonne avec votre ame
-        </p>
+        <h2 className="font-cinzel-decorative text-2xl md:text-3xl text-gradient-gold">Choisissez votre seance</h2>
+        <p className="mt-3 text-parchemin-vieilli/70 font-philosopher italic">Selectionnez le service qui resonne avec votre ame</p>
       </div>
-
       <div className="grid gap-4 sm:grid-cols-2">
         {services.map((service) => (
           <button
@@ -53,56 +46,40 @@ export default function StepService({ selected, onSelect }: Props) {
                 : 'border-violet-royal/20 bg-charbon-mystere hover:border-violet-royal/40'
             }`}
             style={{
-              boxShadow:
-                selected?.id === service.id
-                  ? `0 0 20px ${service.colorHex}30, 0 0 40px ${service.colorHex}10`
-                  : undefined,
+              boxShadow: selected?.id === service.id
+                ? `0 0 20px ${service.colorHex}30, 0 0 40px ${service.colorHex}10`
+                : undefined,
             }}
             onMouseEnter={(e) => {
-              if (selected?.id !== service.id) {
-                (e.currentTarget as HTMLElement).style.boxShadow =
-                  `0 0 15px ${service.colorHex}20`;
-              }
+              if (selected?.id !== service.id)
+                (e.currentTarget as HTMLElement).style.boxShadow = `0 0 15px ${service.colorHex}20`;
             }}
             onMouseLeave={(e) => {
-              if (selected?.id !== service.id) {
+              if (selected?.id !== service.id)
                 (e.currentTarget as HTMLElement).style.boxShadow = '';
-              }
             }}
           >
-            {/* Emoji */}
             <span className="text-3xl block mb-3 select-none">{service.emoji}</span>
-
-            {/* Name */}
-            <h3 className="font-cinzel text-lg text-parchemin group-hover:text-or-ancien transition-colors">
-              {service.name}
-            </h3>
-
-            {/* Description */}
-            <p className="mt-2 text-sm text-parchemin-vieilli/60 line-clamp-2 font-cormorant">
-              {service.description}
-            </p>
-
-            {/* Duration + Price */}
+            <h3 className="font-cinzel text-lg text-parchemin group-hover:text-or-ancien transition-colors">{service.name}</h3>
+            <p className="mt-2 text-sm text-parchemin-vieilli/60 line-clamp-2 font-cormorant">{service.description}</p>
             <div className="mt-4 flex items-center gap-3 text-sm">
-              <span className="text-parchemin-vieilli/50">
-                {service.durationMinutes} min
-              </span>
+              <span className="text-parchemin-vieilli/50">{service.durationMinutes} min</span>
               {service.price && (
                 <>
                   <span className="text-violet-royal/30">|</span>
-                  <span className="text-or-ancien font-cinzel">
-                    {service.price.toFixed(2).replace('.', ',')} $
-                  </span>
+                  <span className="text-or-ancien font-cinzel">{service.price.toFixed(2).replace('.', ',')} $</span>
                 </>
               )}
             </div>
-
-            {/* Color indicator */}
-            <div
-              className="absolute top-4 right-4 w-3 h-3 rounded-full opacity-60"
-              style={{ backgroundColor: service.colorHex }}
-            />
+            {/* Bouton doré de sélection */}
+            <div className={`mt-5 w-full py-2.5 rounded text-center font-cinzel text-sm tracking-wider transition-all duration-300 ${
+              selected?.id === service.id
+                ? 'bg-or-ancien text-noir-nuit shadow-[0_0_15px_rgba(201,168,76,0.4)]'
+                : 'bg-or-ancien/15 text-or-ancien border border-or-ancien/40 group-hover:bg-or-ancien/25 group-hover:border-or-ancien/60'
+            }`}>
+              {selected?.id === service.id ? '✦ Selectionne ✦' : 'Choisir ce service'}
+            </div>
+            <div className="absolute top-4 right-4 w-3 h-3 rounded-full opacity-60" style={{ backgroundColor: service.colorHex }} />
           </button>
         ))}
       </div>

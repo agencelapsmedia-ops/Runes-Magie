@@ -1,30 +1,53 @@
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/admin-guard";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export async function GET() {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
-  const settings = await prisma.bookingSetting.findMany();
-  const result: Record<string, string> = {};
-  settings.forEach((s) => { result[s.key] = s.value; });
-  return NextResponse.json(result);
+  try {
+    const settings = await prisma.bookingSetting.findMany();
+
+    const result: Record<string, string> = {};
+    for (const setting of settings) {
+      result[setting.key] = setting.value;
+    }
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error fetching settings:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
 }
 
-export async function PUT(req: NextRequest) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+export async function PUT(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
-  const body = await req.json();
+  try {
+    const body = await request.json();
 
-  for (const [key, value] of Object.entries(body)) {
-    await prisma.bookingSetting.upsert({
-      where: { key },
-      update: { value: String(value) },
-      create: { key, value: String(value) },
-    });
+    const upserts = Object.entries(body).map(([key, value]) =>
+      prisma.bookingSetting.upsert({
+        where: { key },
+        update: { value: String(value) },
+        create: { key, value: String(value) },
+      })
+    );
+
+    await Promise.all(upserts);
+
+    // Return updated settings
+    const settings = await prisma.bookingSetting.findMany();
+    const result: Record<string, string> = {};
+    for (const setting of settings) {
+      result[setting.key] = setting.value;
+    }
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error updating settings:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true });
 }

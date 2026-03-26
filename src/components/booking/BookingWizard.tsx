@@ -29,6 +29,11 @@ export interface BookingData {
   notes: string;
 }
 
+export interface BookingResult {
+  token: string;
+  appointmentId: string;
+}
+
 const STEPS = [
   { label: 'Service', icon: 'I' },
   { label: 'Date', icon: 'II' },
@@ -39,34 +44,23 @@ const STEPS = [
 export default function BookingWizard() {
   const [step, setStep] = useState(0);
   const [booking, setBooking] = useState<BookingData>({
-    service: null,
-    date: '',
-    time: '',
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    notes: '',
+    service: null, date: '', time: '',
+    clientName: '', clientEmail: '', clientPhone: '', notes: '',
   });
   const [confirmationToken, setConfirmationToken] = useState('');
 
   const goNext = () => setStep((s) => Math.min(s + 1, 4));
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
-
-  const updateBooking = (data: Partial<BookingData>) => {
-    setBooking((prev) => ({ ...prev, ...data }));
-  };
+  const updateBooking = (data: Partial<BookingData>) => setBooking((prev) => ({ ...prev, ...data }));
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Progress Indicator */}
       {step < 4 && (
         <div className="flex items-center justify-center gap-2 mb-12">
           {STEPS.map((s, i) => (
             <div key={i} className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  if (i < step) setStep(i);
-                }}
+                onClick={() => { if (i < step) setStep(i); }}
                 disabled={i > step}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-cinzel tracking-wider transition-all duration-300 ${
                   i === step
@@ -80,18 +74,13 @@ export default function BookingWizard() {
                 <span className="hidden sm:inline">{s.label}</span>
               </button>
               {i < STEPS.length - 1 && (
-                <div
-                  className={`w-6 h-px transition-colors duration-300 ${
-                    i < step ? 'bg-or-ancien/40' : 'bg-gris-fumee/20'
-                  }`}
-                />
+                <div className={`w-6 h-px transition-colors duration-300 ${i < step ? 'bg-or-ancien/40' : 'bg-gris-fumee/20'}`} />
               )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Step Content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -101,54 +90,19 @@ export default function BookingWizard() {
           transition={{ duration: 0.35 }}
         >
           {step === 0 && (
-            <StepService
-              selected={booking.service}
-              onSelect={(service) => {
-                updateBooking({ service, date: '', time: '' });
-                goNext();
-              }}
-            />
+            <StepService selected={booking.service} onSelect={(service) => { updateBooking({ service, date: '', time: '' }); goNext(); }} />
           )}
           {step === 1 && booking.service && (
-            <StepDate
-              serviceId={booking.service.id}
-              selected={booking.date}
-              onSelect={(date) => {
-                updateBooking({ date, time: '' });
-                goNext();
-              }}
-              onBack={goBack}
-            />
+            <StepDate serviceId={booking.service.id} selected={booking.date} onSelect={(date) => { updateBooking({ date, time: '' }); goNext(); }} onBack={goBack} />
           )}
           {step === 2 && booking.service && booking.date && (
-            <StepTimeSlot
-              serviceId={booking.service.id}
-              date={booking.date}
-              selected={booking.time}
-              durationMinutes={booking.service.durationMinutes}
-              onSelect={(time) => {
-                updateBooking({ time });
-                goNext();
-              }}
-              onBack={goBack}
-            />
+            <StepTimeSlot serviceId={booking.service.id} date={booking.date} selectedTime={booking.time} onSelect={(time) => { updateBooking({ time }); goNext(); }} onBack={goBack} />
           )}
           {step === 3 && booking.service && booking.date && booking.time && (
-            <StepClientForm
-              booking={booking}
-              onUpdate={updateBooking}
-              onConfirm={(token) => {
-                setConfirmationToken(token);
-                goNext();
-              }}
-              onBack={goBack}
-            />
+            <StepClientForm data={booking} onUpdate={updateBooking} onConfirm={(result) => { setConfirmationToken(result.token); goNext(); }} onBack={goBack} />
           )}
           {step === 4 && (
-            <StepConfirmation
-              booking={booking}
-              token={confirmationToken}
-            />
+            <StepConfirmation data={booking} result={{ token: confirmationToken, appointmentId: '' }} />
           )}
         </motion.div>
       </AnimatePresence>

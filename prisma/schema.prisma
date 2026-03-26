@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model BookingService {
@@ -74,4 +75,23 @@ model BookingSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  price           Float
+  description     String
+  longDescription String   @default("")
+  category        String
+  subcategory     String?
+  stone           String?
+  image           String
+  images          String[] @default([])
+  inStock         Boolean  @default(true)
+  featured        Boolean  @default(false)
+  tags            String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

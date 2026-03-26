@@ -139,6 +139,10 @@ export default function CartDrawer() {
             {/* CTA */}
             <button
               type="button"
+              onClick={() => {
+                setIsOpen(false);
+                window.location.href = '/panier';
+              }}
               className="w-full inline-flex items-center justify-center font-cinzel uppercase tracking-[0.15em] text-sm
                 px-6 py-3.5 rounded-sm cursor-pointer
                 bg-gradient-to-r from-magenta-rituel to-fuchsia-enchante

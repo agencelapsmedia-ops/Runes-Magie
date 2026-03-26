@@ -13,45 +13,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
         const user = await prisma.adminUser.findUnique({
           where: { email: credentials.email as string },
         });
-
         if (!user) return null;
-
-        const isValid = await compare(
-          credentials.password as string,
-          user.hashedPassword
-        );
-
+        const isValid = await compare(credentials.password as string, user.hashedPassword);
         if (!isValid) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
   ],
-  pages: {
-    signIn: "/admin/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  pages: { signIn: "/admin/login" },
+  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
+      if (user) token.id = user.id;
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id as string;
-      }
+      if (session.user && token.id) session.user.id = token.id as string;
       return session;
     },
   },

@@ -1,32 +1,50 @@
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/admin-guard";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
+
   const { id } = await params;
 
-  const appointment = await prisma.appointment.findUnique({
-    where: { id },
-    include: { service: true },
-  });
+  try {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { service: true },
+    });
 
-  if (!appointment) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
-  return NextResponse.json(appointment);
+    if (!appointment) {
+      return NextResponse.json({ error: "Rendez-vous non trouve" }, { status: 404 });
+    }
+
+    return NextResponse.json(appointment);
+  } catch (error) {
+    console.error("Error fetching appointment:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
+
   const { id } = await params;
 
-  await prisma.appointment.delete({ where: { id } });
-  return NextResponse.json({ success: true });
+  try {
+    await prisma.appointment.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting appointment:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
 }

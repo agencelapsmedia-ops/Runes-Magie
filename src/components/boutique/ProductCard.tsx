@@ -14,7 +14,7 @@ interface ProductCardProps {
 }
 
 const categoryLabels: Record<Category, string> = {
-  cristaux: 'Cristaux',
+  cristaux: 'Pierres et Cristaux',
   runes: 'Runes',
   tarot: 'Tarot',
   'herbes-encens': 'Herbes & Encens',
