@@ -56,9 +56,10 @@ export default function ProductCard({
         hover:border-violet-royal/40"
     >
       {/* Image */}
-      <div className={`relative overflow-hidden bg-gris-fumee ${
-        category === 'tarot' || category === 'oracle' ? 'aspect-[3/4]' : 'aspect-square'
-      }`}>
+      <div
+        className="relative overflow-hidden bg-gris-fumee"
+        style={{ aspectRatio: category === 'tarot' || category === 'oracle' ? '3/4' : '1/1' }}
+      >
         <Image
           src={image}
           alt={name}

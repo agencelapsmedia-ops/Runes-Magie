@@ -125,9 +125,10 @@ export default function ProductDetailPage({
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
         {/* Left — images */}
         <div className="flex flex-col gap-4">
-          <div className={`relative rounded-sm overflow-hidden border border-violet-royal/20 bg-gris-fumee ${
-            cat === 'tarot' || cat === 'oracle' ? 'aspect-[3/4]' : 'aspect-square'
-          }`}>
+          <div
+            className="relative rounded-sm overflow-hidden border border-violet-royal/20 bg-gris-fumee"
+            style={{ aspectRatio: cat === 'tarot' || cat === 'oracle' ? '3/4' : '1/1' }}
+          >
             <Image
               src={product.images[activeImage] || product.image}
               alt={product.name}
