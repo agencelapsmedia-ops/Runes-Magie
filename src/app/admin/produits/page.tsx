@@ -27,6 +27,10 @@ interface Product {
   category: string;
   subcategory: string;
   stone: string;
+  author: string;
+  content: string;
+  format: string;
+  isbn: string;
   image: string;
   images: string[];
   inStock: boolean;
@@ -42,6 +46,10 @@ const emptyProduct: Omit<Product, 'id' | 'slug'> = {
   category: 'cristaux',
   subcategory: '',
   stone: '',
+  author: '',
+  content: '',
+  format: '',
+  isbn: '',
   image: '',
   images: [],
   inStock: true,
@@ -92,6 +100,10 @@ export default function ProduitsPage() {
       category: product.category,
       subcategory: product.subcategory || '',
       stone: product.stone || '',
+      author: product.author || '',
+      content: product.content || '',
+      format: product.format || '',
+      isbn: product.isbn || '',
       image: product.image,
       images: product.images,
       inStock: product.inStock,
@@ -498,6 +510,62 @@ export default function ProduitsPage() {
                   onChange={(e) => setForm({ ...form, longDescription: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 resize-none"
                 />
+              </div>
+
+              {/* Auteur + Contenu */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Auteur(e)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.author}
+                    onChange={(e) => setForm({ ...form, author: e.target.value })}
+                    placeholder="Ex: Isabella Moretti"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contenu
+                  </label>
+                  <input
+                    type="text"
+                    value={form.content}
+                    onChange={(e) => setForm({ ...form, content: e.target.value })}
+                    placeholder="Ex: 78 cartes + livret 344 pages"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+              </div>
+
+              {/* Format + ISBN */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Format
+                  </label>
+                  <input
+                    type="text"
+                    value={form.format}
+                    onChange={(e) => setForm({ ...form, format: e.target.value })}
+                    placeholder="Ex: 4.5&quot;L x 6&quot;H"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ISBN
+                  </label>
+                  <input
+                    type="text"
+                    value={form.isbn}
+                    onChange={(e) => setForm({ ...form, isbn: e.target.value })}
+                    placeholder="Ex: 9782898171185"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                </div>
               </div>
 
               {/* Image principale */}

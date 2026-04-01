@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, price, description, longDescription, category, subcategory, stone, image, images, inStock, featured, tags } = body;
+    const { name, price, description, longDescription, category, subcategory, stone, author, content, format, isbn, image, images, inStock, featured, tags } = body;
 
     if (!name || !category) {
       return NextResponse.json(
@@ -46,6 +46,10 @@ export async function POST(request: NextRequest) {
         category,
         subcategory: subcategory || null,
         stone: stone || null,
+        author: author || null,
+        content: content || null,
+        format: format || null,
+        isbn: isbn || null,
         image: image || "",
         images: images || [],
         inStock: inStock ?? true,

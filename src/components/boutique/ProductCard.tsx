@@ -56,13 +56,17 @@ export default function ProductCard({
         hover:border-violet-royal/40"
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-gris-fumee">
+      <div className={`relative overflow-hidden bg-gris-fumee ${
+        category === 'tarot' || category === 'oracle' ? 'aspect-[3/4]' : 'aspect-square'
+      }`}>
         <Image
           src={image}
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          className={`transition-transform duration-500 group-hover:scale-110 ${
+            category === 'tarot' || category === 'oracle' ? 'object-contain p-2' : 'object-cover'
+          }`}
           unoptimized={image.includes('supabase.co')}
         />
 

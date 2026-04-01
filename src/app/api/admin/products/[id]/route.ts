@@ -46,6 +46,10 @@ export async function PUT(
     if (body.category !== undefined) data.category = body.category;
     if (body.subcategory !== undefined) data.subcategory = body.subcategory || null;
     if (body.stone !== undefined) data.stone = body.stone || null;
+    if (body.author !== undefined) data.author = body.author || null;
+    if (body.content !== undefined) data.content = body.content || null;
+    if (body.format !== undefined) data.format = body.format || null;
+    if (body.isbn !== undefined) data.isbn = body.isbn || null;
     if (body.image !== undefined) data.image = body.image;
     if (body.images !== undefined) data.images = body.images;
     if (body.inStock !== undefined) data.inStock = body.inStock;

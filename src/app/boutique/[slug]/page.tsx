@@ -185,6 +185,30 @@ export default function ProductDetailPage({
             {formatPrice(product.price)}
           </p>
 
+          {/* Product specs */}
+          {((product as any).author || (product as any).content || (product as any).format) && (
+            <div className="border border-violet-royal/20 rounded-sm overflow-hidden">
+              {(product as any).author && (
+                <div className="flex border-b border-violet-royal/10">
+                  <span className="w-28 shrink-0 px-3 py-2 bg-charbon-mystere/50 text-parchemin-vieilli/60 text-xs font-cinzel uppercase tracking-wider">Auteur(e)</span>
+                  <span className="px-3 py-2 text-parchemin font-philosopher text-sm">{(product as any).author}</span>
+                </div>
+              )}
+              {(product as any).content && (
+                <div className="flex border-b border-violet-royal/10">
+                  <span className="w-28 shrink-0 px-3 py-2 bg-charbon-mystere/50 text-parchemin-vieilli/60 text-xs font-cinzel uppercase tracking-wider">Contenu</span>
+                  <span className="px-3 py-2 text-parchemin font-philosopher text-sm">{(product as any).content}</span>
+                </div>
+              )}
+              {(product as any).format && (
+                <div className="flex">
+                  <span className="w-28 shrink-0 px-3 py-2 bg-charbon-mystere/50 text-parchemin-vieilli/60 text-xs font-cinzel uppercase tracking-wider">Format</span>
+                  <span className="px-3 py-2 text-parchemin font-philosopher text-sm">{(product as any).format}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Description */}
           <p className="text-parchemin-vieilli leading-relaxed font-philosopher text-lg whitespace-pre-line">
             {product.longDescription}
