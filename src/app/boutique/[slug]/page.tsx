@@ -131,6 +131,7 @@ export default function ProductDetailPage({
               sizes="(max-width: 1024px) 90vw, 45vw"
               className="object-cover"
               priority
+              unoptimized={(product.images[activeImage] || product.image).includes('supabase.co')}
             />
           </div>
 
@@ -155,6 +156,7 @@ export default function ProductDetailPage({
                     fill
                     sizes="80px"
                     className="object-cover"
+                    unoptimized={img.includes('supabase.co')}
                   />
                 </button>
               ))}
