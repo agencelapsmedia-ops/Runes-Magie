@@ -1,20 +1,36 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import SectionTitle from '@/components/ui/SectionTitle';
 import RuneDivider from '@/components/ui/RuneDivider';
 import ProductCard from '@/components/boutique/ProductCard';
 import Link from 'next/link';
-import { products, categories, categorySubcategories, stoneNames, type Category } from '@/data/products';
+import { categories, categorySubcategories, stoneNames, type Category, type Product } from '@/data/products';
 
 type SortOption = 'name-asc' | 'price-asc' | 'price-desc';
 
 export default function BoutiquePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
   const [activeSubcategory, setActiveSubcategory] = useState<string | 'all'>('all');
   const [activeStone, setActiveStone] = useState<string | 'all'>('all');
   const [sort, setSort] = useState<SortOption>('name-asc');
+
+  // Fetch products from database
+  useEffect(() => {
+    fetch('/api/public/products')
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching products:', err);
+        setLoading(false);
+      });
+  }, []);
 
   // Get subcategories for the active category
   const subcategories = activeCategory !== 'all' ? categorySubcategories[activeCategory] : [];
@@ -72,7 +88,7 @@ export default function BoutiquePage() {
     }
 
     return result;
-  }, [search, activeCategory, activeSubcategory, activeStone, sort]);
+  }, [products, search, activeCategory, activeSubcategory, activeStone, sort]);
 
   return (
     <section className="px-4 py-12 md:py-20 max-w-7xl mx-auto">
@@ -245,11 +261,18 @@ export default function BoutiquePage() {
 
       {/* ── Results count ──────────────────────────── */}
       <p className="mt-6 text-parchemin-vieilli/60 text-sm font-philosopher">
-        {filtered.length} produit{filtered.length !== 1 ? 's' : ''} trouv&eacute;{filtered.length !== 1 ? 's' : ''}
+        {loading ? 'Chargement...' : `${filtered.length} produit${filtered.length !== 1 ? 's' : ''} trouv\u00e9${filtered.length !== 1 ? 's' : ''}`}
       </p>
 
       {/* ── Product grid ───────────────────────────── */}
-      {filtered.length > 0 ? (
+      {loading ? (
+        <div className="mt-16 text-center">
+          <p className="text-5xl mb-4 animate-pulse">&#x2728;</p>
+          <p className="font-cinzel text-parchemin text-lg">
+            Chargement des produits...
+          </p>
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="mt-6 grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filtered.map((product) => (
             <Link key={product.id} href={`/boutique/${product.slug}`}>
@@ -258,7 +281,7 @@ export default function BoutiquePage() {
                 name={product.name}
                 price={product.price}
                 image={product.image}
-                category={product.category}
+                category={product.category as Category}
               />
             </Link>
           ))}

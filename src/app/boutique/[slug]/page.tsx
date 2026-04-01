@@ -1,10 +1,9 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { products, categories, type Category } from '@/data/products';
+import { type Category, type Product } from '@/data/products';
 import { useCart } from '@/components/cart/CartProvider';
 import { formatPrice } from '@/lib/utils';
 import SectionTitle from '@/components/ui/SectionTitle';
@@ -43,16 +42,50 @@ export default function ProductDetailPage({
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const product = products.find((p) => p.slug === slug);
+  // Fetch products from database
+  useEffect(() => {
+    fetch('/api/public/products')
+      .then((res) => res.json())
+      .then((data: Product[]) => {
+        const found = data.find((p) => p.slug === slug);
+        setProduct(found || null);
+        if (found) {
+          setRelatedProducts(
+            data.filter((p) => p.category === found.category && p.id !== found.id).slice(0, 4)
+          );
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error fetching products:', err);
+        setLoading(false);
+      });
+  }, [slug]);
 
-  if (!product) {
-    notFound();
+  if (loading) {
+    return (
+      <section className="px-4 py-12 md:py-20 max-w-7xl mx-auto text-center">
+        <p className="text-5xl mb-4 animate-pulse">&#x2728;</p>
+        <p className="font-cinzel text-parchemin text-lg">Chargement...</p>
+      </section>
+    );
   }
 
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  if (!product) {
+    return (
+      <section className="px-4 py-12 md:py-20 max-w-7xl mx-auto text-center">
+        <p className="text-5xl mb-4">&#x2728;</p>
+        <p className="font-cinzel text-parchemin text-lg">Produit introuvable</p>
+        <Link href="/boutique" className="text-or-ancien hover:underline mt-4 inline-block font-philosopher">
+          Retour a la boutique
+        </Link>
+      </section>
+    );
+  }
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
@@ -64,6 +97,8 @@ export default function ProductDetailPage({
       });
     }
   };
+
+  const cat = product.category as Category;
 
   return (
     <section className="px-4 py-12 md:py-20 max-w-7xl mx-auto">
@@ -131,9 +166,9 @@ export default function ProductDetailPage({
         <div className="flex flex-col gap-5">
           {/* Category badge */}
           <span
-            className={`self-start px-3 py-1 rounded-sm text-xs font-cinzel uppercase tracking-wider ${categoryColors[product.category]}`}
+            className={`self-start px-3 py-1 rounded-sm text-xs font-cinzel uppercase tracking-wider ${categoryColors[cat]}`}
           >
-            {categoryLabels[product.category]}
+            {categoryLabels[cat]}
           </span>
 
           {/* Name */}
@@ -147,7 +182,7 @@ export default function ProductDetailPage({
           </p>
 
           {/* Description */}
-          <p className="text-parchemin-vieilli leading-relaxed font-philosopher text-lg">
+          <p className="text-parchemin-vieilli leading-relaxed font-philosopher text-lg whitespace-pre-line">
             {product.longDescription}
           </p>
 
@@ -230,7 +265,7 @@ export default function ProductDetailPage({
 
           <SectionTitle
             title="Produits Similaires"
-            subtitle={`D'autres tr&eacute;sors de la cat&eacute;gorie ${categoryLabels[product.category]}`}
+            subtitle={`D'autres tr\u00e9sors de la cat\u00e9gorie ${categoryLabels[cat]}`}
           />
 
           <div className="mt-8 grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -241,7 +276,7 @@ export default function ProductDetailPage({
                   name={rp.name}
                   price={rp.price}
                   image={rp.image}
-                  category={rp.category}
+                  category={rp.category as Category}
                 />
               </Link>
             ))}
