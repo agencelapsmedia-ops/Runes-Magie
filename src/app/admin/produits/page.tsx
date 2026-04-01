@@ -9,6 +9,7 @@ const CATEGORIES = [
   { id: 'cristaux', name: 'Pierres et Cristaux' },
   { id: 'runes', name: 'Runes' },
   { id: 'tarot', name: 'Tarot' },
+  { id: 'oracle', name: 'Oracles' },
   { id: 'herbes-encens', name: 'Herbes & Encens' },
   { id: 'bougies', name: 'Bougies' },
   { id: 'bijoux', name: 'Bijoux' },

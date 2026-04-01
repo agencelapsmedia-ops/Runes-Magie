@@ -2,6 +2,7 @@ export type Category =
   | 'cristaux'
   | 'runes'
   | 'tarot'
+  | 'oracle'
   | 'herbes-encens'
   | 'bougies'
   | 'bijoux'
@@ -86,6 +87,7 @@ export const categorySubcategories: Record<Category, Subcategory[]> = {
   ],
   runes: [],
   tarot: [],
+  oracle: [],
   'herbes-encens': [],
   bougies: [],
   bijoux: [],
@@ -118,7 +120,14 @@ export const categories: {
     name: 'Tarot',
     icon: 'cards',
     description:
-      "Jeux de tarot et d'oracles selectionnes pour leur puissance symbolique et leur connexion spirituelle.",
+      "Jeux de tarot selectionnes pour leur puissance symbolique et leur connexion spirituelle.",
+  },
+  {
+    id: 'oracle',
+    name: 'Oracles',
+    icon: 'eye',
+    description:
+      "Cartes oracles divinatoires pour la guidance spirituelle, l'intuition et la connexion avec le divin.",
   },
   {
     id: 'herbes-encens',
