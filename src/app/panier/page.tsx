@@ -250,6 +250,18 @@ function PanierContent() {
         {/* Step: Customer info form */}
         {step === 'info' && (
           <div className="max-w-lg mx-auto">
+            {/* Order summary */}
+            <div className="mb-8 p-4 rounded-sm border border-violet-royal/20 bg-charbon-mystere/30">
+              <div className="flex justify-between font-cormorant text-lg mb-2">
+                <span className="text-parchemin/70">Sous-total ({items.length} produit{items.length > 1 ? 's' : ''})</span>
+                <span className="text-or-ancien tabular-nums">{formatPrice(total)}</span>
+              </div>
+              <div className="flex justify-between font-cinzel text-xl border-t border-violet-royal/20 pt-2">
+                <span className="text-parchemin">Total</span>
+                <span className="text-or-clair tabular-nums">{formatPrice(total)}</span>
+              </div>
+            </div>
+
             <h2 className="font-cinzel-decorative text-2xl text-gradient-gold mb-6 text-center">Vos informations</h2>
 
             {/* Delivery method */}

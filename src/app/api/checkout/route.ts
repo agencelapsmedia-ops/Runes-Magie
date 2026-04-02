@@ -4,9 +4,7 @@ import Stripe from "stripe";
 import { generateOrderNumber } from "@/lib/order-utils";
 import { sendOrderConfirmationEmail, sendOrderAdminNotification } from "@/lib/order-email";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-03-31.basil" as Stripe.LatestApiVersion,
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
