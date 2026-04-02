@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import MobileMenu from './MobileMenu';
+import GhostCaracal from '@/components/hero/GhostCaracal';
 
 interface NavLink {
   label: string;
@@ -26,6 +27,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount] = useState(0);
+  const [ghostTrigger, setGhostTrigger] = useState(0);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20);
@@ -119,9 +121,10 @@ export default function Navbar() {
 
             {/* Actions droites */}
             <div className="flex items-center gap-3">
-              {/* Bouton Connexion */}
+              {/* Bouton Connexion — déclenche le caracal fantôme */}
               <Link
                 href="/admin/login"
+                onClick={() => setGhostTrigger((n) => n + 1)}
                 className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-xs tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70 hover:shadow-[0_0_10px_rgba(201,168,76,0.2)]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -192,6 +195,9 @@ export default function Navbar() {
         links={NAV_LINKS}
         currentPath={pathname}
       />
+
+      {/* Caracal fantôme — déclenché par le bouton Connexion */}
+      <GhostCaracal trigger={ghostTrigger} />
     </>
   );
 }
