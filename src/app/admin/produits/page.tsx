@@ -275,6 +275,7 @@ export default function ProduitsPage() {
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Produit</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Categorie</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Prix</th>
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase text-center">Paiement</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase text-center">Stock</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase text-center">Vedette</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase text-right">Actions</th>
@@ -321,9 +322,57 @@ export default function ProduitsPage() {
                   </span>
                 </td>
 
-                {/* Price */}
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                  {product.price.toFixed(2)} $
+                {/* Price — inline editable */}
+                <td className="px-4 py-3">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={product.price.toFixed(2)}
+                    onBlur={(e) => {
+                      const newPrice = parseFloat(e.target.value);
+                      if (!isNaN(newPrice) && newPrice !== product.price) {
+                        fetch(`/api/admin/products/${product.id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ price: newPrice }),
+                        }).then(() => {
+                          setProducts((prev) =>
+                            prev.map((p) => (p.id === product.id ? { ...p, price: newPrice } : p))
+                          );
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    className="w-20 px-2 py-1 text-sm font-medium text-gray-900 border border-gray-200 rounded text-right focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white hover:border-violet-300"
+                  />
+                  <span className="text-xs text-gray-500 ml-1">$</span>
+                </td>
+
+                {/* Checkout type toggle */}
+                <td className="px-4 py-3 text-center">
+                  <button
+                    onClick={() => {
+                      const newType = product.checkoutType === 'stripe' ? 'email' : 'stripe';
+                      fetch(`/api/admin/products/${product.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ checkoutType: newType }),
+                      }).then(() => {
+                        setProducts((prev) =>
+                          prev.map((p) => (p.id === product.id ? { ...p, checkoutType: newType } : p))
+                        );
+                      });
+                    }}
+                    className={`inline-block text-[0.65rem] font-medium px-2 py-1 rounded-full transition-colors cursor-pointer ${
+                      product.checkoutType === 'stripe'
+                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                        : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                    }`}
+                    title={product.checkoutType === 'stripe' ? 'Cliquer pour passer en courriel' : 'Cliquer pour passer en Stripe'}
+                  >
+                    {product.checkoutType === 'stripe' ? 'Stripe' : 'Courriel'}
+                  </button>
                 </td>
 
                 {/* Stock toggle */}

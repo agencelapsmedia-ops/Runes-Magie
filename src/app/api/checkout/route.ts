@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const orderNumber = await generateOrderNumber();
     const hasEmailItems = verifiedItems.some((i) => i.checkoutType === "email");
 
-    if (hasEmailItems || customerInfo) {
+    if (hasEmailItems) {
       // ── EMAIL ORDER FLOW ──
       if (!customerInfo?.name || !customerInfo?.email) {
         return NextResponse.json(
