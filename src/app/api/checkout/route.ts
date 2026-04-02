@@ -169,8 +169,7 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
       }));
 
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
         line_items: lineItems,
         mode: "payment",
         customer_email: customerInfo.email,
@@ -180,7 +179,9 @@ export async function POST(request: NextRequest) {
           orderId: order.id,
           orderNumber: order.orderNumber,
         },
-      });
+      };
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
       await prisma.order.update({
         where: { id: order.id },
@@ -193,10 +194,11 @@ export async function POST(request: NextRequest) {
         url: session.url,
       });
     }
-  } catch (error) {
-    console.error("Checkout error:", error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Checkout error:", message, error);
     return NextResponse.json(
-      { error: "Erreur lors du traitement de la commande" },
+      { error: `Erreur: ${message}` },
       { status: 500 }
     );
   }
