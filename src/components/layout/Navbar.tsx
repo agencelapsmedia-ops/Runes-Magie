@@ -75,12 +75,12 @@ export default function Navbar() {
               className="flex items-center gap-3 group"
               aria-label="Runes & Magie - Accueil"
             >
-              <div className="relative h-12 w-8 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(46,196,182,0.5)]">
+              <div className="relative h-12 w-10 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(201,168,76,0.5)]">
                 <Image
-                  src="/images/logo/logo-icon.png"
+                  src="/images/logo/logo-cat-gold.png"
                   alt="Logo Runes & Magie"
-                  width={108}
-                  height={200}
+                  width={120}
+                  height={160}
                   className="h-full w-auto object-contain"
                 />
               </div>

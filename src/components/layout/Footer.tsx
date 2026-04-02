@@ -43,13 +43,13 @@ export default function Footer() {
           {/* Colonne 1 : Logo + tagline */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-3 group mb-4">
-              <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-or-ancien/40 transition-all duration-300 group-hover:ring-or-ancien">
+              <div className="relative h-14 w-11 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(201,168,76,0.5)]">
                 <Image
-                  src="/images/logo/logo-rm.jpg"
+                  src="/images/logo/logo-cat-gold.png"
                   alt="Logo Runes & Magie"
-                  width={48}
-                  height={48}
-                  className="h-full w-full object-cover"
+                  width={120}
+                  height={160}
+                  className="h-full w-auto object-contain"
                 />
               </div>
               <div>

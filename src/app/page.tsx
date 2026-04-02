@@ -190,6 +190,15 @@ export default function HomePage() {
 
           {/* Right — text */}
           <div className="flex flex-col gap-6">
+            <div className="flex justify-start lg:justify-start mb-2">
+              <Image
+                src="/images/logo/logo-cat-gold.png"
+                alt="Logo Runes & Magie"
+                width={60}
+                height={80}
+                className="object-contain drop-shadow-[0_0_8px_rgba(201,168,76,0.3)]"
+              />
+            </div>
             <SectionTitle
               title="Votre Sorci&egrave;re &mdash; Noctura Anna"
               className="text-left lg:text-left"
