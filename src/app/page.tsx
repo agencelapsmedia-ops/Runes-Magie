@@ -198,9 +198,9 @@ export default async function HomePage() {
               <Image
                 src="/images/logo/logo-3d-gold.png"
                 alt="Logo Runes & Magie"
-                width={100}
-                height={100}
-                className="object-contain drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]"
+                width={300}
+                height={300}
+                className="object-contain drop-shadow-[0_0_20px_rgba(201,168,76,0.5)]"
               />
             </div>
             <SectionTitle
