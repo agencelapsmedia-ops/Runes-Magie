@@ -7,7 +7,19 @@ export default function HeroCarousel() {
   return (
     <section className="relative w-full h-screen overflow-hidden select-none">
       {/* ---- Background image ---- */}
-      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/images/hero/hero-7.png')" }} />
+      <div
+        className="absolute inset-0 bg-cover"
+        style={{
+          backgroundImage: "url('/images/hero/hero-7.png')",
+          backgroundPosition: 'center center',
+        }}
+      />
+      {/* Sur mobile : masque la partie gauche pour que le visage reste visible à droite */}
+      <style jsx global>{`
+        @media (max-width: 1023px) {
+          .hero-bg { background-position: 70% center !important; }
+        }
+      `}</style>
 
       {/* ---- Dark gradient overlay ---- */}
       <div
@@ -21,22 +33,22 @@ export default function HeroCarousel() {
 
       {/* ---- Content overlay ---- */}
       <div className="relative z-20 flex h-full items-center justify-center px-6 lg:px-16">
-        <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 w-full max-w-6xl">
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-16 w-full max-w-6xl">
 
           {/* Logo gauche */}
-          <div className="flex-shrink-0 drop-shadow-[0_0_40px_rgba(201,168,76,0.5)] animate-float-logo">
+          <div className="flex-shrink-0 drop-shadow-[0_0_50px_rgba(201,168,76,0.6)] animate-float-logo">
             <Image
               src="/images/logo/logo-3d-gold.png"
               alt="Logo Runes & Magie"
-              width={340}
-              height={340}
-              className="w-[200px] lg:w-[340px] h-auto object-contain"
+              width={440}
+              height={440}
+              className="w-[150px] sm:w-[200px] lg:w-[440px] h-auto object-contain"
               priority
             />
           </div>
 
           {/* Contenu droite */}
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left lg:max-w-xl">
             {/* Rune banner */}
             <p
               className="mb-4 text-or-ancien tracking-[12px] animate-glow-runes"
