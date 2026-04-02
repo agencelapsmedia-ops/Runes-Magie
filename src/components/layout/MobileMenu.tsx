@@ -136,6 +136,20 @@ export default function MobileMenu({
           </ul>
         </nav>
 
+        {/* Bouton Connexion */}
+        <div className="px-6 mt-6">
+          <Link
+            href="/admin/login"
+            onClick={onClose}
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            Connexion
+          </Link>
+        </div>
+
         {/* Runes decoratives en bas */}
         <div className="absolute bottom-8 left-0 right-0 text-center">
           <p className="font-medieval text-2xl tracking-[0.5em] text-or-ancien/20">
