@@ -36,7 +36,7 @@ export default function HeroCarousel() {
         {/* Logo — grand, côté gauche, positionné absolument */}
         <div
           className="absolute z-20 drop-shadow-[0_0_60px_rgba(201,168,76,0.55)] animate-float-logo"
-          style={{ left: '3%', top: '50%', transform: 'translateY(-50%)' }}
+          style={{ left: '3%', top: '38%', transform: 'translateY(-50%)' }}
         >
           <Image
             src="/images/logo/logo-3d-gold.png"
