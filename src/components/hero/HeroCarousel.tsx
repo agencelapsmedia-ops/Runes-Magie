@@ -38,7 +38,7 @@ export default function HeroCarousel() {
         <button
           onClick={spawnGhost}
           className="absolute z-20 animate-float-logo cursor-pointer bg-transparent border-0 p-0"
-          style={{ left: '3%', top: '38%', transform: 'translateY(-50%)' }}
+          style={{ left: '3%', top: '30%', transform: 'translateY(-50%)' }}
           aria-label="Invoquer le caracal magique"
           type="button"
         >
