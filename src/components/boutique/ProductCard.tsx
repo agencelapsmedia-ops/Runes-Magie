@@ -11,6 +11,7 @@ interface ProductCardProps {
   price: number;
   image: string;
   category: Category;
+  checkoutType?: 'stripe' | 'email';
 }
 
 const categoryLabels: Record<Category, string> = {
@@ -43,6 +44,7 @@ export default function ProductCard({
   price,
   image,
   category,
+  checkoutType = 'stripe',
 }: ProductCardProps) {
   const { addItem } = useCart();
 
@@ -91,7 +93,7 @@ export default function ProductCard({
 
         <button
           type="button"
-          onClick={() => addItem({ id, name, price, image })}
+          onClick={() => addItem({ id, name, price, image, checkoutType })}
           className="w-full inline-flex items-center justify-center font-cinzel uppercase tracking-[0.12em] text-xs
             px-4 py-2.5 rounded-sm cursor-pointer
             bg-gradient-to-r from-violet-royal to-violet-profond

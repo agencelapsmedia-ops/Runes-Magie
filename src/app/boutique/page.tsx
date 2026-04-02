@@ -282,6 +282,7 @@ export default function BoutiquePage() {
                 price={product.price}
                 image={product.image}
                 category={product.category as Category}
+                checkoutType={(product as any).checkoutType || 'stripe'}
               />
             </Link>
           ))}

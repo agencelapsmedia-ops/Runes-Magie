@@ -50,6 +50,7 @@ export async function PUT(
     if (body.content !== undefined) data.content = body.content || null;
     if (body.format !== undefined) data.format = body.format || null;
     if (body.isbn !== undefined) data.isbn = body.isbn || null;
+    if (body.checkoutType !== undefined) data.checkoutType = body.checkoutType || "stripe";
     if (body.image !== undefined) data.image = body.image;
     if (body.images !== undefined) data.images = body.images;
     if (body.inStock !== undefined) data.inStock = body.inStock;

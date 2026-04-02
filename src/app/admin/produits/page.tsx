@@ -31,6 +31,7 @@ interface Product {
   content: string;
   format: string;
   isbn: string;
+  checkoutType: string;
   image: string;
   images: string[];
   inStock: boolean;
@@ -50,6 +51,7 @@ const emptyProduct: Omit<Product, 'id' | 'slug'> = {
   content: '',
   format: '',
   isbn: '',
+  checkoutType: 'stripe',
   image: '',
   images: [],
   inStock: true,
@@ -104,6 +106,7 @@ export default function ProduitsPage() {
       content: product.content || '',
       format: product.format || '',
       isbn: product.isbn || '',
+      checkoutType: product.checkoutType || 'stripe',
       image: product.image,
       images: product.images,
       inStock: product.inStock,
@@ -566,6 +569,26 @@ export default function ProduitsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   />
                 </div>
+              </div>
+
+              {/* Type de paiement */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type de paiement
+                </label>
+                <select
+                  value={form.checkoutType}
+                  onChange={(e) => setForm({ ...form, checkoutType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                >
+                  <option value="stripe">Paiement en ligne (Stripe)</option>
+                  <option value="email">Demande de soumission (courriel)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {form.checkoutType === 'stripe'
+                    ? 'Le client paiera directement en ligne par carte de credit.'
+                    : 'Le client enverra une demande — vous le contacterez pour finaliser.'}
+                </p>
               </div>
 
               {/* Image principale */}

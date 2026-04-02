@@ -96,6 +96,7 @@ export default function ProductDetailPage({
         name: product.name,
         price: product.price,
         image: product.image,
+        checkoutType: (product as any).checkoutType || 'stripe',
       });
     }
   };
@@ -308,6 +309,7 @@ export default function ProductDetailPage({
                   price={rp.price}
                   image={rp.image}
                   category={rp.category as Category}
+                  checkoutType={(rp as any).checkoutType || 'stripe'}
                 />
               </Link>
             ))}

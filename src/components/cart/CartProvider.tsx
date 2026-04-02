@@ -8,16 +8,19 @@ export interface CartItem {
   price: number;
   quantity: number;
   image: string;
+  checkoutType: 'stripe' | 'email';
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: { id: string; name: string; price: number; image: string }) => void;
+  addItem: (product: { id: string; name: string; price: number; image: string; checkoutType?: 'stripe' | 'email' }) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   itemCount: number;
   total: number;
+  hasEmailItems: boolean;
+  hasStripeItems: boolean;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
@@ -30,7 +33,13 @@ function loadCart(): CartItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    // Backward compatibility: add checkoutType if missing
+    return parsed.map((item: CartItem & { checkoutType?: string }) => ({
+      ...item,
+      checkoutType: item.checkoutType || 'stripe',
+    }));
   } catch {
     return [];
   }
@@ -63,7 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, hydrated]);
 
   const addItem = useCallback(
-    (product: { id: string; name: string; price: number; image: string }) => {
+    (product: { id: string; name: string; price: number; image: string; checkoutType?: 'stripe' | 'email' }) => {
       setItems((prev) => {
         const existing = prev.find((item) => item.id === product.id);
         if (existing) {
@@ -73,7 +82,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               : item,
           );
         }
-        return [...prev, { ...product, quantity: 1 }];
+        return [...prev, { ...product, checkoutType: product.checkoutType || 'stripe', quantity: 1 }];
       });
       setIsOpen(true);
     },
@@ -108,6 +117,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items],
   );
 
+  const hasEmailItems = useMemo(
+    () => items.some((item) => item.checkoutType === 'email'),
+    [items],
+  );
+
+  const hasStripeItems = useMemo(
+    () => items.some((item) => item.checkoutType === 'stripe'),
+    [items],
+  );
+
   const value = useMemo<CartContextType>(
     () => ({
       items,
@@ -117,10 +136,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearCart,
       itemCount,
       total,
+      hasEmailItems,
+      hasStripeItems,
       isOpen,
       setIsOpen,
     }),
-    [items, addItem, removeItem, updateQuantity, clearCart, itemCount, total, isOpen],
+    [items, addItem, removeItem, updateQuantity, clearCart, itemCount, total, hasEmailItems, hasStripeItems, isOpen],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

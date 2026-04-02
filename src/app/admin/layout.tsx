@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: 'ᛊ' },
+  { label: 'Commandes', href: '/admin/commandes', icon: 'ᚲ' },
   { label: 'Produits', href: '/admin/produits', icon: 'ᚦ' },
   { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛃ' },
   { label: 'Rendez-vous', href: '/admin/rendez-vous', icon: 'ᛈ' },

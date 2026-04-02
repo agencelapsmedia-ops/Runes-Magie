@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         content: content || null,
         format: format || null,
         isbn: isbn || null,
+        checkoutType: body.checkoutType || "stripe",
         image: image || "",
         images: images || [],
         inStock: inStock ?? true,

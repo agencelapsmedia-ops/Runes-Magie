@@ -91,6 +91,7 @@ model Product {
   content         String?
   format          String?
   isbn            String?
+  checkoutType    String   @default("stripe")
   image           String
   images          String[] @default([])
   inStock         Boolean  @default(true)
@@ -98,4 +99,38 @@ model Product {
   tags            String[] @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  type            String
+  status          String      @default("new")
+  deliveryMethod  String      @default("pickup")
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  customerMessage String?
+  shippingAddress String?
+  subtotal        Float
+  shippingCost    Float?
+  total           Float
+  stripeSessionId String?     @unique
+  stripePaymentId String?
+  paidAt          DateTime?
+  notes           String?     @default("")
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  productName String
+  price       Float
+  quantity    Int
+  image       String?
 }
