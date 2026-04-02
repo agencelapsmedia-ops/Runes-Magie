@@ -63,6 +63,8 @@ export default function ProduitsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form, setForm] = useState<Omit<Product, 'id' | 'slug'>>(emptyProduct);
   const [tagsInput, setTagsInput] = useState('');
@@ -168,6 +170,74 @@ export default function ProduitsPage() {
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((p) => p.id)));
+    }
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Supprimer ${selectedIds.size} produit(s) ?`)) return;
+    setBulkLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+        )
+      );
+      setProducts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+      setSelectedIds(new Set());
+    } catch {} finally { setBulkLoading(false); }
+  }
+
+  async function bulkSetCheckoutType(type: string) {
+    setBulkLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`/api/admin/products/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ checkoutType: type }),
+          })
+        )
+      );
+      setProducts((prev) =>
+        prev.map((p) => selectedIds.has(p.id) ? { ...p, checkoutType: type } : p)
+      );
+      setSelectedIds(new Set());
+    } catch {} finally { setBulkLoading(false); }
+  }
+
+  async function bulkToggleStock(inStock: boolean) {
+    setBulkLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) =>
+          fetch(`/api/admin/products/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inStock }),
+          })
+        )
+      );
+      setProducts((prev) =>
+        prev.map((p) => selectedIds.has(p.id) ? { ...p, inStock } : p)
+      );
+      setSelectedIds(new Set());
+    } catch {} finally { setBulkLoading(false); }
+  }
+
   async function toggleStock(product: Product) {
     try {
       const res = await fetch(`/api/admin/products/${product.id}`, {
@@ -266,11 +336,54 @@ export default function ProduitsPage() {
         </span>
       </div>
 
+      {/* Bulk actions bar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-lg px-4 py-3">
+          <span className="text-sm font-medium text-violet-800">
+            {selectedIds.size} selectionne{selectedIds.size > 1 ? 's' : ''}
+          </span>
+          <div className="h-4 w-px bg-violet-200" />
+          <button onClick={bulkDelete} disabled={bulkLoading}
+            className="text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md transition-colors">
+            Supprimer
+          </button>
+          <button onClick={() => bulkSetCheckoutType('stripe')} disabled={bulkLoading}
+            className="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors">
+            Mettre en Stripe
+          </button>
+          <button onClick={() => bulkSetCheckoutType('email')} disabled={bulkLoading}
+            className="text-xs font-medium text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md transition-colors">
+            Mettre en Courriel
+          </button>
+          <button onClick={() => bulkToggleStock(true)} disabled={bulkLoading}
+            className="text-xs font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-md transition-colors">
+            En stock
+          </button>
+          <button onClick={() => bulkToggleStock(false)} disabled={bulkLoading}
+            className="text-xs font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md transition-colors">
+            Hors stock
+          </button>
+          <div className="flex-1" />
+          <button onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-gray-500 hover:text-gray-700">
+            Deselectionner tout
+          </button>
+        </div>
+      )}
+
       {/* Product table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 text-left">
+              <th className="px-2 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                  onChange={toggleSelectAll}
+                  className="rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                />
+              </th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Image</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Produit</th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase">Categorie</th>
@@ -287,6 +400,16 @@ export default function ProduitsPage() {
                 key={product.id}
                 className={`hover:bg-gray-50 transition-colors ${!product.inStock ? 'opacity-50' : ''}`}
               >
+                {/* Checkbox */}
+                <td className="px-2 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(product.id)}
+                    onChange={() => toggleSelect(product.id)}
+                    className="rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                  />
+                </td>
+
                 {/* Image */}
                 <td className="px-4 py-3">
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
@@ -426,7 +549,7 @@ export default function ProduitsPage() {
 
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
+                <td colSpan={9} className="px-4 py-12 text-center text-gray-400 text-sm">
                   Aucun produit trouve.
                 </td>
               </tr>
