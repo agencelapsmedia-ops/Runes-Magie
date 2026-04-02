@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Button from '../ui/Button';
 
 export default function HeroCarousel() {
@@ -19,60 +20,79 @@ export default function HeroCarousel() {
       />
 
       {/* ---- Content overlay ---- */}
-      <div className="relative z-20 flex h-full flex-col items-center justify-center px-4 text-center">
-        {/* Rune banner */}
-        <p
-          className="mb-4 text-or-ancien tracking-[12px] animate-glow-runes"
-          style={{ fontSize: 48, lineHeight: 1 }}
-        >
-          &#5765;&#5794;&#5799;&#5800;&#5809;&#5810;
-        </p>
+      <div className="relative z-20 flex h-full items-center justify-center px-6 lg:px-16">
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 w-full max-w-6xl">
 
-        {/* Main title */}
-        <h1
-          className="font-cinzel-decorative font-bold text-gradient-gold leading-none"
-          style={{
-            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
-          }}
-        >
-          Runes &amp; Magie
-        </h1>
+          {/* Logo gauche */}
+          <div className="flex-shrink-0 drop-shadow-[0_0_40px_rgba(201,168,76,0.5)] animate-float-logo">
+            <Image
+              src="/images/logo/logo-3d-gold.png"
+              alt="Logo Runes & Magie"
+              width={340}
+              height={340}
+              className="w-[200px] lg:w-[340px] h-auto object-contain"
+              priority
+            />
+          </div>
 
-        {/* Subtitle */}
-        <p
-          className="mt-4 font-cinzel uppercase text-turquoise-cristal tracking-[8px]"
-          style={{ fontSize: 'clamp(0.75rem, 1.5vw, 1.125rem)' }}
-        >
-          Boutique-&Eacute;cole
-        </p>
+          {/* Contenu droite */}
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+            {/* Rune banner */}
+            <p
+              className="mb-4 text-or-ancien tracking-[12px] animate-glow-runes"
+              style={{ fontSize: 40, lineHeight: 1 }}
+            >
+              &#5765;&#5794;&#5799;&#5800;&#5809;&#5810;
+            </p>
 
-        {/* Gold divider */}
-        <span
-          aria-hidden="true"
-          className="mt-6 mb-5 block h-px w-40"
-          style={{
-            background:
-              'linear-gradient(90deg, transparent, var(--or-ancien), transparent)',
-          }}
-        />
+            {/* Main title */}
+            <h1
+              className="font-cinzel-decorative font-bold text-gradient-gold leading-none"
+              style={{
+                fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
+              }}
+            >
+              Runes &amp; Magie
+            </h1>
 
-        {/* Tagline */}
-        <p
-          className="max-w-xl font-cormorant italic text-parchemin/80"
-          style={{ fontSize: 'clamp(0.95rem, 1.8vw, 1.25rem)' }}
-        >
-          Cristaux, Runes, Tarot &amp; Magie Naturelle&nbsp;&mdash; Votre
-          Sorci&egrave;re, Noctura Anna
-        </p>
+            {/* Subtitle */}
+            <p
+              className="mt-4 font-cinzel uppercase text-turquoise-cristal tracking-[8px]"
+              style={{ fontSize: 'clamp(0.75rem, 1.5vw, 1.125rem)' }}
+            >
+              Boutique-&Eacute;cole
+            </p>
 
-        {/* CTAs */}
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-          <Button variant="primary" size="lg" href="/boutique">
-            D&eacute;couvrir la Boutique
-          </Button>
-          <Button variant="secondary" size="lg" href="/reserver">
-            R&eacute;server un Soin
-          </Button>
+            {/* Gold divider */}
+            <span
+              aria-hidden="true"
+              className="mt-6 mb-5 block h-px w-40"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, var(--or-ancien), transparent)',
+              }}
+            />
+
+            {/* Tagline */}
+            <p
+              className="max-w-xl font-cormorant italic text-parchemin/80"
+              style={{ fontSize: 'clamp(0.95rem, 1.8vw, 1.2rem)' }}
+            >
+              Cristaux, Runes, Tarot &amp; Magie Naturelle&nbsp;&mdash; Votre
+              Sorci&egrave;re, Noctura Anna
+            </p>
+
+            {/* CTAs */}
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button variant="primary" size="lg" href="/boutique">
+                D&eacute;couvrir la Boutique
+              </Button>
+              <Button variant="secondary" size="lg" href="/reserver">
+                R&eacute;server un Soin
+              </Button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -90,9 +110,15 @@ export default function HeroCarousel() {
               0 0 60px rgba(201, 168, 76, 0.15);
           }
         }
-
         .animate-glow-runes {
           animation: glowRunes 3s ease-in-out infinite;
+        }
+        @keyframes floatLogo {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+        .animate-float-logo {
+          animation: floatLogo 5s ease-in-out infinite;
         }
       `}</style>
     </section>
