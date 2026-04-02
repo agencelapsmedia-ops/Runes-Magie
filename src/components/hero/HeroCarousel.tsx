@@ -31,32 +31,31 @@ export default function HeroCarousel() {
         }}
       />
 
-      {/* ══════ DESKTOP : logo absolu gauche + contenu absolu droite ══════ */}
+      {/* ══════ DESKTOP : logo absolu gauche + contenu centré sur toute la largeur ══════ */}
       <div className="hidden lg:block">
-        {/* Logo — grande taille, centré verticalement, côté gauche */}
+        {/* Logo — grand, côté gauche, positionné absolument */}
         <div
           className="absolute z-20 drop-shadow-[0_0_60px_rgba(201,168,76,0.55)] animate-float-logo"
-          style={{ left: '4%', top: '50%', transform: 'translateY(-50%)' }}
+          style={{ left: '3%', top: '50%', transform: 'translateY(-50%)' }}
         >
           <Image
             src="/images/logo/logo-3d-gold.png"
             alt="Logo Runes & Magie"
-            width={600}
-            height={600}
-            className="w-[520px] xl:w-[600px] h-auto object-contain"
+            width={560}
+            height={560}
+            className="w-[480px] xl:w-[560px] h-auto object-contain"
             priority
           />
         </div>
 
-        {/* Contenu — droite, centré verticalement */}
+        {/* Contenu — centré sur toute la largeur de l'écran */}
         <div
-          className="absolute z-20 flex flex-col items-start text-left"
-          style={{ right: '5%', top: '50%', transform: 'translateY(-50%)', maxWidth: '520px' }}
+          className="absolute z-20 inset-0 flex flex-col items-center justify-center text-center"
         >
-          <p className="mb-4 text-or-ancien tracking-[12px] animate-glow-runes" style={{ fontSize: 40, lineHeight: 1 }}>
+          <p className="mb-4 text-or-ancien tracking-[12px] animate-glow-runes" style={{ fontSize: 42, lineHeight: 1 }}>
             &#5765;&#5794;&#5799;&#5800;&#5809;&#5810;
           </p>
-          <h1 className="font-cinzel-decorative font-bold text-gradient-gold leading-none" style={{ fontSize: 'clamp(3rem, 5vw, 5rem)' }}>
+          <h1 className="font-cinzel-decorative font-bold text-gradient-gold leading-none" style={{ fontSize: 'clamp(3rem, 5.5vw, 5rem)' }}>
             Runes &amp; Magie
           </h1>
           <p className="mt-4 font-cinzel uppercase text-turquoise-cristal tracking-[8px]" style={{ fontSize: '1.1rem' }}>
@@ -65,7 +64,7 @@ export default function HeroCarousel() {
           <span aria-hidden="true" className="mt-6 mb-5 block h-px w-40"
             style={{ background: 'linear-gradient(90deg, transparent, var(--or-ancien), transparent)' }}
           />
-          <p className="font-cormorant italic text-parchemin/80" style={{ fontSize: '1.2rem' }}>
+          <p className="font-cormorant italic text-parchemin/80 max-w-lg" style={{ fontSize: '1.2rem' }}>
             Cristaux, Runes, Tarot &amp; Magie Naturelle&nbsp;&mdash; Votre Sorci&egrave;re, Noctura Anna
           </p>
           <div className="mt-8 flex gap-4">
