@@ -7,7 +7,7 @@ import RuneDivider from '@/components/ui/RuneDivider';
 import ProductCard from '@/components/boutique/ProductCard';
 import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
-import { products } from '@/data/products';
+import { prisma } from '@/lib/db';
 import { services } from '@/data/services';
 import { formatPrice } from '@/lib/utils';
 
@@ -54,9 +54,12 @@ const aettir = [
   },
 ];
 
-const featuredProducts = products.filter((p) => p.featured);
-
-export default function HomePage() {
+export default async function HomePage() {
+  const featuredProducts = await prisma.product.findMany({
+    where: { featured: true, inStock: true },
+    orderBy: { category: 'asc' },
+    take: 8,
+  });
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
@@ -141,8 +144,9 @@ export default function HomePage() {
                 id={product.id}
                 name={product.name}
                 price={product.price}
-                image={product.image}
+                image={product.image ?? '/images/placeholder.jpg'}
                 category={product.category}
+                checkoutType={(product.checkoutType as 'stripe' | 'email') ?? 'stripe'}
               />
             </Link>
           ))}
