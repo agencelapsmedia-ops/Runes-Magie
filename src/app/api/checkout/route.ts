@@ -6,7 +6,16 @@ import { sendOrderConfirmationEmail, sendOrderAdminNotification } from "@/lib/or
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+function getAppUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.startsWith('http')) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "https://www.runesetmagie.ca";
+}
+const APP_URL = getAppUrl();
 
 interface CheckoutItem {
   id: string;
