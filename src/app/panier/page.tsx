@@ -134,7 +134,7 @@ function PanierContent() {
           <SectionTitle title="Demande recue !" subtitle="Votre demande de soumission a ete envoyee" as="h1" />
           <p className="mt-4 font-cinzel text-or-ancien text-xl">Commande #{orderResult.orderNumber}</p>
           <p className="mt-8 font-cormorant text-lg text-parchemin/70">
-            Annabelle vous contactera tres bientot pour discuter des details et finaliser votre commande. Les etoiles veillent sur votre chemin...
+            Noctura vous contactera tres bientot pour discuter des details et finaliser votre commande. Les etoiles veillent sur votre chemin...
           </p>
           <div className="mt-10">
             <Button href="/boutique" variant="primary">Continuer vos achats</Button>
@@ -230,7 +230,7 @@ function PanierContent() {
                 <span className="text-or-ancien tabular-nums">{formatPrice(total)}</span>
               </div>
               {hasEmailItems && (
-                <p className="text-amber-400/70 text-xs font-philosopher">* Certains produits sont sur devis — le prix final sera confirme par Annabelle</p>
+                <p className="text-amber-400/70 text-xs font-philosopher">* Certains produits sont sur devis — le prix final sera confirme par Noctura</p>
               )}
               <div className="flex justify-between font-cinzel text-xl border-t border-violet-royal/30 pt-3">
                 <span className="text-parchemin">Total</span>
@@ -332,7 +332,7 @@ function PanierContent() {
             {hasEmailItems && (
               <div className="mt-4 p-3 rounded-sm border border-amber-400/20 bg-amber-400/5">
                 <p className="text-amber-400/80 text-xs font-philosopher">
-                  Votre panier contient des produits sur devis. Annabelle vous contactera pour confirmer les prix et finaliser votre commande.
+                  Votre panier contient des produits dont le prix peut varier. Noctura vous contactera pour confirmer les details et finaliser votre commande.
                 </p>
               </div>
             )}
