@@ -196,11 +196,11 @@ export default async function HomePage() {
           <div className="flex flex-col gap-6">
             <div className="flex justify-start lg:justify-start mb-2">
               <Image
-                src="/images/logo/logo-cat-gold.png"
+                src="/images/logo/logo-3d-gold.png"
                 alt="Logo Runes & Magie"
-                width={60}
-                height={80}
-                className="object-contain drop-shadow-[0_0_8px_rgba(201,168,76,0.3)]"
+                width={100}
+                height={100}
+                className="object-contain drop-shadow-[0_0_12px_rgba(201,168,76,0.4)]"
               />
             </div>
             <SectionTitle
