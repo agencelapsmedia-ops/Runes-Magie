@@ -159,6 +159,39 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* === SOINS HOLISTIQUES === */}
+      <RuneDivider symbols="ᚨ ᛟ ᚢ" />
+      <section style={{ background: 'linear-gradient(135deg, var(--violet-profond) 0%, var(--charbon-mystere) 50%, var(--noir-nuit) 100%)', padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', letterSpacing: '0.3em', fontSize: '0.8rem', marginBottom: '16px', opacity: 0.8 }}>
+            ᚷ SOINS ÉNERGÉTIQUES EN LIGNE ᚷ
+          </p>
+          <h2 style={{ fontFamily: 'var(--font-cinzel-decorative)', fontSize: 'clamp(1.8rem, 4vw, 3rem)', background: 'linear-gradient(135deg, var(--or-ancien), var(--or-clair))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '24px' }}>
+            Consultations Holistiques
+          </h2>
+          <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin-vieilli)', fontSize: '1.2rem', lineHeight: 1.8, marginBottom: '48px', maxWidth: '650px', margin: '0 auto 48px' }}>
+            Connectez-vous avec des praticiens certifiés pour des soins énergétiques, du Reiki, de la naturopathie et bien plus — en ligne, depuis chez vous.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', flexWrap: 'wrap', marginBottom: '48px' }}>
+            {[
+              { rune: 'ᚱ', label: 'Reiki', desc: 'Soin énergétique' },
+              { rune: 'ᛏ', label: 'Naturopathie', desc: 'Santé naturelle' },
+              { rune: 'ᛟ', label: 'Coaching Spirituel', desc: 'Éveil & transformation' },
+              { rune: 'ᚨ', label: 'Cristallothérapie', desc: 'Soin par les pierres' },
+            ].map((item) => (
+              <div key={item.label} style={{ textAlign: 'center', padding: '24px', background: 'rgba(46,196,182,0.05)', border: '1px solid rgba(46,196,182,0.2)', borderRadius: '12px', minWidth: '160px' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '12px', color: 'var(--or-ancien)' }}>{item.rune}</div>
+                <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--parchemin)', fontSize: '0.85rem', marginBottom: '4px' }}>{item.label}</p>
+                <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin-vieilli)', fontSize: '0.9rem', fontStyle: 'italic' }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <Link href="/soins" style={{ display: 'inline-block', padding: '14px 36px', background: 'linear-gradient(135deg, var(--violet-royal), var(--violet-profond))', color: 'var(--or-clair)', fontFamily: 'var(--font-cinzel)', fontSize: '0.9rem', letterSpacing: '0.15em', border: '1px solid var(--or-ancien)', borderRadius: '4px', textDecoration: 'none', boxShadow: '0 0 20px rgba(201,168,76,0.2)' }}>
+            Découvrir les Soins Holistiques →
+          </Link>
+        </div>
+      </section>
+
       {/* ═══════════════════ ABOUT ═══════════════════ */}
       <RuneDivider symbols="ᚹ ᛟ ᚱ" />
 

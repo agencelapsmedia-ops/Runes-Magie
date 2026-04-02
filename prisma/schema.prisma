@@ -9,30 +9,30 @@ datasource db {
 }
 
 model BookingService {
-  id              String              @id @default(cuid())
-  name            String
-  slug            String              @unique
-  description     String
-  durationMinutes Int
-  bufferMinutes   Int                 @default(15)
-  price           Float?
-  colorHex        String              @default("#6B3FA0")
-  emoji           String              @default("*")
-  isActive        Boolean             @default(true)
-  maxPerSlot      Int                 @default(1)
-  appointments    Appointment[]
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  description       String
+  durationMinutes   Int
+  bufferMinutes     Int                @default(15)
+  price             Float?
+  colorHex          String             @default("#6B3FA0")
+  emoji             String             @default("*")
+  isActive          Boolean            @default(true)
+  maxPerSlot        Int                @default(1)
+  createdAt         DateTime           @default(now())
+  appointments      Appointment[]
   availabilityRules AvailabilityRule[]
-  createdAt       DateTime            @default(now())
 }
 
 model AvailabilityRule {
   id        String          @id @default(cuid())
   serviceId String?
-  service   BookingService? @relation(fields: [serviceId], references: [id])
   dayOfWeek Int
   startTime String
   endTime   String
   isActive  Boolean         @default(true)
+  service   BookingService? @relation(fields: [serviceId], references: [id])
 }
 
 model AvailabilityException {
@@ -48,7 +48,6 @@ model AvailabilityException {
 model Appointment {
   id                String         @id @default(cuid())
   serviceId         String
-  service           BookingService @relation(fields: [serviceId], references: [id])
   clientName        String
   clientEmail       String
   clientPhone       String?
@@ -61,6 +60,7 @@ model Appointment {
   confirmationToken String         @unique @default(cuid())
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  service           BookingService @relation(fields: [serviceId], references: [id])
 }
 
 model AdminUser {
@@ -85,13 +85,6 @@ model Product {
   description     String
   longDescription String   @default("")
   category        String
-  subcategory     String?
-  stone           String?
-  author          String?
-  content         String?
-  format          String?
-  isbn            String?
-  checkoutType    String   @default("stripe")
   image           String
   images          String[] @default([])
   inStock         Boolean  @default(true)
@@ -99,6 +92,13 @@ model Product {
   tags            String[] @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  stone           String?
+  subcategory     String?
+  author          String?
+  content         String?
+  format          String?
+  isbn            String?
+  checkoutType    String   @default("stripe")
 }
 
 model Order {
@@ -119,18 +119,142 @@ model Order {
   stripePaymentId String?
   paidAt          DateTime?
   notes           String?     @default("")
-  items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
 }
 
 model OrderItem {
   id          String  @id @default(cuid())
   orderId     String
-  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId   String?
   productName String
   price       Float
   quantity    Int
   image       String?
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ════════════════════════════════════════════════════════════════
+// PLATEFORME DE SOINS HOLISTIQUES
+// ════════════════════════════════════════════════════════════════
+
+model HolisticUser {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  hashedPassword String
+  role           String         @default("CLIENT") // CLIENT | PRACTITIONER | ADMIN
+  firstName      String
+  lastName       String
+  phone          String?
+  locale         String         @default("fr")
+  // Décharge électronique LCCJTI
+  dischargeSignedAt DateTime?
+  dischargeIp       String?
+  dischargeHash     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  practitioner   Practitioner?
+  clientBookings HolisticAppointment[] @relation("ClientAppointments")
+  reviews        HolisticReview[]
+  notifications  HolisticNotification[]
+}
+
+model Practitioner {
+  id                 String         @id @default(cuid())
+  userId             String         @unique
+  user               HolisticUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug               String         @unique
+  status             String         @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
+  bio                String         @default("")
+  specialties        String[]       @default([])
+  yearsExperience    Int            @default(0)
+  hourlyRate         Float          @default(80)
+  photoUrl           String?
+  stripeAccountId    String?
+  stripeAccountReady Boolean        @default(false)
+  certificationUrls  String[]       @default([])
+  insuranceUrl       String?
+  insuranceNumber    String?
+  adminNote          String?
+  approvedAt         DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  availabilities     HolisticAvailability[]
+  appointments       HolisticAppointment[] @relation("PractitionerAppointments")
+  reviews            HolisticReview[]
+}
+
+model HolisticAvailability {
+  id             String       @id @default(cuid())
+  practitionerId String
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int          // 0=Dimanche, 1=Lundi, ..., 6=Samedi
+  startTime      String       // "09:00"
+  endTime        String       // "17:00"
+  isActive       Boolean      @default(true)
+}
+
+model HolisticAppointment {
+  id             String       @id @default(cuid())
+  clientId       String
+  client         HolisticUser @relation("ClientAppointments", fields: [clientId], references: [id])
+  practitionerId String
+  practitioner   Practitioner @relation("PractitionerAppointments", fields: [practitionerId], references: [id])
+  startsAt       DateTime
+  endsAt         DateTime
+  status         String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
+  dailyRoomUrl   String?
+  dailyRoomName  String?
+  cancelledAt    DateTime?
+  cancelledBy    String?      // "CLIENT" | "PRACTITIONER" | "ADMIN"
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  payment        HolisticPayment?
+  review         HolisticReview?
+  notifications  HolisticNotification[]
+}
+
+model HolisticPayment {
+  id                    String              @id @default(cuid())
+  appointmentId         String              @unique
+  appointment           HolisticAppointment @relation(fields: [appointmentId], references: [id])
+  stripePaymentIntentId String?
+  stripeTransferId      String?
+  amountTotal           Float
+  amountCommission      Float               // 35%
+  amountPractitioner    Float               // 65%
+  status                String              @default("PENDING") // PENDING | PAID | REFUNDED | FAILED
+  paidAt                DateTime?
+  payoutAt              DateTime?
+  createdAt             DateTime            @default(now())
+}
+
+model HolisticReview {
+  id             String              @id @default(cuid())
+  appointmentId  String              @unique
+  appointment    HolisticAppointment @relation(fields: [appointmentId], references: [id])
+  clientId       String
+  client         HolisticUser        @relation(fields: [clientId], references: [id])
+  practitionerId String
+  practitioner   Practitioner        @relation(fields: [practitionerId], references: [id])
+  rating         Int                 // 1-5
+  comment        String?
+  status         String              @default("PENDING") // PENDING | APPROVED | REJECTED
+  submittedAt    DateTime            @default(now())
+  approvedAt     DateTime?
+}
+
+model HolisticNotification {
+  id            String               @id @default(cuid())
+  userId        String
+  user          HolisticUser         @relation(fields: [userId], references: [id])
+  appointmentId String?
+  appointment   HolisticAppointment? @relation(fields: [appointmentId], references: [id])
+  type          String               // BOOKING_CONFIRM | REMINDER_24H | REMINDER_1H | VIDEO_LINK | CANCELLATION | PAYOUT
+  channel       String               // EMAIL | SMS
+  sentAt        DateTime?
+  status        String               @default("PENDING") // PENDING | SENT | FAILED
+  createdAt     DateTime             @default(now())
 }
