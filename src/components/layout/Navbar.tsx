@@ -84,7 +84,7 @@ export default function Navbar() {
                   className="h-full w-auto object-contain"
                 />
               </div>
-              <span className="font-cinzel-decorative text-lg font-bold text-gradient-gold hidden sm:block">
+              <span className="font-cinzel-decorative text-base sm:text-lg font-bold text-gradient-gold">
                 Runes & Magie
               </span>
             </Link>
