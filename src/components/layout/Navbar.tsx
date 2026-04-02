@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import MobileMenu from './MobileMenu';
 import GhostCaracal from '@/components/hero/GhostCaracal';
 
@@ -24,10 +24,18 @@ const NAV_LINKS: NavLink[] = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount] = useState(0);
   const [ghostTrigger, setGhostTrigger] = useState(0);
+
+  const handleConnexion = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setGhostTrigger((n) => n + 1);
+    // Laisse l'animation démarrer, puis navigue
+    setTimeout(() => router.push('/admin/login'), 500);
+  }, [router]);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20);
@@ -121,17 +129,16 @@ export default function Navbar() {
 
             {/* Actions droites */}
             <div className="flex items-center gap-3">
-              {/* Bouton Connexion — déclenche le caracal fantôme */}
-              <Link
-                href="/admin/login"
-                onClick={() => setGhostTrigger((n) => n + 1)}
+              {/* Bouton Connexion — déclenche le caracal fantôme puis navigue */}
+              <button
+                onClick={handleConnexion}
                 className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-xs tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70 hover:shadow-[0_0_10px_rgba(201,168,76,0.2)]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
                 Connexion
-              </Link>
+              </button>
 
               {/* Icone panier */}
               <Link
