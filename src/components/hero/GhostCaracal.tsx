@@ -26,7 +26,7 @@ export default function GhostCaracal({ trigger }: { trigger: number }) {
       setInstanceKey((k) => k + 1);
       setVisible(true);
     }, 20);
-    const t2 = setTimeout(() => setVisible(false), 3600);
+    const t2 = setTimeout(() => setVisible(false), 5500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [trigger]);
 
@@ -52,11 +52,11 @@ export default function GhostCaracal({ trigger }: { trigger: number }) {
         <Image
           src="/images/logo/logo-3d-gold.png"
           alt=""
-          width={260}
-          height={260}
+          width={420}
+          height={420}
           unoptimized
           style={{
-            width: '260px',
+            width: '420px',
             height: 'auto',
             opacity: 0.88,
             filter: [

@@ -34,7 +34,7 @@ export default function Navbar() {
     e.preventDefault();
     setGhostTrigger((n) => n + 1);
     // Laisse l'animation démarrer, puis navigue
-    setTimeout(() => router.push('/admin/login'), 500);
+    setTimeout(() => router.push('/admin/login'), 1800);
   }, [router]);
 
   const handleScroll = useCallback(() => {
