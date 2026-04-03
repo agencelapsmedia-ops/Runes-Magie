@@ -31,7 +31,7 @@ async function getPractitioners() {
     yearsExperience: p.yearsExperience,
     avgRating: p.reviews.length
       ? Math.round((p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length) * 10) / 10
-      : null,
+      : 0,
     reviewCount: p.reviews.length,
   }));
 }

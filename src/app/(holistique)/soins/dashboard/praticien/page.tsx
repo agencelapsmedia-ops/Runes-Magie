@@ -217,7 +217,7 @@ export default async function PraticienDashboardPage() {
     }),
     prisma.holisticPayment.aggregate({
       where: {
-        practitionerId,
+        appointment: { practitionerId },
         status: 'PAID',
         paidAt: { gte: monthStart },
       },
