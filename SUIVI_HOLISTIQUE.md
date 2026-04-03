@@ -30,39 +30,45 @@
 
 ---
 
-## 🔄 EN COURS (session 2026-04-02)
+## ✅ COMPLÉTÉ — Session 2026-04-02
 
 ### Pages
-- [ ] `src/app/(holistique)/soins/inscription-praticien/page.tsx` — Formulaire inscription praticien
-- [ ] `src/app/(holistique)/soins/reserver/[practitionerId]/page.tsx` — Calendrier + paiement
-- [ ] `src/app/(holistique)/soins/dashboard/client/page.tsx` — Dashboard client
-- [ ] `src/app/(holistique)/soins/dashboard/praticien/page.tsx` — Dashboard praticien
-- [ ] `src/app/(holistique)/soins/consultation/[appointmentId]/page.tsx` — Salle Daily.co
+- [x] `src/app/(holistique)/soins/inscription-praticien/page.tsx` — Formulaire inscription praticien (3 étapes)
+- [x] `src/app/(holistique)/soins/reserver/[practitionerId]/page.tsx` — Calendrier créneaux + paiement
+- [x] `src/app/(holistique)/soins/dashboard/client/page.tsx` — Dashboard client (rdv à venir/passés)
+- [x] `src/app/(holistique)/soins/dashboard/praticien/page.tsx` — Dashboard praticien (agenda, revenus, avis)
+- [x] `src/app/(holistique)/soins/consultation/[appointmentId]/page.tsx` — Salle vidéo Daily.co
 
 ### API Routes
-- [ ] `src/app/api/holistique/practitioners/by-id/[practitionerId]/route.ts`
-- [ ] `src/app/api/holistique/practitioners/apply/route.ts`
-- [ ] `src/app/api/holistique/appointments/route.ts` (GET + POST)
-- [ ] `src/app/api/holistique/appointments/[id]/route.ts` (PUT confirmer/annuler)
-- [ ] `src/app/api/holistique/checkout/route.ts` — Stripe Connect 35% commission
-- [ ] `src/app/api/holistique/webhooks/stripe/route.ts` — Confirmer paiement
-- [ ] `src/app/api/holistique/video/[appointmentId]/route.ts` — Daily.co rooms
-- [ ] `src/app/api/holistique/reviews/route.ts`
+- [x] `src/app/api/holistique/practitioners/by-id/[practitionerId]/route.ts`
+- [x] `src/app/api/holistique/practitioners/apply/route.ts`
+- [x] `src/app/api/holistique/appointments/route.ts` (GET + POST)
+- [x] `src/app/api/holistique/appointments/[id]/route.ts` (PUT confirmer/annuler)
+- [x] `src/app/api/holistique/checkout/route.ts` — Stripe Connect 35% commission
+- [x] `src/app/api/holistique/webhooks/stripe/route.ts` — Confirmer paiement (STRIPE_HOLISTIC_WEBHOOK_SECRET)
+- [x] `src/app/api/holistique/video/[appointmentId]/route.ts` — Daily.co rooms
+- [x] `src/app/api/holistique/reviews/route.ts`
 
 ### Admin
-- [ ] `src/app/admin/praticiens/page.tsx` — Approbation praticiens
-- [ ] `src/app/admin/consultations/page.tsx` — Liste toutes les consultations
-- [ ] `src/app/admin/revenus-holistique/page.tsx` — Comptabilité commissions 35%
-- [ ] Ajouter liens sidebar dans `src/app/admin/layout.tsx`
-- [ ] `src/app/api/admin/holistic/practitioners/[id]/route.ts` — Approve/Reject
+- [x] `src/app/admin/praticiens/page.tsx` — Approbation praticiens (tabs: En attente / Approuvés / Rejetés)
+- [x] `src/app/admin/consultations/page.tsx` — Liste toutes les consultations
+- [x] `src/app/admin/revenus-holistique/page.tsx` — Comptabilité commissions 35%
+- [x] Liens sidebar dans `src/app/admin/layout.tsx` (Praticiens ᚻ, Consultations ᛜ, Revenus Holistique ᚴ)
+- [x] `src/app/api/admin/holistic/practitioners/[id]/route.ts` — Approve/Reject
 
 ### Intégration site principal
-- [ ] Lien "Soins Holistiques" dans `src/components/layout/Navbar.tsx`
-- [ ] Section holistic sur `src/app/page.tsx` (homepage)
+- [x] Lien "Soins Holistiques" dans `src/components/layout/Navbar.tsx`
+- [x] Section holistic sur `src/app/page.tsx` (homepage) — 4 cards services + CTA
 
 ### Données
-- [ ] `prisma/seed-holistique.ts` — 6 praticiens fictifs approuvés
-- [ ] Exécuter le seed
+- [x] `prisma/seed-holistique.ts` — 6 praticiens fictifs
+- [x] Seed exécuté — 6 praticiens APPROVED en base:
+  - Séraphine Beaumont (Reiki, Soins Chamaniques) — 95$/h
+  - Marc-André Tremblay (Naturopathie, Coaching Spirituel) — 85$/h
+  - Luna Moreau (Cristallothérapie, Reiki) — 90$/h
+  - Étienne Dubois (Hypnose, Coaching Spirituel) — 110$/h
+  - Isabelle Côté (Soins Chamaniques, Naturopathie) — 100$/h
+  - Naomie Bergeron (Reiki, Cristallothérapie, Coaching) — 80$/h
 
 ---
 
