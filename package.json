@@ -7,7 +7,10 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:backfill:dry": "tsx prisma/scripts/backfill-unified.ts --dry-run",
+    "db:backfill": "tsx prisma/scripts/backfill-unified.ts",
+    "db:verify": "tsx prisma/scripts/verify-backfill.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
@@ -39,6 +42,7 @@
     "eslint-config-next": "16.2.1",
     "prisma": "^6.19.2",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }
