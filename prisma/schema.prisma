@@ -140,77 +140,91 @@ model OrderItem {
 // ════════════════════════════════════════════════════════════════
 
 model HolisticUser {
-  id             String         @id @default(cuid())
-  email          String         @unique
-  hashedPassword String
-  role           String         @default("CLIENT") // CLIENT | PRACTITIONER | ADMIN
-  firstName      String
-  lastName       String
-  phone          String?
-  locale         String         @default("fr")
+  id                String                 @id @default(cuid())
+  email             String                 @unique
+  hashedPassword    String
+  role              String                 @default("CLIENT") // CLIENT | PRACTITIONER | ADMIN
+  firstName         String
+  lastName          String
+  phone             String?
+  locale            String                 @default("fr")
   // Décharge électronique LCCJTI
   dischargeSignedAt DateTime?
   dischargeIp       String?
   dischargeHash     String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  practitioner   Practitioner?
-  clientBookings HolisticAppointment[] @relation("ClientAppointments")
-  reviews        HolisticReview[]
-  notifications  HolisticNotification[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  practitioner      Practitioner?
+  clientBookings    HolisticAppointment[]  @relation("ClientAppointments")
+  reviews           HolisticReview[]
+  notifications     HolisticNotification[]
 }
 
 model Practitioner {
-  id                 String         @id @default(cuid())
-  userId             String         @unique
-  user               HolisticUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug               String         @unique
-  status             String         @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
-  bio                String         @default("")
-  specialties        String[]       @default([])
-  yearsExperience    Int            @default(0)
-  hourlyRate         Float          @default(80)
+  id                 String                 @id @default(cuid())
+  userId             String                 @unique
+  user               HolisticUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug               String                 @unique
+  status             String                 @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
+  bio                String                 @default("")
+  specialties        String[]               @default([])
+  yearsExperience    Int                    @default(0)
+  hourlyRate         Float                  @default(80)
   photoUrl           String?
   stripeAccountId    String?
-  stripeAccountReady Boolean        @default(false)
-  certificationUrls  String[]       @default([])
+  stripeAccountReady Boolean                @default(false)
+  certificationUrls  String[]               @default([])
   insuranceUrl       String?
   insuranceNumber    String?
   adminNote          String?
   approvedAt         DateTime?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  // V2 — plateforme unifiée (additifs, défauts safe)
+  isOwner            Boolean                @default(false)
+  commissionPct      Float                  @default(35)
+  addressLine        String?
+  city               String?
+  postalCode         String?
+  userV2Id           String?                @unique
+  userV2             User?                  @relation(fields: [userV2Id], references: [id])
+  // Relations existantes (legacy, à ne pas casser)
   availabilities     HolisticAvailability[]
-  appointments       HolisticAppointment[] @relation("PractitionerAppointments")
+  appointments       HolisticAppointment[]  @relation("PractitionerAppointments")
   reviews            HolisticReview[]
+  // Relations V2 (nouveaux modèles)
+  offerings          Offering[]
+  schedule           Availability[]
+  bookings           Booking[]              @relation("PractitionerBookings")
+  bookingReviews     Review[]               @relation("PractitionerBookingReviews")
 }
 
 model HolisticAvailability {
   id             String       @id @default(cuid())
   practitionerId String
   practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  dayOfWeek      Int          // 0=Dimanche, 1=Lundi, ..., 6=Samedi
-  startTime      String       // "09:00"
-  endTime        String       // "17:00"
+  dayOfWeek      Int // 0=Dimanche, 1=Lundi, ..., 6=Samedi
+  startTime      String // "09:00"
+  endTime        String // "17:00"
   isActive       Boolean      @default(true)
 }
 
 model HolisticAppointment {
-  id             String       @id @default(cuid())
+  id             String                 @id @default(cuid())
   clientId       String
-  client         HolisticUser @relation("ClientAppointments", fields: [clientId], references: [id])
+  client         HolisticUser           @relation("ClientAppointments", fields: [clientId], references: [id])
   practitionerId String
-  practitioner   Practitioner @relation("PractitionerAppointments", fields: [practitionerId], references: [id])
+  practitioner   Practitioner           @relation("PractitionerAppointments", fields: [practitionerId], references: [id])
   startsAt       DateTime
   endsAt         DateTime
-  status         String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
+  status         String                 @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
   dailyRoomUrl   String?
   dailyRoomName  String?
   cancelledAt    DateTime?
-  cancelledBy    String?      // "CLIENT" | "PRACTITIONER" | "ADMIN"
+  cancelledBy    String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
   notes          String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
   payment        HolisticPayment?
   review         HolisticReview?
   notifications  HolisticNotification[]
@@ -223,8 +237,8 @@ model HolisticPayment {
   stripePaymentIntentId String?
   stripeTransferId      String?
   amountTotal           Float
-  amountCommission      Float               // 35%
-  amountPractitioner    Float               // 65%
+  amountCommission      Float // 35%
+  amountPractitioner    Float // 65%
   status                String              @default("PENDING") // PENDING | PAID | REFUNDED | FAILED
   paidAt                DateTime?
   payoutAt              DateTime?
@@ -239,7 +253,7 @@ model HolisticReview {
   client         HolisticUser        @relation(fields: [clientId], references: [id])
   practitionerId String
   practitioner   Practitioner        @relation(fields: [practitionerId], references: [id])
-  rating         Int                 // 1-5
+  rating         Int // 1-5
   comment        String?
   status         String              @default("PENDING") // PENDING | APPROVED | REJECTED
   submittedAt    DateTime            @default(now())
@@ -252,9 +266,162 @@ model HolisticNotification {
   user          HolisticUser         @relation(fields: [userId], references: [id])
   appointmentId String?
   appointment   HolisticAppointment? @relation(fields: [appointmentId], references: [id])
-  type          String               // BOOKING_CONFIRM | REMINDER_24H | REMINDER_1H | VIDEO_LINK | CANCELLATION | PAYOUT
-  channel       String               // EMAIL | SMS
+  type          String // BOOKING_CONFIRM | REMINDER_24H | REMINDER_1H | VIDEO_LINK | CANCELLATION | PAYOUT
+  channel       String // EMAIL | SMS
   sentAt        DateTime?
   status        String               @default("PENDING") // PENDING | SENT | FAILED
   createdAt     DateTime             @default(now())
+}
+
+// ════════════════════════════════════════════════════════════════
+// PLATEFORME UNIFIÉE V2 — Auth + Réservations soins/cours
+// ════════════════════════════════════════════════════════════════
+// Ces modèles coexistent avec les anciens (AdminUser, HolisticUser,
+// BookingService, Appointment, HolisticAppointment, HolisticPayment,
+// AvailabilityRule, HolisticAvailability) le temps du backfill.
+// ════════════════════════════════════════════════════════════════
+
+model User {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  hashedPassword    String
+  role              String         @default("CLIENT") // CLIENT | PRACTITIONER | ADMIN
+  firstName         String
+  lastName          String
+  phone             String?
+  locale            String         @default("fr")
+  // Décharge électronique LCCJTI (préservé depuis HolisticUser)
+  dischargeSignedAt DateTime?
+  dischargeIp       String?
+  dischargeHash     String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  practitioner      Practitioner?
+  clientBookings    Booking[]      @relation("ClientBookings")
+  reviews           Review[]
+  notifications     Notification[]
+}
+
+model Offering {
+  id              String       @id @default(cuid())
+  practitionerId  String
+  practitioner    Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  type            String // SOIN | COURS | CEREMONIE
+  slug            String       @unique
+  name            String
+  description     String
+  longDescription String       @default("")
+  durationMinutes Int
+  bufferMinutes   Int          @default(15)
+  price           Float
+  currency        String       @default("CAD")
+  modes           String[]     @default(["IN_PERSON"]) // IN_PERSON | VIRTUAL
+  capacity        Int          @default(1)
+  colorHex        String       @default("#6B3FA0")
+  emoji           String       @default("*")
+  imageUrl        String?
+  features        String[]     @default([])
+  isActive        Boolean      @default(true)
+  isFeatured      Boolean      @default(false)
+  sortOrder       Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  bookings        Booking[]
+
+  @@index([type, isActive, isFeatured])
+  @@index([practitionerId, isActive])
+}
+
+model Availability {
+  id             String       @id @default(cuid())
+  practitionerId String
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int // 0=Dim ... 6=Sam
+  startTime      String // "09:00"
+  endTime        String // "17:00"
+  mode           String? // null = tous modes, sinon IN_PERSON ou VIRTUAL
+  isActive       Boolean      @default(true)
+
+  @@index([practitionerId, dayOfWeek, isActive])
+}
+
+model Booking {
+  id                String         @id @default(cuid())
+  offeringId        String
+  offering          Offering       @relation(fields: [offeringId], references: [id])
+  practitionerId    String
+  practitioner      Practitioner   @relation("PractitionerBookings", fields: [practitionerId], references: [id])
+  clientId          String
+  client            User           @relation("ClientBookings", fields: [clientId], references: [id])
+  startsAt          DateTime
+  endsAt            DateTime
+  mode              String // IN_PERSON | VIRTUAL
+  status            String         @default("PENDING_PAYMENT") // PENDING_PAYMENT | CONFIRMED | CANCELLED | COMPLETED | NO_SHOW
+  notes             String?
+  dailyRoomUrl      String? // si VIRTUAL
+  dailyRoomName     String?
+  locationSnapshot  String? // snapshot adresse si IN_PERSON
+  googleEventId     String? // sync Google Calendar Noctura
+  cancelledAt       DateTime?
+  cancelledBy       String? // CLIENT | PRACTITIONER | ADMIN
+  confirmationToken String         @unique @default(cuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  payment           Payment?
+  review            Review?
+  notifications     Notification[]
+
+  @@index([practitionerId, startsAt, endsAt, status]) // CRITIQUE — vérif conflit unifiée O(log n)
+  @@index([clientId, startsAt])
+}
+
+model Payment {
+  id                    String    @id @default(cuid())
+  bookingId             String    @unique
+  booking               Booking   @relation(fields: [bookingId], references: [id])
+  stripeSessionId       String?   @unique
+  stripePaymentIntentId String?
+  stripeTransferId      String? // null pour Noctura (compte principal)
+  amountTotal           Float
+  amountCommission      Float // 0 pour Noctura, 35% pour autres
+  amountPractitioner    Float // total - commission
+  commissionPct         Float
+  currency              String    @default("CAD")
+  status                String    @default("PENDING") // PENDING | PAID | REFUNDED | FAILED
+  paidAt                DateTime?
+  refundedAt            DateTime?
+  payoutAt              DateTime?
+  createdAt             DateTime  @default(now())
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  bookingId      String       @unique
+  booking        Booking      @relation(fields: [bookingId], references: [id])
+  clientId       String
+  client         User         @relation(fields: [clientId], references: [id])
+  practitionerId String
+  practitioner   Practitioner @relation("PractitionerBookingReviews", fields: [practitionerId], references: [id])
+  rating         Int // 1-5
+  comment        String?
+  status         String       @default("PENDING") // PENDING | APPROVED | REJECTED
+  submittedAt    DateTime     @default(now())
+  approvedAt     DateTime?
+
+  @@index([practitionerId, status])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  bookingId String?
+  booking   Booking?  @relation(fields: [bookingId], references: [id])
+  type      String // BOOKING_CONFIRM | REMINDER_24H | REMINDER_1H | VIDEO_LINK | CANCELLATION | PAYOUT
+  channel   String // EMAIL | SMS
+  sentAt    DateTime?
+  status    String    @default("PENDING") // PENDING | SENT | FAILED
+  createdAt DateTime  @default(now())
+
+  @@index([userId, status])
 }
