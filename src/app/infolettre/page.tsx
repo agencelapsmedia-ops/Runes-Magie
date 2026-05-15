@@ -15,15 +15,43 @@ export default function InfolettrePage() {
   });
   const [consentEmail, setConsentEmail] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // Placeholder: backend à connecter (Resend Audiences + table Subscriber)
-    setSubmitted(true);
+    setErrorMsg(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/infolettre/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: formData.prenom,
+          lastName: formData.nom,
+          email: formData.email,
+          phone: formData.telephone,
+          consentEmail,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error ?? "Erreur lors de l'inscription. Réessayez plus tard.");
+        return;
+      }
+
+      setSubmitted(true);
+    } catch {
+      setErrorMsg("Impossible de joindre le serveur. Vérifiez votre connexion.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const inputClasses = [
@@ -76,6 +104,14 @@ export default function InfolettrePage() {
             onSubmit={handleSubmit}
             className="bg-charbon-mystere/40 border border-violet-royal/30 rounded-lg p-6 md:p-10 space-y-6"
           >
+            {errorMsg && (
+              <div
+                role="alert"
+                className="px-4 py-3 rounded-lg border border-magenta-rituel/40 bg-magenta-rituel/10 text-magenta-rituel font-cormorant text-base"
+              >
+                {errorMsg}
+              </div>
+            )}
             {/* Prénom + Nom — grid 2 colonnes sur desktop */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -184,8 +220,14 @@ export default function InfolettrePage() {
             </p>
 
             {/* Submit */}
-            <Button type="submit" variant="cta" size="lg" className="w-full">
-              Rejoindre le Cercle
+            <Button
+              type="submit"
+              variant="cta"
+              size="lg"
+              className="w-full"
+              disabled={submitting}
+            >
+              {submitting ? "Inscription en cours…" : "Rejoindre le Cercle"}
             </Button>
           </form>
         )}

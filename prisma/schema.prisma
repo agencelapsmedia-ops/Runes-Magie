@@ -425,3 +425,30 @@ model Notification {
 
   @@index([userId, status])
 }
+
+// ════════════════════════════════════════════════════════════════
+// INFOLETTRE — Abonnés newsletter (séparé des comptes utilisateurs)
+// ════════════════════════════════════════════════════════════════
+// Une personne peut s'abonner à l'infolettre SANS créer de compte client.
+// Conforme Loi 25 (Québec) et LCAP : consent explicit, IP, timestamp, désabo facile.
+// ════════════════════════════════════════════════════════════════
+
+model NewsletterSubscriber {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  firstName        String?
+  lastName         String?
+  phone            String?
+  consentEmail     Boolean   @default(false)
+  consentIp        String?
+  consentedAt      DateTime?
+  unsubscribedAt   DateTime?
+  unsubscribeToken String    @unique @default(cuid())
+  source           String    @default("infolettre") // infolettre | register | order | manual
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([unsubscribedAt])
+  @@index([createdAt])
+}
+
