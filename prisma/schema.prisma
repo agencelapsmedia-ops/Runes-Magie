@@ -99,6 +99,37 @@ model Product {
   format          String?
   isbn            String?
   checkoutType    String   @default("stripe")
+  // Intégration Clover POS — sync inventaire physique
+  cloverId        String?  @unique // ID de l'item dans Clover
+  sku             String?  // Stock Keeping Unit (fallback de matching)
+  stockQuantity   Int?     // Stock numérique (null = stock illimité ou non géré)
+  cloverSyncedAt  DateTime? // Dernière synchronisation depuis Clover
+
+  @@index([cloverId])
+  @@index([sku])
+}
+
+// ════════════════════════════════════════════════════════════════
+// CLOVER — Historique des synchronisations d'inventaire
+// ════════════════════════════════════════════════════════════════
+
+model CloverSyncLog {
+  id              String   @id @default(cuid())
+  startedAt       DateTime @default(now())
+  finishedAt      DateTime?
+  status          String   @default("RUNNING") // RUNNING | SUCCESS | PARTIAL | FAILED
+  mode            String   @default("apply") // dry-run | apply
+  triggeredBy     String   @default("manual") // manual | cron
+  itemsFetched    Int      @default(0)
+  itemsCreated    Int      @default(0)
+  itemsUpdated    Int      @default(0)
+  itemsSkipped    Int      @default(0)
+  errorsCount     Int      @default(0)
+  errorMessage    String?
+  details         String?  // JSON sérialisé : { errors: [], unmatched: [] }
+
+  @@index([startedAt])
+  @@index([status])
 }
 
 model Order {
