@@ -26,9 +26,11 @@
 
 import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
+import { fromZonedTime } from 'date-fns-tz';
 
 const prisma = new PrismaClient();
 const DRY_RUN = process.argv.includes('--dry-run');
+const BUSINESS_TZ = 'America/Toronto';
 
 interface Stats {
   usersCreated: number;
@@ -85,12 +87,15 @@ function detectOfferingType(slug: string, name: string): 'SOIN' | 'COURS' | 'CER
 }
 
 function combineDateTime(date: Date, hhmm: string): Date {
-  // Combine une date (00:00 UTC) avec une heure "HH:mm" en zone America/Toronto.
-  // Approximation : on stocke en UTC, l'application fera la conversion timezone.
-  const [hours, minutes] = hhmm.split(':').map(Number);
-  const result = new Date(date);
-  result.setUTCHours(hours, minutes, 0, 0);
-  return result;
+  // Legacy Appointment stocke `date` = minuit UTC du jour calendaire, et
+  // `startTime`/`endTime` = chaînes "HH:mm" exprimées en heure locale Toronto.
+  // On reconstruit un timestamp UTC correct via la zone business.
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const [hh, min] = hhmm.split(':');
+  const localIso = `${yyyy}-${mm}-${dd}T${hh.padStart(2, '0')}:${(min ?? '00').padStart(2, '0')}:00`;
+  return fromZonedTime(localIso, BUSINESS_TZ);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -415,6 +420,19 @@ async function backfillAppointments(nocturaPractitionerId: string) {
       continue;
     }
 
+    // Mapping status legacy → V2.
+    // ATTENTION : ne PAS mapper vers PENDING_PAYMENT — c'est réservé au flow Stripe
+    // et un cron (Phase 10) supprime les Booking PENDING_PAYMENT > 15 min.
+    // Legacy "pending" = en attente de confirmation admin (pas de paiement) → CONFIRMED.
+    let bookingStatus: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+    if (a.status === 'cancelled') {
+      bookingStatus = 'CANCELLED';
+    } else if (endsAt < new Date()) {
+      bookingStatus = 'COMPLETED';
+    } else {
+      bookingStatus = 'CONFIRMED';
+    }
+
     await prisma.booking.create({
       data: {
         offeringId: offering.id,
@@ -423,7 +441,7 @@ async function backfillAppointments(nocturaPractitionerId: string) {
         startsAt,
         endsAt,
         mode: 'IN_PERSON',
-        status: a.status === 'confirmed' ? 'CONFIRMED' : (a.status === 'cancelled' ? 'CANCELLED' : 'PENDING_PAYMENT'),
+        status: bookingStatus,
         notes: a.notes,
         googleEventId: a.googleEventId,
         confirmationToken: a.confirmationToken,
@@ -493,6 +511,17 @@ async function backfillHolisticAppointments() {
       continue;
     }
 
+    // Voir backfillAppointments — PENDING_PAYMENT serait supprimé par le cron Phase 10.
+    // Legacy "PENDING" (en attente d'approbation praticien) → CONFIRMED/COMPLETED selon date.
+    let bookingStatus: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+    if (a.status === 'CANCELLED') {
+      bookingStatus = 'CANCELLED';
+    } else if (a.status === 'COMPLETED' || a.endsAt < new Date()) {
+      bookingStatus = 'COMPLETED';
+    } else {
+      bookingStatus = 'CONFIRMED';
+    }
+
     const booking = await prisma.booking.create({
       data: {
         offeringId: offering.id,
@@ -501,10 +530,7 @@ async function backfillHolisticAppointments() {
         startsAt: a.startsAt,
         endsAt: a.endsAt,
         mode: 'VIRTUAL',
-        status: a.status === 'CONFIRMED' ? 'CONFIRMED'
-              : a.status === 'CANCELLED' ? 'CANCELLED'
-              : a.status === 'COMPLETED' ? 'COMPLETED'
-              : 'PENDING_PAYMENT',
+        status: bookingStatus,
         notes: a.notes,
         dailyRoomUrl: a.dailyRoomUrl,
         dailyRoomName: a.dailyRoomName,
