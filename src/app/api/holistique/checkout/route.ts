@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
+import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2-sync';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
@@ -23,6 +24,12 @@ export async function POST(req: Request) {
     const appointment = await prisma.holisticAppointment.create({
       data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes, status: 'PENDING' },
     });
+    // Dual-write V2 (best-effort) — pas de Stripe → V2 = CONFIRMED
+    try {
+      await mirrorAppointmentToBooking({ appointment, noStripeFlow: true });
+    } catch (err) {
+      console.error('[v2-sync] mirrorAppointmentToBooking (no-Stripe) failed', { appointmentId: appointment.id, err });
+    }
     return NextResponse.json({ success: true, appointmentId: appointment.id });
   }
 
@@ -47,6 +54,25 @@ export async function POST(req: Request) {
     },
   });
 
+  // Dual-write V2 (best-effort) — flow Stripe → V2 = PENDING_PAYMENT
+  let v2BookingId: string | null = null;
+  try {
+    const booking = await mirrorAppointmentToBooking({ appointment });
+    v2BookingId = booking?.id ?? null;
+    if (booking) {
+      await mirrorPaymentToV2({
+        bookingId: booking.id,
+        amountTotal,
+        amountCommission,
+        amountPractitioner: amountTotal - amountCommission,
+        commissionPct: commissionRate * 100,
+        status: 'PENDING',
+      });
+    }
+  } catch (err) {
+    console.error('[v2-sync] mirror checkout failed', { appointmentId: appointment.id, err });
+  }
+
   const checkoutSession = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
@@ -64,7 +90,10 @@ export async function POST(req: Request) {
       application_fee_amount: Math.round(amountCommission * 100),
       transfer_data: { destination: practitioner.stripeAccountId },
     },
-    metadata: { appointmentId: appointment.id },
+    metadata: {
+      appointmentId: appointment.id,
+      ...(v2BookingId ? { v2BookingId } : {}),
+    },
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/dashboard/client?booking=success`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/reserver/${practitionerId}?cancelled=true`,
     mode: 'payment',

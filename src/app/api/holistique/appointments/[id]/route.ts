@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
+import { syncAppointmentStatusToV2 } from '@/lib/holistic-v2-sync';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await holisticSession();
@@ -20,6 +21,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(status === 'CANCELLED' ? { cancelledAt: new Date(), cancelledBy: role } : {}),
     },
   });
+
+  // Dual-write V2 (best-effort)
+  try {
+    await syncAppointmentStatusToV2({ appointmentId: id, status, cancelledBy: role });
+  } catch (err) {
+    console.error('[v2-sync] syncAppointmentStatusToV2 failed', { appointmentId: id, err });
+  }
 
   return NextResponse.json(updated);
 }

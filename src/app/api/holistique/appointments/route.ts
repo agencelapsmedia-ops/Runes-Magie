@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
+import { mirrorAppointmentToBooking } from '@/lib/holistic-v2-sync';
 
 export async function GET(req: Request) {
   const session = await holisticSession();
@@ -72,6 +73,14 @@ export async function POST(req: Request) {
       status: 'PENDING',
     },
   });
+
+  // Dual-write V2 (best-effort, ne casse pas la requête si échec)
+  // Cette route ne passe pas par Stripe → noStripeFlow: true → V2 status = CONFIRMED
+  try {
+    await mirrorAppointmentToBooking({ appointment, noStripeFlow: true });
+  } catch (err) {
+    console.error('[v2-sync] mirrorAppointmentToBooking failed', { appointmentId: appointment.id, err });
+  }
 
   return NextResponse.json(appointment, { status: 201 });
 }
