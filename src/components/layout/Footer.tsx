@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { label: 'Boutique', href: '/boutique' },
   { label: 'Runes Vikings', href: '/runes-vikings' },
   { label: '\u00C0 Propos', href: '/a-propos' },
+  { label: 'Infolettre', href: '/infolettre' },
   { label: 'Contact', href: '/contact' },
 ];
 
