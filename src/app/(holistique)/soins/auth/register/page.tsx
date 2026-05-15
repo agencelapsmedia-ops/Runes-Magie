@@ -8,6 +8,7 @@ interface FormData {
   firstName: string;
   lastName: string;
   email: string;
+  phone: string;
   password: string;
   confirmPassword: string;
 }
@@ -18,9 +19,12 @@ export default function RegisterPage() {
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
+  const [consentInfolettre, setConsentInfolettre] = useState(false);
+  const [consentTerms, setConsentTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -42,6 +46,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!consentTerms) {
+      setError('Vous devez accepter les conditions générales pour créer un compte.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -52,7 +61,9 @@ export default function RegisterPage() {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
+          phone: formData.phone || undefined,
           password: formData.password,
+          consentInfolettre,
         }),
       });
 
@@ -90,6 +101,7 @@ export default function RegisterPage() {
     type: string;
     autoComplete: string;
     placeholder: string;
+    optional?: boolean;
   }> = [
     {
       id: 'firstName',
@@ -111,6 +123,14 @@ export default function RegisterPage() {
       type: 'email',
       autoComplete: 'email',
       placeholder: 'votre@courriel.ca',
+    },
+    {
+      id: 'phone',
+      label: 'Téléphone (optionnel)',
+      type: 'tel',
+      autoComplete: 'tel',
+      placeholder: '(514) 555-1234',
+      optional: true,
     },
     {
       id: 'password',
@@ -214,7 +234,7 @@ export default function RegisterPage() {
               ))}
             </div>
 
-            {/* Courriel + mots de passe */}
+            {/* Courriel + tél + mots de passe */}
             {fields.slice(2).map((field) => (
               <div key={field.id} className="flex flex-col gap-2">
                 <label
@@ -229,7 +249,7 @@ export default function RegisterPage() {
                   type={field.type}
                   value={formData[field.id]}
                   onChange={handleChange}
-                  required
+                  required={!field.optional}
                   autoComplete={field.autoComplete}
                   placeholder={field.placeholder}
                   className="w-full px-4 py-3 rounded-sm border bg-transparent font-philosopher text-parchemin placeholder:text-parchemin/25 focus:outline-none transition-colors duration-200"
@@ -239,6 +259,46 @@ export default function RegisterPage() {
                 />
               </div>
             ))}
+
+            {/* Consentements */}
+            <div className="space-y-3 pt-2 border-t border-violet-royal/20 mt-2">
+              {/* Consentement infolettre — optionnel */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consentInfolettre}
+                  onChange={(e) => setConsentInfolettre(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-violet-royal flex-shrink-0"
+                />
+                <span className="font-philosopher text-xs leading-relaxed text-parchemin/70">
+                  Je souhaite recevoir l&apos;infolettre de Runes &amp; Magie (lunaisons, ateliers,
+                  offres exclusives). Je peux me désabonner à tout moment.
+                </span>
+              </label>
+
+              {/* Consentement CGU/Loi 25 — obligatoire */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consentTerms}
+                  onChange={(e) => setConsentTerms(e.target.checked)}
+                  required
+                  className="mt-1 h-4 w-4 accent-violet-royal flex-shrink-0"
+                />
+                <span className="font-philosopher text-xs leading-relaxed text-parchemin/70">
+                  J&apos;accepte les conditions générales et la politique de confidentialité.
+                  Mes données sont collectées conformément à la Loi 25 (Québec) et à la LCAP.
+                  <span className="text-magenta-rituel"> *</span>
+                </span>
+              </label>
+
+              {/* Mention légale */}
+              <p className="text-[10px] text-parchemin/40 font-cormorant italic leading-relaxed pt-2">
+                Responsable du traitement&nbsp;: Annabelle Dionne — Runes &amp; Magie,
+                info@runesetmagie.com. Vos informations sont conservées de manière confidentielle.
+                Aucune revente à des tiers.
+              </p>
+            </div>
 
             {/* Bouton d'inscription */}
             <button

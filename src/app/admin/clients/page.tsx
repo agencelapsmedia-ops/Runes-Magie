@@ -254,7 +254,7 @@ function ClientsTable({
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-          {['Client', 'Courriel', 'Téléphone', 'Décharge', 'Réservations', 'Inscrit le'].map((h) => (
+          {['Client', 'Courriel', 'Téléphone', 'Décharge', 'Réservations', 'Inscrit le', ''].map((h) => (
             <th
               key={h}
               style={{
@@ -283,7 +283,10 @@ function ClientsTable({
             }}
           >
             <td style={{ padding: '14px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <a
+                href={`/admin/clients/${c.id}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'inherit' }}
+              >
                 <Avatar firstName={c.firstName} lastName={c.lastName} />
                 <div>
                   <p style={{ fontWeight: 600, color: '#1F2937', fontSize: '0.9rem' }}>
@@ -291,7 +294,7 @@ function ClientsTable({
                   </p>
                   <p style={{ color: '#9CA3AF', fontSize: '0.7rem' }}>{c.locale.toUpperCase()}</p>
                 </div>
-              </div>
+              </a>
             </td>
             <td style={{ padding: '14px 16px', color: '#4B5563', fontSize: '0.85rem' }}>
               <a href={`mailto:${c.email}`} style={{ color: '#4B5563', textDecoration: 'none' }}>
@@ -321,6 +324,20 @@ function ClientsTable({
             </td>
             <td style={{ padding: '14px 16px', color: '#6B7280', fontSize: '0.8rem' }}>
               {new Date(c.createdAt).toLocaleDateString('fr-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </td>
+            <td style={{ padding: '14px 16px' }}>
+              <a
+                href={`/admin/clients/${c.id}`}
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#6B3FA0',
+                  textDecoration: 'none',
+                  fontFamily: 'var(--font-cinzel, serif)',
+                  fontWeight: 600,
+                }}
+              >
+                Voir →
+              </a>
             </td>
           </tr>
         ))}
