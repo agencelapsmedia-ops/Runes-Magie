@@ -30,6 +30,7 @@ export function v2PlaceholderHash(): string {
 /**
  * Trouve ou crée l'Offering V2 générique pour un praticien.
  * Idempotent par slug = `consultation-{practitionerSlug}`.
+ * Race-condition-safe : utilise upsert (slug unique).
  */
 export async function getOrCreateOfferingForPractitioner(practitionerId: string) {
   const practitioner = await prisma.practitioner.findUnique({
@@ -39,11 +40,9 @@ export async function getOrCreateOfferingForPractitioner(practitionerId: string)
   if (!practitioner) throw new Error(`Practitioner ${practitionerId} introuvable`);
 
   const slug = `consultation-${practitioner.slug}`;
-  const existing = await prisma.offering.findUnique({ where: { slug } });
-  if (existing) return existing;
-
-  return prisma.offering.create({
-    data: {
+  return prisma.offering.upsert({
+    where: { slug },
+    create: {
       practitionerId,
       type: 'SOIN',
       slug,
@@ -54,22 +53,22 @@ export async function getOrCreateOfferingForPractitioner(practitionerId: string)
       modes: ['VIRTUAL'],
       isActive: true,
     },
+    update: {}, // No-op si déjà créé (on ne veut pas écraser des modifs ultérieures de Noctura)
   });
 }
 
 /**
  * Trouve l'User V2 correspondant à un HolisticUser (matching par email).
  * Si absent, le crée en réutilisant les données du HolisticUser.
+ * Race-condition-safe : utilise upsert (email unique).
  */
 export async function getOrCreateV2UserFromHolistic(holisticUserId: string) {
   const hu = await prisma.holisticUser.findUnique({ where: { id: holisticUserId } });
   if (!hu) throw new Error(`HolisticUser ${holisticUserId} introuvable`);
 
-  const existing = await prisma.user.findUnique({ where: { email: hu.email } });
-  if (existing) return existing;
-
-  return prisma.user.create({
-    data: {
+  return prisma.user.upsert({
+    where: { email: hu.email },
+    create: {
       email: hu.email,
       hashedPassword: hu.hashedPassword, // bcrypt compatible
       role: hu.role,
@@ -82,6 +81,7 @@ export async function getOrCreateV2UserFromHolistic(holisticUserId: string) {
       dischargeHash: hu.dischargeHash,
       createdAt: hu.createdAt,
     },
+    update: {}, // Pas d'écrasement — l'utilisateur V2 peut avoir des modifs propres
   });
 }
 
@@ -151,7 +151,8 @@ export async function mirrorAppointmentToBooking(params: {
 
 /**
  * Sync le statut V2 quand un HolisticAppointment change.
- * No-op si Booking V2 introuvable (cas legacy pré-dual-write).
+ * Si le Booking V2 n'existe pas encore (cas legacy pré-dual-write), tente
+ * de le créer à la volée via mirrorAppointmentToBooking pour rattraper le retard.
  */
 export async function syncAppointmentStatusToV2(params: {
   appointmentId: string;
@@ -162,10 +163,29 @@ export async function syncAppointmentStatusToV2(params: {
     where: { id: params.appointmentId },
     include: { client: { select: { email: true } } },
   });
-  if (!a) return null;
+  if (!a) {
+    console.warn('[v2-sync] syncAppointmentStatusToV2 : HolisticAppointment introuvable', {
+      appointmentId: params.appointmentId,
+    });
+    return null;
+  }
 
   const v2Client = await prisma.user.findUnique({ where: { email: a.client.email } });
-  if (!v2Client) return null;
+
+  // Si User V2 absent OU Booking absent → tenter le rattrapage via mirror
+  if (!v2Client) {
+    console.info('[v2-sync] User V2 absent → rattrapage via mirror', {
+      appointmentId: params.appointmentId,
+      email: a.client.email,
+    });
+    try {
+      const newBooking = await mirrorAppointmentToBooking({ appointment: a });
+      return newBooking;
+    } catch (err) {
+      console.error('[v2-sync] Rattrapage mirror échoué', { appointmentId: params.appointmentId, err });
+      return null;
+    }
+  }
 
   const booking = await prisma.booking.findFirst({
     where: {
@@ -174,7 +194,19 @@ export async function syncAppointmentStatusToV2(params: {
       clientId: v2Client.id,
     },
   });
-  if (!booking) return null;
+
+  if (!booking) {
+    console.info('[v2-sync] Booking V2 absent → rattrapage via mirror', {
+      appointmentId: params.appointmentId,
+    });
+    try {
+      const newBooking = await mirrorAppointmentToBooking({ appointment: a });
+      return newBooking;
+    } catch (err) {
+      console.error('[v2-sync] Rattrapage mirror échoué', { appointmentId: params.appointmentId, err });
+      return null;
+    }
+  }
 
   const newStatus = legacyStatusToV2(params.status);
   const isCancellation = params.status === 'CANCELLED';
@@ -220,22 +252,42 @@ export async function mirrorPaymentToV2(params: {
 /**
  * Marque un Booking V2 et son Payment associé comme payés.
  * Appelé depuis le webhook Stripe après checkout.session.completed.
+ *
+ * Transactionnel : si une des 2 mises à jour échoue, aucune n'est appliquée.
+ * Évite l'état incohérent (booking payé mais payment toujours PENDING ou vice versa).
  */
 export async function markBookingPaidV2(params: {
   bookingId: string;
   stripePaymentIntentId?: string | null;
 }) {
-  await prisma.booking.update({
-    where: { id: params.bookingId },
-    data: { status: 'CONFIRMED' },
-  });
+  return prisma.$transaction(async (tx) => {
+    // Vérifier que le booking existe et n'est pas déjà annulé (idempotence + cohérence)
+    const booking = await tx.booking.findUnique({ where: { id: params.bookingId } });
+    if (!booking) {
+      throw new Error(`Booking V2 ${params.bookingId} introuvable lors du markPaid`);
+    }
+    if (booking.status === 'CANCELLED') {
+      // Cas rare : annulé entre le checkout et le webhook. On log + ne marque pas comme payé.
+      console.warn('[v2-sync] markBookingPaidV2 : booking déjà CANCELLED, skip', {
+        bookingId: params.bookingId,
+      });
+      return { skipped: true, reason: 'CANCELLED' };
+    }
 
-  await prisma.payment.updateMany({
-    where: { bookingId: params.bookingId },
-    data: {
-      stripePaymentIntentId: params.stripePaymentIntentId ?? null,
-      status: 'PAID',
-      paidAt: new Date(),
-    },
+    await tx.booking.update({
+      where: { id: params.bookingId },
+      data: { status: 'CONFIRMED' },
+    });
+
+    await tx.payment.updateMany({
+      where: { bookingId: params.bookingId },
+      data: {
+        stripePaymentIntentId: params.stripePaymentIntentId ?? null,
+        status: 'PAID',
+        paidAt: new Date(),
+      },
+    });
+
+    return { skipped: false };
   });
 }
