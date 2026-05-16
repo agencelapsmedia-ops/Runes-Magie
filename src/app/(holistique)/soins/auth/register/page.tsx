@@ -29,8 +29,39 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    // Auto-format pour le téléphone canadien : "(XXX) XXX-XXXX"
+    if (name === 'phone') {
+      const digits = value.replace(/\D/g, '').slice(0, 10);
+      let formatted = digits;
+      if (digits.length > 6) formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+      else if (digits.length > 3) formatted = `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+      else if (digits.length > 0) formatted = `(${digits}`;
+      setFormData((prev) => ({ ...prev, phone: formatted }));
+      return;
+    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }
+
+  // Indicateur de force du mot de passe (4 critères)
+  function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+    if (!pw) return { score: 0, label: '', color: 'transparent' };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+    const map = [
+      { label: 'Très faible', color: '#991B1B' },
+      { label: 'Faible', color: '#C2410C' },
+      { label: 'Moyen', color: '#CA8A04' },
+      { label: 'Fort', color: '#15803D' },
+      { label: 'Très fort', color: '#15803D' },
+    ];
+    return { score: score as 0 | 1 | 2 | 3 | 4, ...map[score] };
+  }
+
+  const pwStrength = passwordStrength(formData.password);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -257,6 +288,31 @@ export default function RegisterPage() {
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                 />
+                {/* Indicateur de force du mot de passe (uniquement sous le champ password) */}
+                {field.id === 'password' && formData.password && (
+                  <div className="mt-1">
+                    <div className="flex gap-1 h-1.5">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-full transition-colors duration-200"
+                          style={{
+                            backgroundColor:
+                              i < pwStrength.score
+                                ? pwStrength.color
+                                : 'rgba(74, 45, 122, 0.25)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <p
+                      className="font-philosopher text-[10px] tracking-wider mt-1.5 uppercase"
+                      style={{ color: pwStrength.color }}
+                    >
+                      Mot de passe : {pwStrength.label}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
 
