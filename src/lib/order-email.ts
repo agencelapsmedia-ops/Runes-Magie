@@ -2,6 +2,9 @@ import { Resend } from "resend";
 import { ORDER_STATUSES, DELIVERY_METHODS, type OrderStatus } from "@/lib/order-utils";
 import { formatPrice } from "@/lib/utils";
 
+// Re-export pour permettre l'import depuis @/lib/order-email (pratique en routes API)
+export type { OrderStatus };
+
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.FROM_EMAIL || "Runes & Magie <noreply@runesetmagie.com>";
 

@@ -145,7 +145,7 @@ export default async function HomePage() {
                 name={product.name}
                 price={product.price}
                 image={product.image ?? '/images/placeholder.jpg'}
-                category={product.category}
+                category={product.category as import('@/data/products').Category}
                 checkoutType={(product.checkoutType as 'stripe' | 'email') ?? 'stripe'}
               />
             </Link>

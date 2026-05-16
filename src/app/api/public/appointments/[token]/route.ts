@@ -74,8 +74,13 @@ export async function DELETE(
     if (setting) {
       const hoursRequired = parseInt(setting.value, 10);
       const now = new Date();
+      // appointment.startTime est un String "HH:MM", appointment.date est un DateTime (00:00 UTC).
+      // On combine les deux pour obtenir le timestamp réel du RDV.
+      const [hh, mm] = appointment.startTime.split(':').map((n) => parseInt(n, 10));
+      const appointmentDateTime = new Date(appointment.date);
+      appointmentDateTime.setUTCHours(hh ?? 0, mm ?? 0, 0, 0);
       const hoursUntilAppointment =
-        (appointment.startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       if (hoursUntilAppointment < hoursRequired) {
         return NextResponse.json(

@@ -250,7 +250,7 @@ export default function StepConfirmation({ data, result }: Props) {
 
           {/* View booking */}
           <a
-            href={`/reservation/${result.bookingId}?token=${result.token}`}
+            href={`/reservation/${result.appointmentId}?token=${result.token}`}
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-mystique/30 bg-charbon-mystere/50 px-5 py-2.5 font-philosopher text-sm text-parchemin transition-all hover:border-turquoise-cristal/40 hover:text-turquoise-cristal"
           >
             Voir ma reservation
@@ -258,7 +258,7 @@ export default function StepConfirmation({ data, result }: Props) {
 
           {/* Cancel link */}
           <a
-            href={`/reservation/${result.bookingId}/annuler?token=${result.token}`}
+            href={`/reservation/${result.appointmentId}/annuler?token=${result.token}`}
             className="inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-philosopher text-sm text-gris-fumee/60 transition-colors hover:text-magenta-rituel"
           >
             Annuler
