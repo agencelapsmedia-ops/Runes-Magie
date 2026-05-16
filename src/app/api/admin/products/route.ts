@@ -46,7 +46,22 @@ export async function POST(request: NextRequest) {
       tags,
       sku,
       stockQuantity,
+      productType,
+      syncToClover,
+      downloadUrl,
+      courseAccessSlug,
     } = body;
+
+    // Détermine syncToClover automatiquement selon productType si non explicite
+    const finalProductType = (typeof productType === 'string' ? productType : 'PHYSICAL') as
+      | 'PHYSICAL'
+      | 'DROPSHIPPING'
+      | 'EBOOK'
+      | 'COURSE';
+    const finalSyncToClover =
+      typeof syncToClover === 'boolean'
+        ? syncToClover
+        : finalProductType === 'PHYSICAL';
 
     if (!name || !category) {
       return NextResponse.json(
@@ -88,13 +103,22 @@ export async function POST(request: NextRequest) {
         featured: featured ?? false,
         tags: tags || [],
         sku: finalSku,
-        stockQuantity: typeof stockQuantity === 'number' ? stockQuantity : null,
+        // Stock seulement pour PHYSICAL ; les autres types sont "toujours disponibles"
+        stockQuantity:
+          finalProductType === 'PHYSICAL' && typeof stockQuantity === 'number'
+            ? stockQuantity
+            : null,
+        productType: finalProductType,
+        syncToClover: finalSyncToClover,
+        downloadUrl: finalProductType === 'EBOOK' ? (downloadUrl || null) : null,
+        courseAccessSlug: finalProductType === 'COURSE' ? (courseAccessSlug || null) : null,
       },
     });
 
-    // Tentative de push vers Clover (best-effort, mis en queue si échec)
+    // Tentative de push vers Clover SEULEMENT si syncToClover=true
+    // (les dropshipping/ebook/cours ne sont jamais envoyés à Clover)
     let cloverSyncStatus: 'synced' | 'queued' | 'skipped' = 'skipped';
-    if (isCloverConfigured()) {
+    if (isCloverConfigured() && product.syncToClover) {
       const cloverId = await tryCreateInClover({
         productId: product.id,
         name: product.name,

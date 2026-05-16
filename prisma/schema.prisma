@@ -104,9 +104,16 @@ model Product {
   sku             String?  // Stock Keeping Unit (fallback de matching)
   stockQuantity   Int?     // Stock numérique (null = stock illimité ou non géré)
   cloverSyncedAt  DateTime? // Dernière synchronisation depuis Clover
+  // Type de produit + sync Clover opt-out
+  productType     String   @default("PHYSICAL") // PHYSICAL | DROPSHIPPING | EBOOK | COURSE
+  syncToClover    Boolean  @default(true) // false = produit jamais envoyé à Clover (dropshipping, virtuel)
+  // Livraison digitale (productType = EBOOK ou COURSE)
+  downloadUrl     String?  // Pour EBOOK : URL du fichier dans Supabase Storage (signé après paiement)
+  courseAccessSlug String? // Pour COURSE : slug du cours pour accès au lecteur vidéo
 
   @@index([cloverId])
   @@index([sku])
+  @@index([productType])
 }
 
 // ════════════════════════════════════════════════════════════════

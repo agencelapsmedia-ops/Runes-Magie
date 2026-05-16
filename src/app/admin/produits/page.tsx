@@ -17,6 +17,15 @@ const CATEGORIES = [
   { id: 'baguettes-magiques', name: 'Baguettes Magiques' },
 ];
 
+type ProductType = 'PHYSICAL' | 'DROPSHIPPING' | 'EBOOK' | 'COURSE';
+
+const PRODUCT_TYPES: Array<{ id: ProductType; label: string; description: string }> = [
+  { id: 'PHYSICAL', label: 'Physique (boutique)', description: 'Stock géré par Clover. Pickup ou expédition.' },
+  { id: 'DROPSHIPPING', label: 'Dropshipping', description: 'Fournisseur tiers expédie. Pas de stock à gérer.' },
+  { id: 'EBOOK', label: 'Ebook téléchargeable', description: 'Fichier numérique. Lien après paiement.' },
+  { id: 'COURSE', label: 'Formation vidéo', description: 'Accès au lecteur en ligne après paiement.' },
+];
+
 interface Product {
   id: string;
   slug: string;
@@ -41,6 +50,10 @@ interface Product {
   stockQuantity: number | null;
   cloverId: string | null;
   cloverSyncedAt: string | null;
+  productType: ProductType;
+  syncToClover: boolean;
+  downloadUrl: string | null;
+  courseAccessSlug: string | null;
 }
 
 const emptyProduct: Omit<Product, 'id' | 'slug' | 'cloverId' | 'cloverSyncedAt'> = {
@@ -63,6 +76,10 @@ const emptyProduct: Omit<Product, 'id' | 'slug' | 'cloverId' | 'cloverSyncedAt'>
   tags: [],
   sku: null,
   stockQuantity: null,
+  productType: 'PHYSICAL',
+  syncToClover: true,
+  downloadUrl: null,
+  courseAccessSlug: null,
 };
 
 export default function ProduitsPage() {
@@ -122,6 +139,10 @@ export default function ProduitsPage() {
       tags: product.tags,
       sku: product.sku ?? null,
       stockQuantity: product.stockQuantity ?? null,
+      productType: (product.productType ?? 'PHYSICAL') as ProductType,
+      syncToClover: product.syncToClover ?? true,
+      downloadUrl: product.downloadUrl ?? null,
+      courseAccessSlug: product.courseAccessSlug ?? null,
     });
     setTagsInput(product.tags.join(', '));
     setImagesInput(product.images.join('\n'));
@@ -751,45 +772,145 @@ export default function ProduitsPage() {
                 </div>
               </div>
 
-              {/* SKU + Stock quantity (gestion inventaire / Clover) */}
-              <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-violet-50 border border-violet-100">
+              {/* Type de produit + SKU + Stock (gestion inventaire / Clover) */}
+              <div className="p-3 rounded-lg bg-violet-50 border border-violet-100 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    SKU (optionnel)
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type de produit
                   </label>
-                  <input
-                    type="text"
-                    value={form.sku ?? ''}
-                    onChange={(e) => setForm({ ...form, sku: e.target.value || null })}
-                    placeholder="Auto-généré si vide (ex: RM-CRIST-AMT-001)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 font-mono"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Code unique synchronisé avec Clover.
-                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PRODUCT_TYPES.map((t) => (
+                      <label
+                        key={t.id}
+                        className={`flex items-start gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                          form.productType === t.id
+                            ? 'bg-white border-violet-400 ring-2 ring-violet-200'
+                            : 'bg-white/50 border-gray-200 hover:border-violet-200'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="productType"
+                          value={t.id}
+                          checked={form.productType === t.id}
+                          onChange={() => {
+                            // Quand on change de type, on auto-ajuste syncToClover et reset les champs spécifiques
+                            const isPhysical = t.id === 'PHYSICAL';
+                            setForm({
+                              ...form,
+                              productType: t.id,
+                              syncToClover: isPhysical,
+                              stockQuantity: isPhysical ? form.stockQuantity : null,
+                              downloadUrl: t.id === 'EBOOK' ? form.downloadUrl : null,
+                              courseAccessSlug: t.id === 'COURSE' ? form.courseAccessSlug : null,
+                            });
+                          }}
+                          className="mt-0.5 accent-violet-600"
+                        />
+                        <div>
+                          <div className="text-xs font-semibold text-gray-900">{t.label}</div>
+                          <div className="text-[10px] text-gray-500 leading-tight">{t.description}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantité en stock
+
+                {/* SKU — affiché pour tous */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SKU (optionnel)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.sku ?? ''}
+                      onChange={(e) => setForm({ ...form, sku: e.target.value || null })}
+                      placeholder="Auto-généré si vide (ex: RM-CRIST-AMT-001)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 font-mono"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Code unique de référence.
+                    </p>
+                  </div>
+
+                  {/* Stock — affiché uniquement pour PHYSICAL */}
+                  {form.productType === 'PHYSICAL' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Quantité en stock
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={form.stockQuantity ?? ''}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            stockQuantity: e.target.value === '' ? null : parseInt(e.target.value, 10),
+                          })
+                        }
+                        placeholder="Ex: 5"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Synchronisé avec Clover.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Champ spécifique EBOOK */}
+                {form.productType === 'EBOOK' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      URL du fichier (Supabase Storage)
+                    </label>
+                    <input
+                      type="url"
+                      value={form.downloadUrl ?? ''}
+                      onChange={(e) => setForm({ ...form, downloadUrl: e.target.value || null })}
+                      placeholder="https://[...].supabase.co/storage/v1/object/.../mon-ebook.pdf"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 font-mono text-xs"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Le fichier sera envoyé au client par courriel après paiement (Phase ultérieure).
+                    </p>
+                  </div>
+                )}
+
+                {/* Champ spécifique COURSE */}
+                {form.productType === 'COURSE' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug d&apos;accès au cours
+                    </label>
+                    <input
+                      type="text"
+                      value={form.courseAccessSlug ?? ''}
+                      onChange={(e) => setForm({ ...form, courseAccessSlug: e.target.value || null })}
+                      placeholder="ex: tarot-debutants"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 font-mono"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Le client aura accès via /cours/[slug] après paiement (Phase ultérieure).
+                    </p>
+                  </div>
+                )}
+
+                {/* Override syncToClover pour les cas particuliers */}
+                {form.productType !== 'PHYSICAL' && (
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={form.syncToClover}
+                      onChange={(e) => setForm({ ...form, syncToClover: e.target.checked })}
+                      className="accent-violet-600"
+                    />
+                    Synchroniser quand même avec Clover (par défaut non pour les produits non-physiques)
                   </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={form.stockQuantity ?? ''}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        stockQuantity: e.target.value === '' ? null : parseInt(e.target.value, 10),
-                      })
-                    }
-                    placeholder="Vide = stock illimité (digital, service)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Synchronisé avec Clover à la création/modification.
-                  </p>
-                </div>
+                )}
               </div>
 
               {/* Type de paiement */}

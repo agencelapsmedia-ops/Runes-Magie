@@ -60,15 +60,19 @@ export async function PUT(
     if (body.tags !== undefined) data.tags = body.tags;
     if (body.sku !== undefined) data.sku = body.sku || null;
     if (body.stockQuantity !== undefined) data.stockQuantity = body.stockQuantity;
+    if (body.productType !== undefined) data.productType = body.productType;
+    if (body.syncToClover !== undefined) data.syncToClover = body.syncToClover;
+    if (body.downloadUrl !== undefined) data.downloadUrl = body.downloadUrl || null;
+    if (body.courseAccessSlug !== undefined) data.courseAccessSlug = body.courseAccessSlug || null;
 
     const product = await prisma.product.update({
       where: { id },
       data,
     });
 
-    // Propager update vers Clover si lié
+    // Propager update vers Clover seulement si syncToClover=true ET produit déjà lié
     let cloverSyncStatus: 'synced' | 'queued' | 'skipped' = 'skipped';
-    if (isCloverConfigured() && product.cloverId) {
+    if (isCloverConfigured() && product.cloverId && product.syncToClover) {
       // Détermine ce qui change côté Clover (nom, prix, sku, masqué)
       const cloverUpdate: {
         name?: string;
