@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import SubscriberActions from './SubscriberActions';
 
 type Tab = 'comptes' | 'infolettre';
 
@@ -93,13 +94,53 @@ export default async function ClientsAdminPage({
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '8px' }}>
-          ᛗ Clients
-        </h1>
-        <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
-          Comptes clients inscrits et abonnés à l&apos;infolettre
-        </p>
+      <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '8px' }}>
+            ᛗ Clients
+          </h1>
+          <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
+            Comptes clients inscrits et abonnés à l&apos;infolettre
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <a
+            href={`/api/admin/clients/export?type=${tab}`}
+            download
+            style={{
+              padding: '8px 14px',
+              background: '#FFFFFF',
+              color: '#6B3FA0',
+              border: '1px solid #C4B5FD',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-cinzel, serif)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ↓ Export CSV ({tab === 'comptes' ? 'Comptes' : 'Infolettre'})
+          </a>
+          <a
+            href="/api/admin/clients/export?type=all"
+            download
+            style={{
+              padding: '8px 14px',
+              background: '#F9FAFB',
+              color: '#6B7280',
+              border: '1px solid #D1D5DB',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-cinzel, serif)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Tous
+          </a>
+        </div>
       </div>
 
       {/* Stats */}
@@ -373,7 +414,7 @@ function SubscribersTable({
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-          {['Abonné', 'Courriel', 'Téléphone', 'Statut', 'Source', 'Inscrit le'].map((h) => (
+          {['Abonné', 'Courriel', 'Téléphone', 'Statut', 'Source', 'Inscrit le', 'Actions'].map((h) => (
             <th
               key={h}
               style={{
@@ -437,6 +478,13 @@ function SubscribersTable({
               </td>
               <td style={{ padding: '14px 16px', color: '#6B7280', fontSize: '0.8rem' }}>
                 {new Date(s.createdAt).toLocaleDateString('fr-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+              </td>
+              <td style={{ padding: '14px 16px' }}>
+                <SubscriberActions
+                  subscriberId={s.id}
+                  unsubscribed={Boolean(s.unsubscribedAt)}
+                  email={s.email}
+                />
               </td>
             </tr>
           );
