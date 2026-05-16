@@ -120,7 +120,6 @@ model Product {
   author           String?
   content          String?
   format           String?
-  isbn             String?
   checkoutType     String    @default("stripe")
   // Intégration Clover POS — sync inventaire physique
   cloverId         String?   @unique // ID de l'item dans Clover

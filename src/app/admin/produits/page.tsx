@@ -42,7 +42,6 @@ interface Product {
   author: string;
   content: string;
   format: string;
-  isbn: string;
   checkoutType: string;
   image: string;
   images: string[];
@@ -70,7 +69,6 @@ const emptyProduct: Omit<Product, 'id' | 'slug' | 'cloverId' | 'cloverSyncedAt'>
   author: '',
   content: '',
   format: '',
-  isbn: '',
   checkoutType: 'stripe',
   image: '',
   images: [],
@@ -148,7 +146,6 @@ export default function ProduitsPage() {
       author: product.author || '',
       content: product.content || '',
       format: product.format || '',
-      isbn: product.isbn || '',
       checkoutType: product.checkoutType || 'stripe',
       image: product.image,
       images: product.images,
@@ -762,32 +759,18 @@ export default function ProduitsPage() {
                 </div>
               </div>
 
-              {/* Format + ISBN */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Format
-                  </label>
-                  <input
-                    type="text"
-                    value={form.format}
-                    onChange={(e) => setForm({ ...form, format: e.target.value })}
-                    placeholder="Ex: 4.5&quot;L x 6&quot;H"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ISBN
-                  </label>
-                  <input
-                    type="text"
-                    value={form.isbn}
-                    onChange={(e) => setForm({ ...form, isbn: e.target.value })}
-                    placeholder="Ex: 9782898171185"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-                  />
-                </div>
+              {/* Format */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Format
+                </label>
+                <input
+                  type="text"
+                  value={form.format}
+                  onChange={(e) => setForm({ ...form, format: e.target.value })}
+                  placeholder="Ex: 4.5&quot;L x 6&quot;H"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                />
               </div>
 
               {/* Type de produit + SKU + Stock (gestion inventaire / Clover) */}
