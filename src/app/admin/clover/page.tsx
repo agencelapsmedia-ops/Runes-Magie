@@ -1,17 +1,30 @@
 import { prisma } from '@/lib/db';
 import CloverSyncButton from './CloverSyncButton';
+import QueuePanel from './QueuePanel';
 
 export default async function CloverAdminPage() {
   const isConfigured = Boolean(process.env.CLOVER_MERCHANT_ID && process.env.CLOVER_API_TOKEN);
 
-  const [productsTotal, productsSynced, recentLogs] = await Promise.all([
+  const [productsTotal, productsSynced, recentLogs, queueCounts] = await Promise.all([
     prisma.product.count(),
     prisma.product.count({ where: { cloverId: { not: null } } }),
     prisma.cloverSyncLog.findMany({
       orderBy: { startedAt: 'desc' },
       take: 10,
     }),
+    prisma.cloverSyncQueue.groupBy({
+      by: ['status'],
+      _count: { id: true },
+    }),
   ]);
+
+  const queueByStatus: Record<string, number> = {};
+  for (const c of queueCounts) {
+    queueByStatus[c.status] = c._count.id;
+  }
+  const pendingCount = queueByStatus['PENDING'] ?? 0;
+  const failedCount = queueByStatus['FAILED_MAX_ATTEMPTS'] ?? 0;
+  const retryingCount = queueByStatus['FAILED_RETRYING'] ?? 0;
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
@@ -41,6 +54,15 @@ export default async function CloverAdminPage() {
           icon="ᛃ"
         />
       </div>
+
+      {/* Queue de synchronisation (alerte si quelque chose en attente) */}
+      {(pendingCount + retryingCount + failedCount) > 0 && (
+        <QueuePanel
+          pendingCount={pendingCount}
+          retryingCount={retryingCount}
+          failedCount={failedCount}
+        />
+      )}
 
       {/* Bouton sync */}
       {isConfigured && (

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
+import { generateSku, findUniqueSku } from "@/lib/clover-sku";
+import { tryCreateInClover, isCloverConfigured } from "@/lib/clover-queue";
 
 export async function GET() {
   const session = await auth();
@@ -25,7 +27,26 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, price, description, longDescription, category, subcategory, stone, author, content, format, isbn, image, images, inStock, featured, tags } = body;
+    const {
+      name,
+      price,
+      description,
+      longDescription,
+      category,
+      subcategory,
+      stone,
+      author,
+      content,
+      format,
+      isbn,
+      image,
+      images,
+      inStock,
+      featured,
+      tags,
+      sku,
+      stockQuantity,
+    } = body;
 
     if (!name || !category) {
       return NextResponse.json(
@@ -35,6 +56,16 @@ export async function POST(request: NextRequest) {
     }
 
     const slug = slugify(name);
+
+    // SKU : utiliser celui fourni, sinon auto-générer
+    let finalSku: string | null = null;
+    if (typeof sku === 'string' && sku.trim()) {
+      finalSku = sku.trim();
+    } else {
+      // Génère un SKU unique de la forme RM-CRIST-AMT-001
+      const baseSku = generateSku(name, category);
+      finalSku = await findUniqueSku(baseSku);
+    }
 
     const product = await prisma.product.create({
       data: {
@@ -56,10 +87,26 @@ export async function POST(request: NextRequest) {
         inStock: inStock ?? true,
         featured: featured ?? false,
         tags: tags || [],
+        sku: finalSku,
+        stockQuantity: typeof stockQuantity === 'number' ? stockQuantity : null,
       },
     });
 
-    return NextResponse.json(product, { status: 201 });
+    // Tentative de push vers Clover (best-effort, mis en queue si échec)
+    let cloverSyncStatus: 'synced' | 'queued' | 'skipped' = 'skipped';
+    if (isCloverConfigured()) {
+      const cloverId = await tryCreateInClover({
+        productId: product.id,
+        name: product.name,
+        priceCents: Math.round(product.price * 100),
+        sku: product.sku,
+        category: product.category,
+        description: product.description,
+      });
+      cloverSyncStatus = cloverId ? 'synced' : 'queued';
+    }
+
+    return NextResponse.json({ ...product, _cloverSyncStatus: cloverSyncStatus }, { status: 201 });
   } catch (error) {
     console.error("Error creating product:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

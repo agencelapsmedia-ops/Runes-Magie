@@ -204,3 +204,154 @@ export function normalizeCloverItem(item: CloverItem): NormalizedCloverProduct {
     hidden,
   };
 }
+
+// ════════════════════════════════════════════════════════════════
+// WRITE API — création / modification / suppression / stock
+// ════════════════════════════════════════════════════════════════
+// Nécessite un token avec scope INVENTORY:WRITE en plus de INVENTORY:READ.
+// Si Clover refuse (perm manquante ou autre), l'erreur remonte au caller
+// qui doit la mettre dans CloverSyncQueue pour retry automatique.
+
+async function cloverWrite<T>(
+  method: 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  body?: object,
+): Promise<T> {
+  const { apiToken, host } = getConfig();
+  const url = `${host}${path}`;
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const responseBody = await res.text().catch(() => '');
+    throw new Error(`Clover API ${method} ${res.status} sur ${path} : ${responseBody.slice(0, 300)}`);
+  }
+
+  if (res.status === 204 || method === 'DELETE') {
+    return {} as T;
+  }
+
+  return res.json() as Promise<T>;
+}
+
+export interface CreateCloverItemInput {
+  name: string;
+  priceCents: number; // Clover utilise les cents
+  sku?: string | null;
+  alternateName?: string;
+  hidden?: boolean;
+  categoryIds?: string[]; // IDs de catégories Clover (optionnel)
+}
+
+/**
+ * Crée un nouvel item dans Clover.
+ * Retourne l'item créé (incluant le cloverId généré).
+ */
+export async function createCloverItem(input: CreateCloverItemInput): Promise<CloverItem> {
+  const { merchantId } = getConfig();
+  const body: Record<string, unknown> = {
+    name: input.name,
+    price: input.priceCents,
+    hidden: input.hidden ?? false,
+  };
+  if (input.sku) body.sku = input.sku;
+  if (input.alternateName) body.alternateName = input.alternateName;
+
+  const item = await cloverWrite<CloverItem>('POST', `/v3/merchants/${merchantId}/items`, body);
+
+  // Lier aux catégories si fournies (Clover demande un endpoint séparé)
+  if (input.categoryIds && input.categoryIds.length > 0) {
+    for (const categoryId of input.categoryIds) {
+      try {
+        await cloverWrite('POST', `/v3/merchants/${merchantId}/category_items`, {
+          elements: [{ category: { id: categoryId }, item: { id: item.id } }],
+        });
+      } catch (err) {
+        console.warn('[clover] Liaison catégorie échouée', { itemId: item.id, categoryId, err });
+        // Ne pas faire échouer toute la création pour ça
+      }
+    }
+  }
+
+  return item;
+}
+
+export interface UpdateCloverItemInput {
+  name?: string;
+  priceCents?: number;
+  sku?: string | null;
+  alternateName?: string;
+  hidden?: boolean;
+}
+
+/**
+ * Met à jour un item Clover existant.
+ */
+export async function updateCloverItem(cloverId: string, input: UpdateCloverItemInput): Promise<CloverItem> {
+  const { merchantId } = getConfig();
+  const body: Record<string, unknown> = {};
+  if (input.name !== undefined) body.name = input.name;
+  if (input.priceCents !== undefined) body.price = input.priceCents;
+  if (input.sku !== undefined) body.sku = input.sku ?? '';
+  if (input.alternateName !== undefined) body.alternateName = input.alternateName;
+  if (input.hidden !== undefined) body.hidden = input.hidden;
+
+  return cloverWrite<CloverItem>('POST', `/v3/merchants/${merchantId}/items/${cloverId}`, body);
+}
+
+/**
+ * Supprime un item Clover (soft delete : Clover archive l'item).
+ */
+export async function deleteCloverItem(cloverId: string): Promise<void> {
+  const { merchantId } = getConfig();
+  await cloverWrite('DELETE', `/v3/merchants/${merchantId}/items/${cloverId}`);
+}
+
+/**
+ * Définit le stock d'un item Clover (valeur absolue, pas un delta).
+ *
+ * Nécessite que le tracking de stock soit activé pour cet item dans Clover
+ * (sinon l'API retourne 404). Si l'item n'a jamais eu de stockCount, on doit
+ * d'abord le créer via POST /item_stocks.
+ */
+export async function setCloverItemStock(cloverId: string, stockCount: number): Promise<void> {
+  const { merchantId } = getConfig();
+  try {
+    await cloverWrite('POST', `/v3/merchants/${merchantId}/item_stocks/${cloverId}`, {
+      stockCount,
+    });
+  } catch (err) {
+    // Si l'item_stock n'existe pas encore, on le crée
+    if (err instanceof Error && err.message.includes('404')) {
+      await cloverWrite('POST', `/v3/merchants/${merchantId}/item_stocks`, {
+        item: { id: cloverId },
+        stockCount,
+      });
+    } else {
+      throw err;
+    }
+  }
+}
+
+/**
+ * Décrémente le stock d'un item Clover (delta négatif).
+ * Utilisé depuis le webhook Stripe après une vente en ligne.
+ */
+export async function adjustCloverItemStock(cloverId: string, delta: number): Promise<void> {
+  // Clover n'a pas d'endpoint de delta direct → on read puis write
+  const { merchantId } = getConfig();
+  const current = await cloverFetch<{ stockCount?: number }>(
+    `/v3/merchants/${merchantId}/item_stocks/${cloverId}`,
+  );
+  const newCount = Math.max(0, (current.stockCount ?? 0) + delta);
+  await setCloverItemStock(cloverId, newCount);
+}

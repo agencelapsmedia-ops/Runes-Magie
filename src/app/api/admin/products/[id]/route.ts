@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
+import { tryUpdateInClover, tryDeleteInClover, isCloverConfigured } from "@/lib/clover-queue";
+import { setCloverItemStock } from "@/lib/clover";
 
 export async function GET(
   _request: NextRequest,
@@ -56,13 +58,48 @@ export async function PUT(
     if (body.inStock !== undefined) data.inStock = body.inStock;
     if (body.featured !== undefined) data.featured = body.featured;
     if (body.tags !== undefined) data.tags = body.tags;
+    if (body.sku !== undefined) data.sku = body.sku || null;
+    if (body.stockQuantity !== undefined) data.stockQuantity = body.stockQuantity;
 
     const product = await prisma.product.update({
       where: { id },
       data,
     });
 
-    return NextResponse.json(product);
+    // Propager update vers Clover si lié
+    let cloverSyncStatus: 'synced' | 'queued' | 'skipped' = 'skipped';
+    if (isCloverConfigured() && product.cloverId) {
+      // Détermine ce qui change côté Clover (nom, prix, sku, masqué)
+      const cloverUpdate: {
+        name?: string;
+        priceCents?: number;
+        sku?: string | null;
+        alternateName?: string;
+        hidden?: boolean;
+      } = {};
+      if (body.name !== undefined) cloverUpdate.name = product.name;
+      if (body.price !== undefined) cloverUpdate.priceCents = Math.round(product.price * 100);
+      if (body.sku !== undefined) cloverUpdate.sku = product.sku;
+      if (body.description !== undefined) cloverUpdate.alternateName = product.description;
+      if (body.inStock !== undefined) cloverUpdate.hidden = !product.inStock;
+
+      if (Object.keys(cloverUpdate).length > 0) {
+        const ok = await tryUpdateInClover(id, { cloverId: product.cloverId, data: cloverUpdate });
+        cloverSyncStatus = ok ? 'synced' : 'queued';
+      }
+
+      // Propage le stockQuantity séparément (endpoint dédié)
+      if (body.stockQuantity !== undefined && product.stockQuantity != null) {
+        try {
+          await setCloverItemStock(product.cloverId, product.stockQuantity);
+        } catch (err) {
+          console.error('[products/PUT] setCloverItemStock échec', { productId: id, err });
+          cloverSyncStatus = 'queued';
+        }
+      }
+    }
+
+    return NextResponse.json({ ...product, _cloverSyncStatus: cloverSyncStatus });
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
@@ -79,7 +116,18 @@ export async function DELETE(
   const { id } = await params;
 
   try {
+    // On lit le cloverId AVANT de supprimer pour pouvoir le propager
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { cloverId: true },
+    });
+
     await prisma.product.delete({ where: { id } });
+
+    if (isCloverConfigured() && product?.cloverId) {
+      await tryDeleteInClover(id, { cloverId: product.cloverId });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting product:", error);

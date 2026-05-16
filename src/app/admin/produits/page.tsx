@@ -37,9 +37,13 @@ interface Product {
   inStock: boolean;
   featured: boolean;
   tags: string[];
+  sku: string | null;
+  stockQuantity: number | null;
+  cloverId: string | null;
+  cloverSyncedAt: string | null;
 }
 
-const emptyProduct: Omit<Product, 'id' | 'slug'> = {
+const emptyProduct: Omit<Product, 'id' | 'slug' | 'cloverId' | 'cloverSyncedAt'> = {
   name: '',
   price: 0,
   description: '',
@@ -57,6 +61,8 @@ const emptyProduct: Omit<Product, 'id' | 'slug'> = {
   inStock: true,
   featured: false,
   tags: [],
+  sku: null,
+  stockQuantity: null,
 };
 
 export default function ProduitsPage() {
@@ -66,7 +72,7 @@ export default function ProduitsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [form, setForm] = useState<Omit<Product, 'id' | 'slug'>>(emptyProduct);
+  const [form, setForm] = useState<Omit<Product, 'id' | 'slug' | 'cloverId' | 'cloverSyncedAt'>>(emptyProduct);
   const [tagsInput, setTagsInput] = useState('');
   const [imagesInput, setImagesInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -114,6 +120,8 @@ export default function ProduitsPage() {
       inStock: product.inStock,
       featured: product.featured,
       tags: product.tags,
+      sku: product.sku ?? null,
+      stockQuantity: product.stockQuantity ?? null,
     });
     setTagsInput(product.tags.join(', '));
     setImagesInput(product.images.join('\n'));
@@ -740,6 +748,47 @@ export default function ProduitsPage() {
                     placeholder="Ex: 9782898171185"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   />
+                </div>
+              </div>
+
+              {/* SKU + Stock quantity (gestion inventaire / Clover) */}
+              <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-violet-50 border border-violet-100">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    SKU (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.sku ?? ''}
+                    onChange={(e) => setForm({ ...form, sku: e.target.value || null })}
+                    placeholder="Auto-généré si vide (ex: RM-CRIST-AMT-001)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 font-mono"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Code unique synchronisé avec Clover.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantité en stock
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={form.stockQuantity ?? ''}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        stockQuantity: e.target.value === '' ? null : parseInt(e.target.value, 10),
+                      })
+                    }
+                    placeholder="Vide = stock illimité (digital, service)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Synchronisé avec Clover à la création/modification.
+                  </p>
                 </div>
               </div>
 

@@ -132,6 +132,34 @@ model CloverSyncLog {
   @@index([status])
 }
 
+// ════════════════════════════════════════════════════════════════
+// CLOVER — Retry queue pour les opérations qui ont échoué
+// ════════════════════════════════════════════════════════════════
+// Si la création/update/delete d'un produit côté Clover échoue (API down,
+// permission manquante, etc.), l'opération est mise en queue pour re-essai
+// automatique avec backoff exponential.
+// ════════════════════════════════════════════════════════════════
+
+model CloverSyncQueue {
+  id              String   @id @default(cuid())
+  productId       String   // FK logique vers Product.id (pas de FK contrainte pour éviter les blocages)
+  action          String   // CREATE | UPDATE | DELETE | STOCK_DECREMENT | STOCK_INCREMENT
+  payload         String   // JSON sérialisé : données nécessaires à l'opération
+  status          String   @default("PENDING") // PENDING | PROCESSING | SUCCESS | FAILED_RETRYING | FAILED_MAX_ATTEMPTS
+  attempts        Int      @default(0)
+  maxAttempts     Int      @default(5)
+  lastError       String?
+  nextAttemptAt   DateTime @default(now())
+  lastAttemptAt   DateTime?
+  succeededAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, nextAttemptAt]) // critique pour le cron
+  @@index([productId])
+  @@index([createdAt])
+}
+
 model Order {
   id              String      @id @default(cuid())
   orderNumber     String      @unique
