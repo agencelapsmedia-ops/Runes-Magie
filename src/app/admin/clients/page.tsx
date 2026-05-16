@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import SubscriberActions from './SubscriberActions';
+import AddSubscriberButton from './AddSubscriberButton';
 
 type Tab = 'comptes' | 'infolettre';
 
@@ -104,6 +105,7 @@ export default async function ClientsAdminPage({
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          {tab === 'infolettre' && <AddSubscriberButton />}
           <a
             href={`/api/admin/clients/export?type=${tab}`}
             download
