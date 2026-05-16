@@ -10,6 +10,8 @@ const navItems = [
   { label: 'Clients', href: '/admin/clients', icon: 'ᛗ' },
   { label: 'Commandes', href: '/admin/commandes', icon: 'ᚲ' },
   { label: 'Produits', href: '/admin/produits', icon: 'ᚦ' },
+  { label: 'Produits (grille)', href: '/admin/produits/grid', icon: 'ᚤ' },
+  { label: 'Catégories', href: '/admin/categories', icon: 'ᛚ' },
   { label: 'Clover', href: '/admin/clover', icon: 'ᚷ' },
   { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛃ' },
   { label: 'Rendez-vous', href: '/admin/rendez-vous', icon: 'ᛈ' },

@@ -77,38 +77,61 @@ model BookingSetting {
   updatedAt DateTime @updatedAt
 }
 
+// ════════════════════════════════════════════════════════════════
+// CATÉGORIES DE PRODUITS — gérées dynamiquement + sync Clover
+// ════════════════════════════════════════════════════════════════
+// Remplace l'ancienne liste hardcodée. Le champ Product.category
+// reste un String (slug) pour préserver la compatibilité avec
+// deriveCategory() et mapSiteToCloverCategoryIds(). La liaison
+// logique se fait via Category.slug ↔ Product.category.
+// ════════════════════════════════════════════════════════════════
+
+model Category {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  name             String
+  description      String    @default("")
+  cloverCategoryId String?   @unique
+  displayOrder     Int       @default(0)
+  cloverSyncedAt   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([displayOrder])
+}
+
 model Product {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  name            String
-  price           Float
-  description     String
-  longDescription String   @default("")
-  category        String
-  image           String
-  images          String[] @default([])
-  inStock         Boolean  @default(true)
-  featured        Boolean  @default(false)
-  tags            String[] @default([])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  stone           String?
-  subcategory     String?
-  author          String?
-  content         String?
-  format          String?
-  isbn            String?
-  checkoutType    String   @default("stripe")
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  name             String
+  price            Float
+  description      String
+  longDescription  String    @default("")
+  category         String
+  image            String
+  images           String[]  @default([])
+  inStock          Boolean   @default(true)
+  featured         Boolean   @default(false)
+  tags             String[]  @default([])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  stone            String?
+  subcategory      String?
+  author           String?
+  content          String?
+  format           String?
+  isbn             String?
+  checkoutType     String    @default("stripe")
   // Intégration Clover POS — sync inventaire physique
-  cloverId        String?  @unique // ID de l'item dans Clover
-  sku             String?  // Stock Keeping Unit (fallback de matching)
-  stockQuantity   Int?     // Stock numérique (null = stock illimité ou non géré)
-  cloverSyncedAt  DateTime? // Dernière synchronisation depuis Clover
+  cloverId         String?   @unique // ID de l'item dans Clover
+  sku              String? // Stock Keeping Unit (fallback de matching)
+  stockQuantity    Int? // Stock numérique (null = stock illimité ou non géré)
+  cloverSyncedAt   DateTime? // Dernière synchronisation depuis Clover
   // Type de produit + sync Clover opt-out
-  productType     String   @default("PHYSICAL") // PHYSICAL | DROPSHIPPING | EBOOK | COURSE
-  syncToClover    Boolean  @default(true) // false = produit jamais envoyé à Clover (dropshipping, virtuel)
+  productType      String    @default("PHYSICAL") // PHYSICAL | DROPSHIPPING | EBOOK | COURSE
+  syncToClover     Boolean   @default(true) // false = produit jamais envoyé à Clover (dropshipping, virtuel)
   // Livraison digitale (productType = EBOOK ou COURSE)
-  downloadUrl     String?  // Pour EBOOK : URL du fichier dans Supabase Storage (signé après paiement)
+  downloadUrl      String? // Pour EBOOK : URL du fichier dans Supabase Storage (signé après paiement)
   courseAccessSlug String? // Pour COURSE : slug du cours pour accès au lecteur vidéo
 
   @@index([cloverId])
@@ -121,19 +144,19 @@ model Product {
 // ════════════════════════════════════════════════════════════════
 
 model CloverSyncLog {
-  id              String   @id @default(cuid())
-  startedAt       DateTime @default(now())
-  finishedAt      DateTime?
-  status          String   @default("RUNNING") // RUNNING | SUCCESS | PARTIAL | FAILED
-  mode            String   @default("apply") // dry-run | apply
-  triggeredBy     String   @default("manual") // manual | cron
-  itemsFetched    Int      @default(0)
-  itemsCreated    Int      @default(0)
-  itemsUpdated    Int      @default(0)
-  itemsSkipped    Int      @default(0)
-  errorsCount     Int      @default(0)
-  errorMessage    String?
-  details         String?  // JSON sérialisé : { errors: [], unmatched: [] }
+  id           String    @id @default(cuid())
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  status       String    @default("RUNNING") // RUNNING | SUCCESS | PARTIAL | FAILED
+  mode         String    @default("apply") // dry-run | apply
+  triggeredBy  String    @default("manual") // manual | cron
+  itemsFetched Int       @default(0)
+  itemsCreated Int       @default(0)
+  itemsUpdated Int       @default(0)
+  itemsSkipped Int       @default(0)
+  errorsCount  Int       @default(0)
+  errorMessage String?
+  details      String? // JSON sérialisé : { errors: [], unmatched: [] }
 
   @@index([startedAt])
   @@index([status])
@@ -148,19 +171,19 @@ model CloverSyncLog {
 // ════════════════════════════════════════════════════════════════
 
 model CloverSyncQueue {
-  id              String   @id @default(cuid())
-  productId       String   // FK logique vers Product.id (pas de FK contrainte pour éviter les blocages)
-  action          String   // CREATE | UPDATE | DELETE | STOCK_DECREMENT | STOCK_INCREMENT
-  payload         String   // JSON sérialisé : données nécessaires à l'opération
-  status          String   @default("PENDING") // PENDING | PROCESSING | SUCCESS | FAILED_RETRYING | FAILED_MAX_ATTEMPTS
-  attempts        Int      @default(0)
-  maxAttempts     Int      @default(5)
-  lastError       String?
-  nextAttemptAt   DateTime @default(now())
-  lastAttemptAt   DateTime?
-  succeededAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String    @id @default(cuid())
+  productId     String // FK logique vers Product.id (pas de FK contrainte pour éviter les blocages)
+  action        String // CREATE | UPDATE | DELETE | STOCK_DECREMENT | STOCK_INCREMENT
+  payload       String // JSON sérialisé : données nécessaires à l'opération
+  status        String    @default("PENDING") // PENDING | PROCESSING | SUCCESS | FAILED_RETRYING | FAILED_MAX_ATTEMPTS
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  lastError     String?
+  nextAttemptAt DateTime  @default(now())
+  lastAttemptAt DateTime?
+  succeededAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([status, nextAttemptAt]) // critique pour le cron
   @@index([productId])
@@ -517,4 +540,3 @@ model NewsletterSubscriber {
   @@index([unsubscribedAt])
   @@index([createdAt])
 }
-

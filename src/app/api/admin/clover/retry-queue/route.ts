@@ -7,6 +7,9 @@ import {
   deleteCloverItem,
   setCloverItemStock,
   fetchAllCloverCategories,
+  createCloverCategory,
+  updateCloverCategory,
+  deleteCloverCategory,
 } from '@/lib/clover';
 import { mapSiteToCloverCategoryIds } from '@/lib/clover-sku';
 import { nextBackoffMs, isCloverConfigured } from '@/lib/clover-queue';
@@ -100,6 +103,24 @@ export async function POST(req: Request) {
         await deleteCloverItem(payload.cloverId);
       } else if (item.action === 'STOCK_SET') {
         await setCloverItemStock(payload.cloverId, payload.stockCount);
+      } else if (item.action === 'CATEGORY_CREATE') {
+        const created = await createCloverCategory({
+          name: payload.name,
+          sortOrder: payload.sortOrder,
+        });
+        // item.productId stocke en réalité le categoryId local pour ces actions
+        await prisma.category.update({
+          where: { id: item.productId },
+          data: { cloverCategoryId: created.id, cloverSyncedAt: new Date() },
+        });
+      } else if (item.action === 'CATEGORY_UPDATE') {
+        await updateCloverCategory(payload.cloverCategoryId, payload.data);
+        await prisma.category.update({
+          where: { id: item.productId },
+          data: { cloverSyncedAt: new Date() },
+        });
+      } else if (item.action === 'CATEGORY_DELETE') {
+        await deleteCloverCategory(payload.cloverCategoryId);
       } else {
         throw new Error(`Action inconnue : ${item.action}`);
       }

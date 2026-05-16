@@ -10,7 +10,9 @@
     "postinstall": "prisma generate",
     "db:backfill:dry": "tsx prisma/scripts/backfill-unified.ts --dry-run",
     "db:backfill": "tsx prisma/scripts/backfill-unified.ts",
-    "db:verify": "tsx prisma/scripts/verify-backfill.ts"
+    "db:verify": "tsx prisma/scripts/verify-backfill.ts",
+    "db:seed:categories": "tsx prisma/scripts/seed-categories.ts",
+    "db:migrate:isbn-to-sku": "tsx prisma/scripts/migrate-isbn-to-sku.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",

@@ -355,3 +355,55 @@ export async function adjustCloverItemStock(cloverId: string, delta: number): Pr
   const newCount = Math.max(0, (current.stockCount ?? 0) + delta);
   await setCloverItemStock(cloverId, newCount);
 }
+
+// ════════════════════════════════════════════════════════════════
+// CATÉGORIES — write API
+// ════════════════════════════════════════════════════════════════
+
+export interface CreateCloverCategoryInput {
+  name: string;
+  sortOrder?: number;
+}
+
+/**
+ * Crée une nouvelle catégorie dans Clover.
+ */
+export async function createCloverCategory(input: CreateCloverCategoryInput): Promise<CloverCategory> {
+  const { merchantId } = getConfig();
+  const body: Record<string, unknown> = { name: input.name };
+  if (typeof input.sortOrder === 'number') body.sortOrder = input.sortOrder;
+  return cloverWrite<CloverCategory>('POST', `/v3/merchants/${merchantId}/categories`, body);
+}
+
+export interface UpdateCloverCategoryInput {
+  name?: string;
+  sortOrder?: number;
+}
+
+/**
+ * Met à jour une catégorie Clover existante.
+ */
+export async function updateCloverCategory(
+  cloverCategoryId: string,
+  input: UpdateCloverCategoryInput,
+): Promise<CloverCategory> {
+  const { merchantId } = getConfig();
+  const body: Record<string, unknown> = {};
+  if (input.name !== undefined) body.name = input.name;
+  if (input.sortOrder !== undefined) body.sortOrder = input.sortOrder;
+  return cloverWrite<CloverCategory>(
+    'POST',
+    `/v3/merchants/${merchantId}/categories/${cloverCategoryId}`,
+    body,
+  );
+}
+
+/**
+ * Supprime (archive) une catégorie Clover.
+ * Clover archive plutôt que de supprimer dur ; les items qui y étaient
+ * liés ne sont PAS supprimés, mais perdent la liaison.
+ */
+export async function deleteCloverCategory(cloverCategoryId: string): Promise<void> {
+  const { merchantId } = getConfig();
+  await cloverWrite('DELETE', `/v3/merchants/${merchantId}/categories/${cloverCategoryId}`);
+}

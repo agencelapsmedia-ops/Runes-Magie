@@ -5,7 +5,10 @@ import Image from 'next/image';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { categorySubcategories, stoneNames } from '@/data/products';
 
-const CATEGORIES = [
+// Catégories chargées dynamiquement depuis /api/admin/categories
+// (gérées dans /admin/categories). Fallback hardcoded si l'API échoue
+// pour ne pas casser l'UI le temps du seed initial.
+const FALLBACK_CATEGORIES = [
   { id: 'cristaux', name: 'Pierres et Cristaux' },
   { id: 'runes', name: 'Runes' },
   { id: 'tarot', name: 'Tarot' },
@@ -84,6 +87,7 @@ const emptyProduct: Omit<Product, 'id' | 'slug' | 'cloverId' | 'cloverSyncedAt'>
 
 export default function ProduitsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>(FALLBACK_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -98,7 +102,21 @@ export default function ProduitsPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  function fetchCategories() {
+    fetch('/api/admin/categories')
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((data: Array<{ slug: string; name: string }>) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data.map((c) => ({ id: c.slug, name: c.name })));
+        }
+      })
+      .catch(() => {
+        // Garde le FALLBACK_CATEGORIES en cas d'erreur (ex: avant seed initial)
+      });
+  }
 
   function fetchProducts() {
     setLoading(true);
@@ -311,7 +329,7 @@ export default function ProduitsPage() {
     );
 
   const categoryName = (id: string) =>
-    CATEGORIES.find((c) => c.id === id)?.name || id;
+    categories.find((c) => c.id === id)?.name || id;
 
   if (loading) {
     return (
@@ -354,7 +372,7 @@ export default function ProduitsPage() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
         >
           <option value="all">Toutes les categories</option>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
@@ -623,7 +641,7 @@ export default function ProduitsPage() {
                     onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   >
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>
