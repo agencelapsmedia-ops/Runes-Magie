@@ -2,8 +2,9 @@ import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
-import { tryUpdateInClover, isCloverConfigured } from "@/lib/clover-queue";
-import { setCloverItemStock } from "@/lib/clover";
+import { tryUpdateInClover, trySyncItemCategories, isCloverConfigured } from "@/lib/clover-queue";
+import { setCloverItemStock, fetchAllCloverCategories, getCloverItemCategoryLinks, type CloverCategory } from "@/lib/clover";
+import { mapSiteToCloverCategoryIds } from "@/lib/clover-sku";
 
 /**
  * POST /api/admin/products/bulk-update
@@ -49,7 +50,11 @@ const ALLOWED_FIELDS = new Set([
 
 const CHUNK_SIZE = 5; // Concurrence max pour les writes Clover
 
-async function processOne(input: UpdateInput, cloverEnabled: boolean): Promise<UpdateResult> {
+async function processOne(
+  input: UpdateInput,
+  cloverEnabled: boolean,
+  cloverCategoriesCache: CloverCategory[] | null,
+): Promise<UpdateResult> {
   try {
     // Filtre les champs interdits
     const filtered: Record<string, unknown> = {};
@@ -74,6 +79,16 @@ async function processOne(input: UpdateInput, cloverEnabled: boolean): Promise<U
     // Si nom change → maj du slug
     if (typeof filtered.name === 'string' && filtered.name.trim()) {
       filtered.slug = slugify(filtered.name as string);
+    }
+
+    // Lire l'ancienne catégorie AVANT update si elle change (pour syncer Clover après)
+    let oldCategory: string | null = null;
+    if (filtered.category !== undefined) {
+      const before = await prisma.product.findUnique({
+        where: { id: input.id },
+        select: { category: true },
+      });
+      oldCategory = before?.category ?? null;
     }
 
     const product = await prisma.product.update({
@@ -112,6 +127,21 @@ async function processOne(input: UpdateInput, cloverEnabled: boolean): Promise<U
           cloverSyncStatus = 'queued';
         }
       }
+
+      // ★ FIX BUG #2 : sync les liaisons catégorie Clover si la catégorie a changé
+      if (oldCategory && filtered.category !== undefined && oldCategory !== filtered.category && cloverCategoriesCache) {
+        try {
+          const oldIds = mapSiteToCloverCategoryIds(oldCategory, cloverCategoriesCache);
+          const newIds = mapSiteToCloverCategoryIds(product.category, cloverCategoriesCache);
+          const actualLinks = await getCloverItemCategoryLinks(product.cloverId);
+          const oldToRemove = oldIds.filter((id) => actualLinks.includes(id));
+          const ok = await trySyncItemCategories(product.id, product.cloverId, oldToRemove, newIds);
+          if (!ok && cloverSyncStatus === 'synced') cloverSyncStatus = 'queued';
+        } catch (err) {
+          console.error('[bulk-update] sync catégorie Clover échec', { productId: input.id, err });
+          cloverSyncStatus = 'queued';
+        }
+      }
     }
 
     return { id: input.id, ok: true, cloverSyncStatus };
@@ -139,10 +169,21 @@ export async function POST(request: NextRequest) {
     const cloverEnabled = isCloverConfigured();
     const results: UpdateResult[] = [];
 
+    // Pré-charge les catégories Clover une seule fois si on va sync des changements de catégorie
+    const hasCategoryChange = updates.some((u) => 'category' in u.changes);
+    let cloverCategoriesCache: CloverCategory[] | null = null;
+    if (cloverEnabled && hasCategoryChange) {
+      try {
+        cloverCategoriesCache = await fetchAllCloverCategories();
+      } catch (err) {
+        console.warn('[bulk-update] fetch catégories Clover échec, sync catégorie sera skip', err);
+      }
+    }
+
     // Traite par chunks pour éviter de surcharger Clover
     for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
       const chunk = updates.slice(i, i + CHUNK_SIZE);
-      const chunkResults = await Promise.all(chunk.map((u) => processOne(u, cloverEnabled)));
+      const chunkResults = await Promise.all(chunk.map((u) => processOne(u, cloverEnabled, cloverCategoriesCache)));
       results.push(...chunkResults);
     }
 

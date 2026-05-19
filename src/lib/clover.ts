@@ -98,6 +98,18 @@ async function cloverFetch<T>(
 }
 
 /**
+ * Récupère UN item par son cloverId.
+ * Utilisé notamment par le webhook handler pour lire le stock actuel.
+ */
+export async function getCloverItem(cloverId: string): Promise<CloverItem> {
+  const { merchantId } = getConfig();
+  return cloverFetch<CloverItem>(
+    `/v3/merchants/${merchantId}/items/${cloverId}`,
+    { expand: 'categories' },
+  );
+}
+
+/**
  * Récupère TOUS les items du marchand (gère la pagination automatiquement).
  * Inclut les catégories en `expand=categories` pour mapping.
  */
@@ -261,11 +273,26 @@ function truncateForClover(value: string | null | undefined): string | undefined
   return value.length > CLOVER_MAX_STRING ? value.slice(0, CLOVER_MAX_STRING) : value;
 }
 
+export interface CategoryLinkError {
+  categoryId: string;
+  action: 'ADD' | 'REMOVE';
+  error: string;
+}
+
+export interface CreateCloverItemResult {
+  item: CloverItem;
+  categoryLinkErrors: CategoryLinkError[];
+}
+
 /**
  * Crée un nouvel item dans Clover.
- * Retourne l'item créé (incluant le cloverId généré).
+ * Retourne l'item créé + les erreurs de liaison catégorie (pour retry queue).
+ *
+ * NB : si la création de l'item lui-même échoue, l'erreur est thrown.
+ * Si seules les liaisons catégorie échouent, l'item est créé mais les liaisons
+ * manquantes sont retournées au caller pour mise en queue de retry.
  */
-export async function createCloverItem(input: CreateCloverItemInput): Promise<CloverItem> {
+export async function createCloverItem(input: CreateCloverItemInput): Promise<CreateCloverItemResult> {
   const { merchantId } = getConfig();
   const body: Record<string, unknown> = {
     name: truncateForClover(input.name),
@@ -277,21 +304,91 @@ export async function createCloverItem(input: CreateCloverItemInput): Promise<Cl
 
   const item = await cloverWrite<CloverItem>('POST', `/v3/merchants/${merchantId}/items`, body);
 
+  const categoryLinkErrors: CategoryLinkError[] = [];
+
   // Lier aux catégories si fournies (Clover demande un endpoint séparé)
   if (input.categoryIds && input.categoryIds.length > 0) {
     for (const categoryId of input.categoryIds) {
       try {
-        await cloverWrite('POST', `/v3/merchants/${merchantId}/category_items`, {
-          elements: [{ category: { id: categoryId }, item: { id: item.id } }],
-        });
+        await addCloverItemCategoryLink(item.id, categoryId);
       } catch (err) {
-        console.warn('[clover] Liaison catégorie échouée', { itemId: item.id, categoryId, err });
-        // Ne pas faire échouer toute la création pour ça
+        const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+        console.warn('[clover] Liaison catégorie échouée', { itemId: item.id, categoryId, err: msg });
+        categoryLinkErrors.push({ categoryId, action: 'ADD', error: msg });
       }
     }
   }
 
-  return item;
+  return { item, categoryLinkErrors };
+}
+
+/**
+ * Lie un item à une catégorie dans Clover.
+ * Utilisé par createCloverItem et updateCloverItemCategories.
+ */
+export async function addCloverItemCategoryLink(itemId: string, categoryId: string): Promise<void> {
+  const { merchantId } = getConfig();
+  await cloverWrite('POST', `/v3/merchants/${merchantId}/category_items`, {
+    elements: [{ category: { id: categoryId }, item: { id: itemId } }],
+  });
+}
+
+/**
+ * Retire la liaison d'un item à une catégorie dans Clover.
+ */
+export async function removeCloverItemCategoryLink(itemId: string, categoryId: string): Promise<void> {
+  const { merchantId } = getConfig();
+  // Pattern Clover : DELETE /category_items/{categoryId}:{itemId}
+  await cloverWrite('DELETE', `/v3/merchants/${merchantId}/category_items/${categoryId}:${itemId}`);
+}
+
+/**
+ * Récupère les IDs de catégories Clover actuellement liées à un item.
+ */
+export async function getCloverItemCategoryLinks(cloverId: string): Promise<string[]> {
+  const item = await getCloverItem(cloverId);
+  return item.categories?.elements?.map((c) => c.id) ?? [];
+}
+
+/**
+ * Synchronise les liaisons catégories d'un item Clover avec un nouveau set.
+ * Compute le diff (ajouts + retraits) et applique chaque opération.
+ * Retourne les erreurs éventuelles (pour mise en queue de retry).
+ */
+export async function updateCloverItemCategories(
+  itemId: string,
+  oldCategoryIds: string[],
+  newCategoryIds: string[],
+): Promise<{ added: string[]; removed: string[]; errors: CategoryLinkError[] }> {
+  const toAdd = newCategoryIds.filter((id) => !oldCategoryIds.includes(id));
+  const toRemove = oldCategoryIds.filter((id) => !newCategoryIds.includes(id));
+  const errors: CategoryLinkError[] = [];
+
+  for (const categoryId of toAdd) {
+    try {
+      await addCloverItemCategoryLink(itemId, categoryId);
+    } catch (err) {
+      errors.push({
+        categoryId,
+        action: 'ADD',
+        error: err instanceof Error ? err.message : 'Erreur inconnue',
+      });
+    }
+  }
+
+  for (const categoryId of toRemove) {
+    try {
+      await removeCloverItemCategoryLink(itemId, categoryId);
+    } catch (err) {
+      errors.push({
+        categoryId,
+        action: 'REMOVE',
+        error: err instanceof Error ? err.message : 'Erreur inconnue',
+      });
+    }
+  }
+
+  return { added: toAdd, removed: toRemove, errors };
 }
 
 export interface UpdateCloverItemInput {

@@ -31,7 +31,9 @@ export type CloverQueueAction =
   | 'STOCK_SET'
   | 'CATEGORY_CREATE'
   | 'CATEGORY_UPDATE'
-  | 'CATEGORY_DELETE';
+  | 'CATEGORY_DELETE'
+  | 'CATEGORY_LINK_ADD'
+  | 'CATEGORY_LINK_REMOVE';
 
 interface CreatePayload {
   productId: string;
@@ -92,6 +94,10 @@ export async function queueOperation(
 /**
  * Tente la création immédiate dans Clover. Si échec → queue + log.
  * Retourne le cloverId si succès, null sinon (mais le produit reste créé localement).
+ *
+ * Si l'item est créé mais que certaines liaisons catégorie échouent, on met
+ * en queue les liaisons manquantes (action CATEGORY_LINK_ADD) au lieu de
+ * les ignorer silencieusement.
  */
 export async function tryCreateInClover(payload: CreatePayload): Promise<string | null> {
   try {
@@ -107,7 +113,7 @@ export async function tryCreateInClover(payload: CreatePayload): Promise<string 
       categoryIds,
     };
 
-    const created = await createCloverItem(input);
+    const { item: created, categoryLinkErrors } = await createCloverItem(input);
 
     // Update le Product avec le cloverId reçu
     await prisma.product.update({
@@ -115,11 +121,47 @@ export async function tryCreateInClover(payload: CreatePayload): Promise<string 
       data: { cloverId: created.id, cloverSyncedAt: new Date() },
     });
 
+    // Mise en queue des liaisons catégorie échouées pour retry
+    for (const linkErr of categoryLinkErrors) {
+      await queueOperation(
+        'CATEGORY_LINK_ADD',
+        payload.productId,
+        { itemId: created.id, categoryId: linkErr.categoryId },
+        linkErr.error,
+      );
+    }
+
     return created.id;
   } catch (err) {
     console.error('[clover-queue] CREATE échouée → mise en queue', { productId: payload.productId, err });
     await queueOperation('CREATE', payload.productId, payload, err);
     return null;
+  }
+}
+
+/**
+ * Tente de synchroniser les catégories liées d'un item Clover.
+ * Met en queue les erreurs individuelles (ADD/REMOVE) pour retry.
+ */
+export async function trySyncItemCategories(
+  productId: string,
+  cloverId: string,
+  oldCategoryIds: string[],
+  newCategoryIds: string[],
+): Promise<boolean> {
+  try {
+    const { updateCloverItemCategories } = await import('@/lib/clover');
+    const result = await updateCloverItemCategories(cloverId, oldCategoryIds, newCategoryIds);
+
+    for (const err of result.errors) {
+      const action: CloverQueueAction = err.action === 'ADD' ? 'CATEGORY_LINK_ADD' : 'CATEGORY_LINK_REMOVE';
+      await queueOperation(action, productId, { itemId: cloverId, categoryId: err.categoryId }, err.error);
+    }
+
+    return result.errors.length === 0;
+  } catch (err) {
+    console.error('[clover-queue] syncItemCategories échec global', { productId, err });
+    return false;
   }
 }
 

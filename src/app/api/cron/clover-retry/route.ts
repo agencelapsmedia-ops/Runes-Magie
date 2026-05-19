@@ -68,7 +68,7 @@ export async function GET(req: Request) {
       if (item.action === 'CREATE') {
         const categories = await getCategories();
         const categoryIds = mapSiteToCloverCategoryIds(payload.category, categories);
-        const created = await createCloverItem({
+        const { item: created, categoryLinkErrors } = await createCloverItem({
           name: payload.name,
           priceCents: payload.priceCents,
           sku: payload.sku,
@@ -80,6 +80,20 @@ export async function GET(req: Request) {
           where: { id: item.productId },
           data: { cloverId: created.id, cloverSyncedAt: new Date() },
         });
+        // Re-mettre en queue les liaisons catégorie qui ont échoué
+        for (const linkErr of categoryLinkErrors) {
+          await prisma.cloverSyncQueue.create({
+            data: {
+              productId: item.productId,
+              action: 'CATEGORY_LINK_ADD',
+              payload: JSON.stringify({ itemId: created.id, categoryId: linkErr.categoryId }),
+              status: 'PENDING',
+              attempts: 0,
+              lastError: linkErr.error.slice(0, 500),
+              nextAttemptAt: new Date(Date.now() + 60_000),
+            },
+          });
+        }
       } else if (item.action === 'UPDATE') {
         await updateCloverItem(payload.cloverId, payload.data);
         await prisma.product.update({

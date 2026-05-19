@@ -445,16 +445,34 @@ export default function ProductsGridPage() {
   // Compteur de modifs en attente
   const dirtyCount = Object.values(pendingEdits).reduce((n, changes) => n + Object.keys(changes).length, 0);
 
+  // Stats inventaire
+  const totalCount = products.length;
+  const visibleCount = products.filter((p) => p.inStock).length;
+  const hiddenCount = totalCount - visibleCount;
+  const linkedToCloverCount = products.filter((p) => p.cloverId).length;
+  const orphansCount = products.filter((p) => p.syncToClover && !p.cloverId).length;
+
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       <div style={{ marginBottom: 16 }}>
         <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: 4 }}>
-          ᚤ Produits — grille
+          ᚤ Inventaire — grille des produits
         </h1>
         <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>
-          Édite plusieurs cellules, puis &laquo; Sauvegarder tout &raquo;. Les changements sont poussés à Clover automatiquement.
+          C&apos;est ici ton inventaire complet. Édite plusieurs cellules puis &laquo; Sauvegarder tout &raquo;. Les changements sont poussés à Clover automatiquement.
           {' '}<span style={{ color: '#9CA3AF' }}>(Ctrl+Z pour annuler)</span>
         </p>
+      </div>
+
+      {/* Stats inventaire */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <StatBadge label="Total produits" value={totalCount} color="#2D1B4E" />
+        <StatBadge label="Visibles boutique" value={visibleCount} color="#065F46" />
+        <StatBadge label="Cachés" value={hiddenCount} color="#6B7280" highlight={hiddenCount > 0} />
+        <StatBadge label="Liés à Clover" value={linkedToCloverCount} color="#1E3A8A" suffix={totalCount > 0 ? `/${totalCount}` : ''} />
+        {orphansCount > 0 && (
+          <StatBadge label="Orphelins (à pousser)" value={orphansCount} color="#92400E" highlight />
+        )}
       </div>
 
       {/* Toolbar */}
@@ -467,6 +485,22 @@ export default function ProductsGridPage() {
           style={{ padding: '8px 14px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: '0.9rem', minWidth: 240, color: '#1F2937', background: '#FFF' }}
         />
         <div style={{ flex: 1 }} />
+        <a
+          href="/admin/clover"
+          style={{
+            background: '#FFF',
+            color: '#6B3FA0',
+            border: '1px solid #C4B5FD',
+            padding: '8px 16px',
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            textDecoration: 'none',
+            display: 'inline-block',
+          }}
+        >
+          ᚦ Sync Clover
+        </a>
         {dirtyCount > 0 && (
           <span style={{ background: '#FEF3C7', color: '#92400E', padding: '6px 12px', borderRadius: 999, fontSize: '0.85rem', fontWeight: 600, border: '1px solid #FCD34D' }}>
             {dirtyCount} modif{dirtyCount > 1 ? 's' : ''} en attente
@@ -684,6 +718,53 @@ function CheckboxCell({
         onChange={(e) => onChange(e.target.checked)}
         style={{ width: 16, height: 16, cursor: 'pointer' }}
       />
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// StatBadge — petit composant local pour les stats inventaire
+// ════════════════════════════════════════════════════════════════
+function StatBadge({
+  label,
+  value,
+  color,
+  suffix,
+  highlight,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  suffix?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        background: '#FFFFFF',
+        borderRadius: 12,
+        padding: '14px 18px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        border: highlight ? '1px solid #C9A84C' : '1px solid transparent',
+      }}
+    >
+      <div
+        style={{
+          fontSize: '0.7rem',
+          fontFamily: 'var(--font-cinzel, serif)',
+          fontWeight: 600,
+          color: '#6B7280',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: '1.5rem', fontWeight: 700, color, lineHeight: 1 }}>
+        {value}
+        {suffix && <span style={{ fontSize: '0.95rem', color: '#9CA3AF', fontWeight: 500 }}>{suffix}</span>}
+      </div>
     </div>
   );
 }

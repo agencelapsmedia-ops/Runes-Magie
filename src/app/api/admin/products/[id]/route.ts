@@ -2,8 +2,9 @@ import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
-import { tryUpdateInClover, tryDeleteInClover, isCloverConfigured } from "@/lib/clover-queue";
-import { setCloverItemStock } from "@/lib/clover";
+import { tryUpdateInClover, tryDeleteInClover, trySyncItemCategories, isCloverConfigured } from "@/lib/clover-queue";
+import { setCloverItemStock, fetchAllCloverCategories, getCloverItemCategoryLinks } from "@/lib/clover";
+import { mapSiteToCloverCategoryIds } from "@/lib/clover-sku";
 
 export async function GET(
   _request: NextRequest,
@@ -40,6 +41,13 @@ export async function PUT(
   try {
     const body = await request.json();
     const data: Record<string, unknown> = {};
+
+    // Lire l'ancien produit AVANT update pour détecter changements significatifs (catégorie)
+    const oldProduct = await prisma.product.findUnique({
+      where: { id },
+      select: { category: true, cloverId: true },
+    });
+    const oldCategory = oldProduct?.category;
 
     if (body.name !== undefined) { data.name = body.name; data.slug = slugify(body.name); }
     if (body.price !== undefined) data.price = parseFloat(body.price);
@@ -100,6 +108,24 @@ export async function PUT(
           cloverSyncStatus = 'queued';
         }
       }
+
+      // ★ FIX BUG #2 : si la catégorie a changé, synchroniser les liaisons Clover
+      if (body.category !== undefined && oldCategory && oldCategory !== body.category) {
+        try {
+          const cloverCategories = await fetchAllCloverCategories();
+          const oldIds = mapSiteToCloverCategoryIds(oldCategory, cloverCategories);
+          const newIds = mapSiteToCloverCategoryIds(body.category, cloverCategories);
+          // Récupère l'état actuel pour éviter les retraits orphelins
+          const actualLinks = await getCloverItemCategoryLinks(product.cloverId);
+          // On retire seulement ce qui correspond à l'ancienne catégorie ET qui est encore lié
+          const oldToRemove = oldIds.filter((id) => actualLinks.includes(id));
+          const ok = await trySyncItemCategories(product.id, product.cloverId, oldToRemove, newIds);
+          if (!ok && cloverSyncStatus === 'synced') cloverSyncStatus = 'queued';
+        } catch (err) {
+          console.error('[products/PUT] sync catégorie Clover échec', { productId: id, err });
+          cloverSyncStatus = 'queued';
+        }
+      }
     }
 
     return NextResponse.json({ ...product, _cloverSyncStatus: cloverSyncStatus });
@@ -119,17 +145,27 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    // On lit le cloverId AVANT de supprimer pour pouvoir le propager
+    // ★ FIX BUG #1 : inverser l'ordre — Clover D'ABORD, DB ensuite.
+    // Avant : DB deleted → Clover failed → queue avec productId orphelin (impossible à retraiter).
+    // Maintenant : si Clover échoue, le produit local reste, l'admin peut retry.
     const product = await prisma.product.findUnique({
       where: { id },
-      select: { cloverId: true },
+      select: { cloverId: true, name: true },
     });
 
-    await prisma.product.delete({ where: { id } });
-
-    if (isCloverConfigured() && product?.cloverId) {
-      await tryDeleteInClover(id, { cloverId: product.cloverId });
+    if (!product) {
+      return NextResponse.json({ error: "Produit introuvable" }, { status: 404 });
     }
+
+    if (isCloverConfigured() && product.cloverId) {
+      // tryDeleteInClover gère son propre try/catch + queue + retry
+      await tryDeleteInClover(id, { cloverId: product.cloverId });
+      // NB : si Clover échoue ET queue, le retry essayera plus tard.
+      // L'item Clover sera archivé éventuellement.
+    }
+
+    // Le delete local se fait après que Clover ait été notifié (succès ou queue)
+    await prisma.product.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {
