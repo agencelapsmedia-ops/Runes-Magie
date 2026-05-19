@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/clover-retry",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/clover-pull",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
