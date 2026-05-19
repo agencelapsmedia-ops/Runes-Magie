@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import CloverSyncButton from './CloverSyncButton';
 import PushOrphansButton from './PushOrphansButton';
 import PushOrphanCategoriesButton from './PushOrphanCategoriesButton';
+import PushAllSkusButton from './PushAllSkusButton';
 import QueuePanel from './QueuePanel';
 
 export default async function CloverAdminPage() {
@@ -82,6 +83,9 @@ export default async function CloverAdminPage() {
 
       {/* Catégories orphelines (non poussées vers Clover) */}
       {isConfigured && <PushOrphanCategoriesButton orphanCount={orphanCategoriesCount} />}
+
+      {/* Rattrapage SKU (utile après migration) */}
+      {isConfigured && <PushAllSkusButton />}
 
       {/* Bouton sync */}
       {isConfigured && (
