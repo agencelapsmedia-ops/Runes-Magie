@@ -545,6 +545,31 @@ export default function ProductsGridPage() {
         )}
         <div style={{ flex: 1 }} />
         <a
+          href={(() => {
+            const params = new URLSearchParams();
+            if (categoryFilter) params.set('category', categoryFilter);
+            if (globalFilter) params.set('search', globalFilter);
+            const qs = params.toString();
+            return qs ? `/api/admin/products/export-inventory-pdf?${qs}` : '/api/admin/products/export-inventory-pdf';
+          })()}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Génère un PDF de l'inventaire avec les filtres actifs"
+          style={{
+            background: '#FFF',
+            color: '#92400E',
+            border: '1px solid #FCD34D',
+            padding: '8px 16px',
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            textDecoration: 'none',
+            display: 'inline-block',
+          }}
+        >
+          📄 Inventaire PDF
+        </a>
+        <a
           href="/admin/produits?new=1"
           style={{
             background: '#2D1B4E',
