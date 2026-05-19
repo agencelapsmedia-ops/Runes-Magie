@@ -1,34 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import {
-  fetchAllCloverItems,
-  normalizeCloverItem,
-  type NormalizedCloverProduct,
-} from '@/lib/clover';
+import { fetchCloverOrdersSince, type CloverLineItem } from '@/lib/clover';
 
 /**
  * GET /api/cron/clover-pull
  *
- * Cron qui tire l'inventaire Clover vers le site (Clover → site).
+ * Cron qui décrémente le stock site SELON LES VENTES Clover récentes.
  *
- * Appelé par Vercel Cron toutes les 6 heures pour synchroniser :
- *   - stockQuantity (ventes en boutique → décrément du stock site)
- *   - price (si Annabelle change un prix en caisse)
- *   - inStock (item caché/visible)
+ * ⚠️ ARCHITECTURE : le site est MAÎTRE de l'inventaire. Clover ne sert que
+ * de caisse pour décrémenter quand une vente est faite. On NE PULL PAS l'état
+ * complet des items Clover (ça écraserait les stocks gérés côté site).
  *
- * Comportement :
- *   - Ne CRÉE PAS de nouveau produit (filtre POS-only via condition cloverId existe)
- *   - Update seulement les Products déjà liés (matching par cloverId)
- *   - Log dans CloverSyncLog avec triggeredBy='cron'
+ * Au lieu de ça, on récupère les NOUVELLES ORDERS Clover depuis le dernier
+ * check, et on décrémente Product.stockQuantity pour chaque item vendu.
  *
+ * Stocke le timestamp du dernier check dans BookingSetting (clé
+ * `clover_last_orders_check`) pour ne pas double-décrémenter.
+ *
+ * Cron : toutes les 6h (vercel.json)
  * Auth : header X-Cron-Secret matching process.env.CRON_SECRET
- *        OU Vercel cron qui passe Authorization automatique
  */
+
+const SETTING_KEY = 'clover_last_orders_check';
+const DEFAULT_LOOKBACK_MS = 24 * 60 * 60 * 1000; // 24h sur le premier run
+
 async function isAuthorized(req: Request): Promise<boolean> {
-  // Vercel cron auth (header automatique) OU cron secret manuel
   const cronSecret = req.headers.get('x-cron-secret') ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  if (cronSecret && cronSecret === process.env.CRON_SECRET) return true;
-  return false;
+  return !!cronSecret && cronSecret === process.env.CRON_SECRET;
 }
 
 export async function GET(req: Request) {
@@ -48,39 +46,97 @@ export async function GET(req: Request) {
     },
   });
 
-  let itemsFetched = 0;
-  let itemsUpdated = 0;
-  let itemsSkipped = 0;
+  let ordersFetched = 0;
+  let lineItemsProcessed = 0;
+  let decrementedCount = 0;
+  let skippedNoMatch = 0;
+  let skippedRefunded = 0;
   let errorsCount = 0;
-  const errors: Array<{ cloverId: string; error: string }> = [];
+  const errors: Array<{ orderId: string; error: string }> = [];
 
   try {
-    const items = await fetchAllCloverItems();
-    itemsFetched = items.length;
+    // 1) Lire le timestamp du dernier check (ou défaut -24h sur 1er run)
+    const setting = await prisma.bookingSetting.findUnique({ where: { key: SETTING_KEY } });
+    const sinceMs = setting ? parseInt(setting.value, 10) : Date.now() - DEFAULT_LOOKBACK_MS;
 
-    for (const item of items) {
+    // 2) Fetch les orders Clover depuis ce timestamp
+    const orders = await fetchCloverOrdersSince(sinceMs);
+    ordersFetched = orders.length;
+
+    // 3) Pour chaque order, décrémenter le stock site
+    const nowMs = Date.now();
+    for (const order of orders) {
       try {
-        const normalized = normalizeCloverItem(item);
-        const result = await applyUpdateIfExists(normalized);
-        if (result === 'updated') itemsUpdated++;
-        else itemsSkipped++;
+        // On ne traite que les orders effectivement payées (skip "open", "locked", etc.)
+        // Clover utilise 'paid' pour les ventes confirmées.
+        if (order.state && order.state !== 'paid') continue;
+
+        const items = order.lineItems?.elements ?? [];
+        for (const li of items) {
+          lineItemsProcessed++;
+
+          if (li.refunded || li.exchanged) {
+            skippedRefunded++;
+            continue;
+          }
+
+          const cloverItemId = li.item?.id;
+          if (!cloverItemId) {
+            skippedNoMatch++;
+            continue;
+          }
+
+          const qty = getLineItemQuantity(li);
+          if (qty <= 0) {
+            skippedNoMatch++;
+            continue;
+          }
+
+          // Décrémenter le Product correspondant si il a stockQuantity non-null
+          // (les ebooks/cours/dropship sont skip naturellement)
+          const result = await prisma.product.updateMany({
+            where: {
+              cloverId: cloverItemId,
+              stockQuantity: { not: null },
+            },
+            data: {
+              stockQuantity: { decrement: qty },
+              cloverSyncedAt: new Date(),
+            },
+          });
+
+          if (result.count > 0) {
+            decrementedCount += result.count;
+          } else {
+            skippedNoMatch++;
+          }
+        }
       } catch (err) {
         errorsCount++;
         errors.push({
-          cloverId: item.id,
+          orderId: order.id,
           error: err instanceof Error ? err.message : 'Erreur inconnue',
         });
       }
     }
 
+    // 4) Sauver le nouveau timestamp de check
+    await prisma.bookingSetting.upsert({
+      where: { key: SETTING_KEY },
+      update: { value: String(nowMs) },
+      create: { key: SETTING_KEY, value: String(nowMs) },
+    });
+
+    // 5) Finaliser le log
+    const status = errorsCount === 0 ? 'SUCCESS' : decrementedCount > 0 ? 'PARTIAL' : 'FAILED';
     await prisma.cloverSyncLog.update({
       where: { id: log.id },
       data: {
-        status: errorsCount === 0 ? 'SUCCESS' : itemsUpdated > 0 ? 'PARTIAL' : 'FAILED',
+        status,
         finishedAt: new Date(),
-        itemsFetched,
-        itemsUpdated,
-        itemsSkipped,
+        itemsFetched: ordersFetched,
+        itemsUpdated: decrementedCount,
+        itemsSkipped: skippedNoMatch + skippedRefunded,
         errorsCount,
         details: errors.length > 0 ? JSON.stringify({ errors: errors.slice(0, 50) }) : null,
       },
@@ -88,9 +144,13 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      itemsFetched,
-      itemsUpdated,
-      itemsSkipped,
+      sinceMs,
+      nowMs,
+      ordersFetched,
+      lineItemsProcessed,
+      decrementedCount,
+      skippedNoMatch,
+      skippedRefunded,
       errorsCount,
       nextRun: 'dans ~6h',
     });
@@ -110,39 +170,17 @@ export async function GET(req: Request) {
 }
 
 /**
- * Update les champs sync-back (stock, prix, visibility) si le produit existe
- * déjà côté site (matched par cloverId). NE CRÉE PAS de nouveau produit.
+ * Clover peut renvoyer la quantité d'un line item via :
+ *   - `unitQty` (centiéme, ex 1000 = 1.0 pour items à poids variable)
+ *   - `quantity` (entier direct pour items normaux)
+ * Selon le type d'item. On normalise en entier ≥ 1.
  */
-async function applyUpdateIfExists(item: NormalizedCloverProduct): Promise<'updated' | 'skipped'> {
-  const existing = await prisma.product.findUnique({
-    where: { cloverId: item.cloverId },
-    select: { id: true, stockQuantity: true, price: true, inStock: true },
-  });
-
-  if (!existing) {
-    // Item Clover sans contrepartie site (probablement POS-only).
-    // On NE CRÉE PAS pour éviter l'incident du 19 mai (import accidentel).
-    return 'skipped';
+function getLineItemQuantity(li: CloverLineItem): number {
+  if (typeof li.quantity === 'number' && li.quantity > 0) return li.quantity;
+  if (typeof li.unitQty === 'number' && li.unitQty > 0) {
+    // unitQty est en centièmes pour les items à poids ; mais pour les items
+    // entiers, c'est généralement 1000, 2000, etc. → diviser par 1000.
+    return Math.max(1, Math.round(li.unitQty / 1000));
   }
-
-  // Détecte les changements pour optimiser (skip si rien ne change)
-  const stockChanged = existing.stockQuantity !== item.stockQuantity;
-  const priceChanged = existing.price !== item.price;
-  const stockBoolChanged = existing.inStock !== item.inStock;
-
-  if (!stockChanged && !priceChanged && !stockBoolChanged) {
-    return 'skipped';
-  }
-
-  await prisma.product.update({
-    where: { cloverId: item.cloverId },
-    data: {
-      stockQuantity: item.stockQuantity,
-      price: item.price,
-      inStock: item.inStock,
-      cloverSyncedAt: new Date(),
-    },
-  });
-
-  return 'updated';
+  return 1; // défaut : 1 unité par line item
 }

@@ -109,6 +109,67 @@ export async function getCloverItem(cloverId: string): Promise<CloverItem> {
   );
 }
 
+// ════════════════════════════════════════════════════════════════
+// Orders (ventes Clover) — pour décrément stock site
+// ════════════════════════════════════════════════════════════════
+
+export interface CloverLineItem {
+  id: string;
+  name: string;
+  price: number;
+  unitQty?: number;
+  quantity?: number;
+  item?: { id: string };
+  refunded?: boolean;
+  exchanged?: boolean;
+}
+
+export interface CloverOrder {
+  id: string;
+  createdTime: number;
+  modifiedTime: number;
+  state?: string;
+  total?: number;
+  lineItems?: { elements: CloverLineItem[] };
+}
+
+/**
+ * Récupère toutes les orders Clover créées DEPUIS un timestamp.
+ * Utilisé par le cron pour décrémenter le stock site selon les ventes boutique.
+ *
+ * @param sinceMs - Timestamp Unix en ms. On ne récupère que les orders créées après.
+ * @returns Toutes les orders avec lineItems expansés.
+ */
+export async function fetchCloverOrdersSince(sinceMs: number): Promise<CloverOrder[]> {
+  const { merchantId } = getConfig();
+  const orders: CloverOrder[] = [];
+  const pageSize = 100;
+  let offset = 0;
+  const HARD_LIMIT = 2000; // safety : on ne traite jamais plus de 2k orders en 1 run
+
+  while (true) {
+    const data = await cloverFetch<CloverList<CloverOrder>>(
+      `/v3/merchants/${merchantId}/orders`,
+      {
+        filter: `createdTime>=${sinceMs}`,
+        expand: 'lineItems',
+        limit: pageSize,
+        offset,
+        orderBy: 'createdTime ASC',
+      },
+    );
+    orders.push(...data.elements);
+    if (data.elements.length < pageSize) break;
+    offset += pageSize;
+    if (offset > HARD_LIMIT) {
+      console.warn(`[clover] fetchCloverOrdersSince : limit ${HARD_LIMIT} atteinte`);
+      break;
+    }
+  }
+
+  return orders;
+}
+
 /**
  * Récupère TOUS les items du marchand (gère la pagination automatiquement).
  * Inclut les catégories en `expand=categories` pour mapping.

@@ -99,12 +99,14 @@ export default async function CloverAdminPage() {
           }}
         >
           <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.05rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '12px' }}>
-            Lancer une synchronisation
+            Lancer une synchronisation Clover → site
           </h2>
           <p style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '16px', lineHeight: 1.5 }}>
             <strong>Mode aperçu (dry-run)</strong> : récupère les items de Clover et te montre ce qui changerait, sans rien modifier dans la base.
             <br />
-            <strong>Mode appliquer</strong> : exécute réellement les modifications (création + mise à jour des produits).
+            <strong>Mode appliquer</strong> : importe les nouveaux items Clover dans le site (CREATE), et met à jour les noms si modifiés en boutique. <strong>Ne touche PAS au stock, au SKU, au prix ni à la visibilité côté site</strong> (le site reste maître pour ces champs).
+            <br />
+            <span style={{ color: '#92400E' }}>💡 Le décrément automatique du stock après vente boutique se fait via le cron toutes les 6h.</span>
           </p>
           <CloverSyncButton />
         </div>

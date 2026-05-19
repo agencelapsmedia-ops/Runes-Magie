@@ -224,19 +224,19 @@ async function applySyncItem(
     return { action: 'create' };
   }
 
-  // UPDATE — détermine ce qui change
+  // UPDATE — ARCHITECTURE : le SITE est maître de l'inventaire.
+  // On ne SYNC PAS depuis Clover les champs où le site est autoritaire :
+  //   ❌ stockQuantity : géré côté site, décrémenté par le cron via les ventes
+  //   ❌ sku          : migré au format 4-chiffres côté site (Clover a les anciens)
+  //   ❌ inStock      : dérivé du stock côté site
+  //   ❌ price        : géré côté site (Annabelle peut avoir des prix différents en boutique vs web)
+  // Seul `cloverId` (liaison) et `name` (au cas où renommage en boutique) sont éligibles.
   const changes: Record<string, { from: unknown; to: unknown }> = {};
-  if (existing.price !== item.price) changes.price = { from: existing.price, to: item.price };
   if (existing.name !== item.name) changes.name = { from: existing.name, to: item.name };
-  if (existing.inStock !== item.inStock) changes.inStock = { from: existing.inStock, to: item.inStock };
-  if (existing.stockQuantity !== item.stockQuantity)
-    changes.stockQuantity = { from: existing.stockQuantity, to: item.stockQuantity };
-  if (existing.category !== item.category && !existing.category)
-    changes.category = { from: existing.category, to: item.category };
+  if (existing.cloverId !== item.cloverId) changes.cloverId = { from: existing.cloverId, to: item.cloverId };
 
   const hasChanges = Object.keys(changes).length > 0;
-
-  if (!hasChanges && existing.cloverId === item.cloverId) {
+  if (!hasChanges) {
     return { action: 'skip', matchedBy };
   }
 
@@ -245,16 +245,11 @@ async function applySyncItem(
       where: { id: existing.id },
       data: {
         cloverId: item.cloverId,
-        sku: item.sku ?? existing.sku,
-        price: item.price,
         name: item.name,
-        inStock: item.inStock,
-        stockQuantity: item.stockQuantity,
-        // NB : on ne touche pas à description, image, category, featured si déjà custom
         cloverSyncedAt: new Date(),
       },
     });
   }
 
-  return { action: hasChanges ? 'update' : 'skip', matchedBy, changes };
+  return { action: 'update', matchedBy, changes };
 }
