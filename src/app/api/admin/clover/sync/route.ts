@@ -73,6 +73,33 @@ export async function POST(req: Request) {
     for (const item of items) {
       try {
         const normalized = normalizeCloverItem(item);
+
+        // Filtre POS-only : un item Clover SANS SKU est probablement un
+        // service/catégorie générique de caisse (Tirage simple, Formation, etc.)
+        // qui n'a rien à faire sur le site web e-commerce.
+        // Si un item existe déjà sur le site (matché par cloverId), on l'update
+        // quand même — ce filtre s'applique uniquement aux nouvelles créations.
+        const isPotentiallyPOSOnly = !normalized.sku;
+        if (isPotentiallyPOSOnly) {
+          const alreadyOnSite = await prisma.product.findUnique({
+            where: { cloverId: normalized.cloverId },
+            select: { id: true },
+          });
+          if (!alreadyOnSite) {
+            result.itemsSkipped++;
+            if (mode === 'dry-run' && result.preview) {
+              result.preview.push({
+                action: 'skip',
+                cloverId: normalized.cloverId,
+                name: normalized.name,
+                matchedBy: undefined,
+                changes: { __reason: { from: 'no SKU', to: 'POS-only filter' } },
+              });
+            }
+            continue;
+          }
+        }
+
         const matchResult = await applySyncItem(normalized, mode);
 
         if (matchResult.action === 'create') result.itemsCreated++;
