@@ -61,6 +61,7 @@ export default function ProductsGridPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>(''); // '' = toutes
   const [sorting, setSorting] = useState<SortingState>([]);
 
   // Modifs en attente : { productId: { field: newValue } }
@@ -274,6 +275,34 @@ export default function ProductsGridPage() {
   // ────────────────────────────────────────────────
   const columns = useMemo<ColumnDef<Product>[]>(() => [
     {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <a
+          href={`/admin/produits?edit=${row.original.id}`}
+          title="Édition détaillée (longue description, images, etc.)"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            border: '1px solid #E5E7EB',
+            background: '#FFFFFF',
+            color: '#6B3FA0',
+            textDecoration: 'none',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+          }}
+        >
+          ✎
+        </a>
+      ),
+      size: 50,
+      enableSorting: false,
+    },
+    {
       id: 'image',
       header: 'Image',
       cell: ({ row }) => (
@@ -431,8 +460,14 @@ export default function ProductsGridPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [categories, pendingEdits, cellStates, updateCell]);
 
+  // Filtre par catégorie : filtre la data avant de passer à tanstack
+  const filteredProducts = useMemo(() => {
+    if (!categoryFilter) return products;
+    return products.filter((p) => p.category === categoryFilter);
+  }, [products, categoryFilter]);
+
   const table = useReactTable({
-    data: products,
+    data: filteredProducts,
     columns,
     state: { globalFilter, sorting },
     onGlobalFilterChange: setGlobalFilter,
@@ -484,7 +519,48 @@ export default function ProductsGridPage() {
           onChange={(e) => setGlobalFilter(e.target.value)}
           style={{ padding: '8px 14px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: '0.9rem', minWidth: 240, color: '#1F2937', background: '#FFF' }}
         />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          style={{ padding: '8px 14px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: '0.9rem', color: '#1F2937', background: '#FFF', cursor: 'pointer' }}
+        >
+          <option value="">Toutes les catégories</option>
+          {categories.map((c) => (
+            <option key={c.slug} value={c.slug}>{c.name}</option>
+          ))}
+        </select>
+        {categoryFilter && (
+          <button
+            onClick={() => setCategoryFilter('')}
+            title="Reset filtre catégorie"
+            style={{ padding: '8px 12px', border: '1px solid #FCA5A5', background: '#FFF', color: '#991B1B', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+          >
+            ✕
+          </button>
+        )}
+        {categoryFilter && (
+          <span style={{ color: '#6B7280', fontSize: '0.85rem' }}>
+            {filteredProducts.length} / {products.length} produits
+          </span>
+        )}
         <div style={{ flex: 1 }} />
+        <a
+          href="/admin/produits?new=1"
+          style={{
+            background: '#2D1B4E',
+            color: '#FFF',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            textDecoration: 'none',
+            display: 'inline-block',
+            fontFamily: 'var(--font-cinzel, serif)',
+          }}
+        >
+          + Nouveau produit
+        </a>
         <a
           href="/admin/clover"
           style={{

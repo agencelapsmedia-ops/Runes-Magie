@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import ImageUploader from '@/components/admin/ImageUploader';
 import { categorySubcategories, stoneNames } from '@/data/products';
@@ -98,10 +100,33 @@ export default function ProduitsPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  // Auto-ouverture du modal selon les query params ?new=1 ou ?edit=<id>
+  // Attend que les products soient chargés pour pouvoir trouver l'edit cible.
+  useEffect(() => {
+    const newParam = searchParams.get('new');
+    const editId = searchParams.get('edit');
+    if (newParam === '1') {
+      openCreate();
+      router.replace('/admin/produits', { scroll: false });
+      return;
+    }
+    if (editId && products.length > 0) {
+      const target = products.find((p) => p.id === editId);
+      if (target) {
+        openEdit(target);
+        router.replace('/admin/produits', { scroll: false });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, products]);
 
   function fetchCategories() {
     fetch('/api/admin/categories')
@@ -338,10 +363,17 @@ export default function ProduitsPage() {
 
   return (
     <div>
+      {/* Lien retour vers l'inventaire (point d'entrée principal) */}
+      <div className="mb-3">
+        <Link href="/admin/produits/grid" className="text-sm text-violet-700 hover:text-violet-900 font-medium">
+          ← Retour à l&apos;inventaire
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          Produits
+          Produits — édition détaillée
           <span className="ml-2 text-sm font-normal text-gray-500">
             ({products.length})
           </span>
