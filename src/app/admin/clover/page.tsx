@@ -1,15 +1,18 @@
 import { prisma } from '@/lib/db';
 import CloverSyncButton from './CloverSyncButton';
 import PushOrphansButton from './PushOrphansButton';
+import PushOrphanCategoriesButton from './PushOrphanCategoriesButton';
 import QueuePanel from './QueuePanel';
 
 export default async function CloverAdminPage() {
   const isConfigured = Boolean(process.env.CLOVER_MERCHANT_ID && process.env.CLOVER_API_TOKEN);
 
-  const [productsTotal, productsSynced, orphansCount, recentLogs, queueCounts] = await Promise.all([
+  const [productsTotal, productsSynced, orphansCount, categoriesTotal, categoriesSynced, recentLogs, queueCounts] = await Promise.all([
     prisma.product.count(),
     prisma.product.count({ where: { cloverId: { not: null } } }),
     prisma.product.count({ where: { syncToClover: true, cloverId: null } }),
+    prisma.category.count(),
+    prisma.category.count({ where: { cloverCategoryId: { not: null } } }),
     prisma.cloverSyncLog.findMany({
       orderBy: { startedAt: 'desc' },
       take: 10,
@@ -19,6 +22,8 @@ export default async function CloverAdminPage() {
       _count: { id: true },
     }),
   ]);
+
+  const orphanCategoriesCount = categoriesTotal - categoriesSynced;
 
   const queueByStatus: Record<string, number> = {};
   for (const c of queueCounts) {
@@ -42,13 +47,19 @@ export default async function CloverAdminPage() {
       {!isConfigured && <ConfigurationMissing />}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         <StatCard label="Produits site" value={productsTotal.toString()} icon="ᚲ" />
         <StatCard
           label="Liés à Clover"
-          value={productsSynced.toString()}
+          value={`${productsSynced}/${productsTotal}`}
           icon="ᛒ"
           highlight={productsSynced > 0}
+        />
+        <StatCard
+          label="Catégories sync"
+          value={`${categoriesSynced}/${categoriesTotal}`}
+          icon="ᛚ"
+          highlight={categoriesSynced > 0 && categoriesSynced === categoriesTotal}
         />
         <StatCard
           label="Dernier sync"
@@ -68,6 +79,9 @@ export default async function CloverAdminPage() {
 
       {/* Produits orphelins (non poussés vers Clover) */}
       {isConfigured && <PushOrphansButton orphanCount={orphansCount} />}
+
+      {/* Catégories orphelines (non poussées vers Clover) */}
+      {isConfigured && <PushOrphanCategoriesButton orphanCount={orphanCategoriesCount} />}
 
       {/* Bouton sync */}
       {isConfigured && (
