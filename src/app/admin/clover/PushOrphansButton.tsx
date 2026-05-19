@@ -21,10 +21,11 @@ export default function PushOrphansButton({ orphanCount }: { orphanCount: number
   const [result, setResult] = useState<PushResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function push() {
-    const confirmed = window.confirm(
-      `Pousser ${orphanCount} produit(s) du site vers Clover ?\n\nIls apparaîtront dans ton inventaire Clover. Cette opération ne peut pas être annulée automatiquement (il faudrait les supprimer manuellement sur Clover).`,
-    );
+  async function push(opts: { limit?: number; label: string }) {
+    const message = opts.limit
+      ? `Tester en poussant ${opts.limit} produit(s) du site vers Clover ?\n\nIls apparaîtront dans ton inventaire Clover. Si ça marche, on poussera les autres.`
+      : `Pousser TOUS les ${orphanCount} produits du site vers Clover ?\n\nIls apparaîtront dans ton inventaire Clover. Cette opération ne peut pas être annulée automatiquement (il faudrait les supprimer manuellement sur Clover).`;
+    const confirmed = window.confirm(message);
     if (!confirmed) return;
 
     setLoading(true);
@@ -32,7 +33,10 @@ export default function PushOrphansButton({ orphanCount }: { orphanCount: number
     setResult(null);
 
     try {
-      const res = await fetch('/api/admin/clover/push-orphans', { method: 'POST' });
+      const url = opts.limit
+        ? `/api/admin/clover/push-orphans?limit=${opts.limit}`
+        : '/api/admin/clover/push-orphans';
+      const res = await fetch(url, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Erreur serveur');
@@ -77,24 +81,44 @@ export default function PushOrphansButton({ orphanCount }: { orphanCount: number
         comme à synchroniser mais n&apos;{orphanCount > 1 ? 'ont' : 'a'} pas encore été poussé{orphanCount > 1 ? 's' : ''} vers Clover (par exemple parce que
         les credentials Clover étaient absents lors de leur création).
       </p>
-      <button
-        onClick={push}
-        disabled={loading || orphanCount === 0}
-        style={{
-          padding: '10px 20px',
-          background: loading ? '#A16207' : '#92400E',
-          color: '#FFFFFF',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          fontFamily: 'var(--font-cinzel, serif)',
-          cursor: loading || orphanCount === 0 ? 'not-allowed' : 'pointer',
-          opacity: orphanCount === 0 ? 0.5 : 1,
-        }}
-      >
-        {loading ? 'Push en cours…' : `↑ Pousser ces ${orphanCount} produit${orphanCount > 1 ? 's' : ''} vers Clover`}
-      </button>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => push({ limit: 1, label: 'test1' })}
+          disabled={loading || orphanCount === 0}
+          style={{
+            padding: '10px 20px',
+            background: loading ? '#9CA3AF' : '#6B7280',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            fontFamily: 'var(--font-cinzel, serif)',
+            cursor: loading || orphanCount === 0 ? 'not-allowed' : 'pointer',
+            opacity: orphanCount === 0 ? 0.5 : 1,
+          }}
+        >
+          {loading ? '…' : '🧪 Tester avec 1 produit'}
+        </button>
+        <button
+          onClick={() => push({ label: 'all' })}
+          disabled={loading || orphanCount === 0}
+          style={{
+            padding: '10px 20px',
+            background: loading ? '#A16207' : '#92400E',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            fontFamily: 'var(--font-cinzel, serif)',
+            cursor: loading || orphanCount === 0 ? 'not-allowed' : 'pointer',
+            opacity: orphanCount === 0 ? 0.5 : 1,
+          }}
+        >
+          {loading ? 'Push en cours…' : `↑ Pousser tous les ${orphanCount} produit${orphanCount > 1 ? 's' : ''} vers Clover`}
+        </button>
+      </div>
 
       {error && (
         <div

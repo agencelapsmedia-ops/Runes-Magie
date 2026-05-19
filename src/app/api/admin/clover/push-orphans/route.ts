@@ -9,9 +9,12 @@ import { tryCreateInClover, isCloverConfigured } from '@/lib/clover-queue';
  * Rattrapage : pousse vers Clover tous les produits qui ont `syncToClover=true`
  * mais pas de `cloverId` (orphelins du sync immédiat).
  *
+ * Query params optionnels :
+ *   - ?limit=N  : ne traite que les N premiers (utile pour tester avec 1)
+ *
  * Utile après une remise en place des credentials Clover, ou après import en masse.
  */
-export async function POST() {
+export async function POST(req: Request) {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
 
@@ -21,6 +24,10 @@ export async function POST() {
       { status: 503 },
     );
   }
+
+  const url = new URL(req.url);
+  const limitParam = url.searchParams.get('limit');
+  const limit = limitParam ? Math.max(1, Math.min(500, parseInt(limitParam, 10) || 0)) : undefined;
 
   const orphans = await prisma.product.findMany({
     where: { syncToClover: true, cloverId: null },
@@ -33,6 +40,7 @@ export async function POST() {
       description: true,
     },
     orderBy: { createdAt: 'asc' },
+    ...(limit ? { take: limit } : {}),
   });
 
   const results: Array<{
