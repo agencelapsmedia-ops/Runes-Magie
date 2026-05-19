@@ -71,14 +71,12 @@ export async function POST(request: NextRequest) {
 
     const slug = slugify(name);
 
-    // SKU : utiliser celui fourni, sinon auto-générer
+    // SKU : utiliser celui fourni, sinon auto-générer (4 chiffres séquentiels)
     let finalSku: string | null = null;
     if (typeof sku === 'string' && sku.trim()) {
-      finalSku = sku.trim();
+      finalSku = await findUniqueSku(sku.trim());
     } else {
-      // Génère un SKU unique de la forme RM-CRIST-AMT-001
-      const baseSku = generateSku(name, category);
-      finalSku = await findUniqueSku(baseSku);
+      finalSku = await generateSku();
     }
 
     const product = await prisma.product.create({

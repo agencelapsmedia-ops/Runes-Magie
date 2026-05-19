@@ -1,93 +1,64 @@
 /**
  * Helpers SKU + mapping catégories site ↔ Clover.
  *
- * Format SKU : RM-{CAT}-{NAME}-{NUM}
- *   RM     = Runes & Magie (préfixe brand)
- *   CAT    = code catégorie 3-5 lettres (CRIST, TAROT, BOUGI, etc.)
- *   NAME   = 3 premières consonnes signifiantes du nom (ex: 'Améthyste' → AMT)
- *   NUM    = nombre auto-incrémenté à 3 chiffres en cas de collision (001, 002...)
+ * Format SKU : NNNN (4 chiffres séquentiels)
+ *   - Chaque nouveau produit reçoit le prochain numéro disponible
+ *   - Padding avec zéros : 0001, 0042, 0789, 9999
+ *   - Max 9999 produits (largement suffisant pour la boutique)
  *
- * Exemple : 'Améthyste 50g' (cristaux) → RM-CRIST-AMT-001
+ * Migration : voir prisma/scripts/regenerate-skus.ts
  */
 
 import { prisma } from '@/lib/db';
 
-const CATEGORY_CODES: Record<string, string> = {
-  'cristaux': 'CRIST',
-  'runes': 'RUNE',
-  'tarot': 'TAROT',
-  'oracle': 'ORACL',
-  'herbes-encens': 'HERBE',
-  'bougies': 'BOUGI',
-  'bijoux': 'BIJOU',
-  'orgonites': 'ORGON',
-  'baguettes-magiques': 'BAGUE',
-};
+const SKU_PATTERN = /^\d{4}$/;
+const SKU_MAX = 9999;
 
 /**
- * Génère un code 3 lettres à partir du nom du produit.
- * Préfère les consonnes significatives, fallback sur les premières lettres.
+ * Génère le prochain SKU séquentiel disponible (4 chiffres).
+ * Lit la DB pour trouver le max actuel et incrémente.
+ *
+ * @returns SKU string format "NNNN" (ex: "0042")
+ * @throws Error si on dépasse 9999 produits
  */
-function nameCode(name: string): string {
-  const normalized = name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // retire les accents
-    .toUpperCase()
-    .replace(/[^A-Z]/g, ''); // garde uniquement A-Z
-
-  if (normalized.length === 0) return 'XXX';
-  if (normalized.length <= 3) return normalized.padEnd(3, 'X');
-
-  // Stratégie : 1ère lettre + 2 consonnes significatives suivantes
-  const first = normalized[0];
-  const rest = normalized.slice(1).replace(/[AEIOUY]/g, ''); // retire voyelles
-  const consonants = (first + rest).slice(0, 3);
-  return consonants.padEnd(3, 'X');
-}
-
-/**
- * Génère un SKU candidat pour un produit.
- * Le caller doit vérifier l'unicité avec findUniqueSku().
- */
-export function generateSku(name: string, category: string): string {
-  const catCode = CATEGORY_CODES[category] ?? 'AUTRE';
-  const nameCodePart = nameCode(name);
-  return `RM-${catCode}-${nameCodePart}-001`;
-}
-
-/**
- * Cherche un SKU unique en incrémentant le suffixe numérique si nécessaire.
- * Returns le SKU final à utiliser.
- */
-export async function findUniqueSku(baseSku: string): Promise<string> {
-  const existing = await prisma.product.findFirst({ where: { sku: baseSku } });
-  if (!existing) return baseSku;
-
-  // Le SKU base existe : trouver le prochain numéro disponible
-  // baseSku format : RM-XXX-YYY-NNN
-  const match = baseSku.match(/^(.+)-(\d{3})$/);
-  if (!match) {
-    // Pas le format attendu : ajoute -001
-    return `${baseSku}-001`;
-  }
-
-  const prefix = match[1];
-  // Cherche tous les SKU avec ce préfixe
-  const siblings = await prisma.product.findMany({
-    where: { sku: { startsWith: `${prefix}-` } },
+export async function generateSku(): Promise<string> {
+  // Récupère tous les SKU au format 4 chiffres
+  const allWithSku = await prisma.product.findMany({
+    where: { sku: { not: null } },
     select: { sku: true },
   });
 
-  const usedNumbers = new Set<number>();
-  for (const s of siblings) {
-    const m = s.sku?.match(new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&')}-(\\d{3})$`));
-    if (m) usedNumbers.add(parseInt(m[1], 10));
+  let maxNum = 0;
+  for (const p of allWithSku) {
+    if (p.sku && SKU_PATTERN.test(p.sku)) {
+      const n = parseInt(p.sku, 10);
+      if (n > maxNum) maxNum = n;
+    }
   }
 
-  // Trouve le plus petit numéro disponible >= 1
-  let num = 1;
-  while (usedNumbers.has(num) && num < 1000) num++;
-  return `${prefix}-${String(num).padStart(3, '0')}`;
+  const next = maxNum + 1;
+  if (next > SKU_MAX) {
+    throw new Error(`SKU dépassé : déjà ${maxNum} produits avec SKU 4-chiffres. Max ${SKU_MAX}.`);
+  }
+  return String(next).padStart(4, '0');
+}
+
+/**
+ * Vérifie qu'un SKU n'est pas déjà pris et retourne un SKU unique.
+ * Si le baseSku est libre → le retourne tel quel.
+ * Sinon → génère un nouveau séquentiel.
+ *
+ * NB : avec le nouveau format 4-chiffres, generateSku() garantit déjà l'unicité.
+ * Cette fonction reste pour les cas où on accepte un SKU custom de l'utilisateur.
+ */
+export async function findUniqueSku(baseSku: string): Promise<string> {
+  if (!baseSku) return generateSku();
+
+  const existing = await prisma.product.findFirst({ where: { sku: baseSku } });
+  if (!existing) return baseSku;
+
+  // Collision : on génère un séquentiel à la place
+  return generateSku();
 }
 
 /**
