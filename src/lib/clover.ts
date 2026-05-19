@@ -252,6 +252,15 @@ export interface CreateCloverItemInput {
   categoryIds?: string[]; // IDs de catégories Clover (optionnel)
 }
 
+// Clover limite les champs string à 127 caractères. Toute valeur plus longue
+// déclenche une 400 "Maximum string length exceeded".
+const CLOVER_MAX_STRING = 127;
+
+function truncateForClover(value: string | null | undefined): string | undefined {
+  if (value == null) return undefined;
+  return value.length > CLOVER_MAX_STRING ? value.slice(0, CLOVER_MAX_STRING) : value;
+}
+
 /**
  * Crée un nouvel item dans Clover.
  * Retourne l'item créé (incluant le cloverId généré).
@@ -259,12 +268,12 @@ export interface CreateCloverItemInput {
 export async function createCloverItem(input: CreateCloverItemInput): Promise<CloverItem> {
   const { merchantId } = getConfig();
   const body: Record<string, unknown> = {
-    name: input.name,
+    name: truncateForClover(input.name),
     price: input.priceCents,
     hidden: input.hidden ?? false,
   };
-  if (input.sku) body.sku = input.sku;
-  if (input.alternateName) body.alternateName = input.alternateName;
+  if (input.sku) body.sku = truncateForClover(input.sku);
+  if (input.alternateName) body.alternateName = truncateForClover(input.alternateName);
 
   const item = await cloverWrite<CloverItem>('POST', `/v3/merchants/${merchantId}/items`, body);
 
@@ -299,10 +308,10 @@ export interface UpdateCloverItemInput {
 export async function updateCloverItem(cloverId: string, input: UpdateCloverItemInput): Promise<CloverItem> {
   const { merchantId } = getConfig();
   const body: Record<string, unknown> = {};
-  if (input.name !== undefined) body.name = input.name;
+  if (input.name !== undefined) body.name = truncateForClover(input.name);
   if (input.priceCents !== undefined) body.price = input.priceCents;
-  if (input.sku !== undefined) body.sku = input.sku ?? '';
-  if (input.alternateName !== undefined) body.alternateName = input.alternateName;
+  if (input.sku !== undefined) body.sku = input.sku != null ? truncateForClover(input.sku) : '';
+  if (input.alternateName !== undefined) body.alternateName = truncateForClover(input.alternateName) ?? '';
   if (input.hidden !== undefined) body.hidden = input.hidden;
 
   return cloverWrite<CloverItem>('POST', `/v3/merchants/${merchantId}/items/${cloverId}`, body);
