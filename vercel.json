@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/clover-pull",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }
