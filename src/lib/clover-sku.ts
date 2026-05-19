@@ -64,41 +64,41 @@ export async function findUniqueSku(baseSku: string): Promise<string> {
 /**
  * Map d'une catégorie site → ID(s) de catégorie(s) Clover correspondantes.
  *
- * On utilise les catégories qui existent déjà dans Clover (chargées via
- * fetchAllCloverCategories). Si une catégorie n'existe pas, on retourne
- * un tableau vide et le caller décide quoi faire (créer la catégorie ou skip).
+ * Stratégie (V2) : lookup DIRECT dans la table Category qui contient le
+ * `cloverCategoryId` pour chaque catégorie site déjà synchronisée. Plus de
+ * liste hardcodée → marche automatiquement pour TOUTES les catégories
+ * (nouvelles ou existantes), pas seulement les 9 de base.
  *
- * @param siteCategory - slug de la catégorie site (ex: 'cristaux')
- * @param cloverCategories - liste des catégories Clover (résultat de fetchAllCloverCategories)
+ * Fallback : si la catégorie n'a pas de cloverCategoryId dans la DB,
+ * essaye un fuzzy match par nom dans la liste cloverCategories fournie.
+ *
+ * @param siteCategory - slug de la catégorie site (ex: 'cours-formations')
+ * @param cloverCategories - optionnel, liste Clover pour fallback fuzzy match
  */
-export function mapSiteToCloverCategoryIds(
+export async function mapSiteToCloverCategoryIds(
   siteCategory: string,
-  cloverCategories: Array<{ id: string; name: string }>,
-): string[] {
-  const siteCategoryNames: Record<string, string[]> = {
-    'cristaux': ['Cristaux', 'Pierres', 'Pierres et Cristaux', 'Crystals'],
-    'runes': ['Runes', 'Runes Vikings'],
-    'tarot': ['Tarot', 'Tarots'],
-    'oracle': ['Oracle', 'Oracles'],
-    'herbes-encens': ['Herbes', 'Encens', 'Herbes & Encens', 'Herbes et Encens'],
-    'bougies': ['Bougies', 'Candles'],
-    'bijoux': ['Bijoux', 'Jewelry'],
-    'orgonites': ['Orgonites', 'Orgone'],
-    'baguettes-magiques': ['Baguettes', 'Baguettes magiques', 'Wands'],
-  };
+  cloverCategories?: Array<{ id: string; name: string }>,
+): Promise<string[]> {
+  // 1) Tentative principale : lookup direct via la table Category
+  const cat = await prisma.category.findUnique({
+    where: { slug: siteCategory },
+    select: { cloverCategoryId: true, name: true },
+  });
 
-  const candidates = siteCategoryNames[siteCategory] ?? [];
-  const matched: string[] = [];
+  if (cat?.cloverCategoryId) {
+    return [cat.cloverCategoryId];
+  }
 
-  for (const cat of cloverCategories) {
-    const nameLower = cat.name.toLowerCase();
-    for (const candidate of candidates) {
-      if (nameLower === candidate.toLowerCase() || nameLower.includes(candidate.toLowerCase())) {
-        matched.push(cat.id);
-        break;
+  // 2) Fallback fuzzy match (si pas de cloverCategoryId en DB et liste fournie)
+  if (cat && cloverCategories && cloverCategories.length > 0) {
+    const target = cat.name.toLowerCase();
+    for (const c of cloverCategories) {
+      const lower = c.name.toLowerCase();
+      if (lower === target || lower.includes(target) || target.includes(lower)) {
+        return [c.id];
       }
     }
   }
 
-  return matched;
+  return [];
 }

@@ -3,6 +3,7 @@ import CloverSyncButton from './CloverSyncButton';
 import PushOrphansButton from './PushOrphansButton';
 import PushOrphanCategoriesButton from './PushOrphanCategoriesButton';
 import PushAllSkusButton from './PushAllSkusButton';
+import RelinkCategoriesButton from './RelinkCategoriesButton';
 import QueuePanel from './QueuePanel';
 
 export default async function CloverAdminPage() {
@@ -86,6 +87,9 @@ export default async function CloverAdminPage() {
 
       {/* Rattrapage SKU (utile après migration) */}
       {isConfigured && <PushAllSkusButton />}
+
+      {/* Réparation des liaisons catégorie (utile après ajout de catégories) */}
+      {isConfigured && <RelinkCategoriesButton />}
 
       {/* Bouton sync */}
       {isConfigured && (

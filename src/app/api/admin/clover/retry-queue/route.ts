@@ -81,7 +81,7 @@ export async function POST(req: Request) {
 
       if (item.action === 'CREATE') {
         const categories = await getCategories();
-        const categoryIds = mapSiteToCloverCategoryIds(payload.category, categories);
+        const categoryIds = await mapSiteToCloverCategoryIds(payload.category, categories);
         const { item: created, categoryLinkErrors } = await createCloverItem({
           name: payload.name,
           priceCents: payload.priceCents,

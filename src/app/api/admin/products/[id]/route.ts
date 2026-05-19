@@ -113,8 +113,8 @@ export async function PUT(
       if (body.category !== undefined && oldCategory && oldCategory !== body.category) {
         try {
           const cloverCategories = await fetchAllCloverCategories();
-          const oldIds = mapSiteToCloverCategoryIds(oldCategory, cloverCategories);
-          const newIds = mapSiteToCloverCategoryIds(body.category, cloverCategories);
+          const oldIds = await mapSiteToCloverCategoryIds(oldCategory, cloverCategories);
+          const newIds = await mapSiteToCloverCategoryIds(body.category, cloverCategories);
           // Récupère l'état actuel pour éviter les retraits orphelins
           const actualLinks = await getCloverItemCategoryLinks(product.cloverId);
           // On retire seulement ce qui correspond à l'ancienne catégorie ET qui est encore lié

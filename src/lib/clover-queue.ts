@@ -102,7 +102,7 @@ export async function queueOperation(
 export async function tryCreateInClover(payload: CreatePayload): Promise<string | null> {
   try {
     const categories = await fetchAllCloverCategories();
-    const categoryIds = mapSiteToCloverCategoryIds(payload.category, categories);
+    const categoryIds = await mapSiteToCloverCategoryIds(payload.category, categories);
 
     const input: CreateCloverItemInput = {
       name: payload.name,

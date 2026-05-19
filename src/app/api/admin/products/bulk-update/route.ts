@@ -131,8 +131,8 @@ async function processOne(
       // ★ FIX BUG #2 : sync les liaisons catégorie Clover si la catégorie a changé
       if (oldCategory && filtered.category !== undefined && oldCategory !== filtered.category && cloverCategoriesCache) {
         try {
-          const oldIds = mapSiteToCloverCategoryIds(oldCategory, cloverCategoriesCache);
-          const newIds = mapSiteToCloverCategoryIds(product.category, cloverCategoriesCache);
+          const oldIds = await mapSiteToCloverCategoryIds(oldCategory, cloverCategoriesCache);
+          const newIds = await mapSiteToCloverCategoryIds(product.category, cloverCategoriesCache);
           const actualLinks = await getCloverItemCategoryLinks(product.cloverId);
           const oldToRemove = oldIds.filter((id) => actualLinks.includes(id));
           const ok = await trySyncItemCategories(product.id, product.cloverId, oldToRemove, newIds);
