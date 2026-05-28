@@ -73,13 +73,13 @@ export default function PractitionerCard({
       }}
     >
       {/* Photo ou initiales */}
-      <div className="relative w-full h-48 overflow-hidden">
+      <div className="relative w-full h-72 overflow-hidden">
         {photoUrl ? (
           <Image
             src={photoUrl}
             alt={`${firstName} ${lastName}`}
             fill
-            className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+            className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
