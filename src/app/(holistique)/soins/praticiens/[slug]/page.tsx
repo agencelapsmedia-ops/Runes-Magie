@@ -78,7 +78,7 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '1.5rem' }}>
-                {practitioner.hourlyRate} $/h
+                {(practitioner.hourlyRate * 1.5).toFixed(2)} $ / séance (90 min)
               </span>
               <Button variant="primary" size="lg" href={`/soins/reserver/${practitioner.id}`}>
                 Réserver une consultation

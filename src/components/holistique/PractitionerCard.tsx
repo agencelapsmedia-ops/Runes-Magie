@@ -174,13 +174,13 @@ export default function PractitionerCard({
             )}
           </div>
 
-          {/* Prix */}
+          {/* Prix — séance de 90 min */}
           {hourlyRate !== null && (
             <div className="text-right">
               <span className="font-cinzel text-sm font-semibold" style={{ color: 'var(--or-ancien)' }}>
-                {hourlyRate}$
+                {(hourlyRate * 1.5).toFixed(2)}$
               </span>
-              <span className="font-philosopher text-xs text-parchemin/40"> /h</span>
+              <span className="font-philosopher text-xs text-parchemin/40"> /séance</span>
             </div>
           )}
         </div>

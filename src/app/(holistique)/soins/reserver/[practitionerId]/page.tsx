@@ -31,13 +31,16 @@ interface SessionUser {
 const DAY_NAMES_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const DAY_NAMES_FULL = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
+// Durée d'une séance en minutes (peut être déplacé par praticien plus tard)
+const SESSION_DURATION_MINUTES = 90;
+
 function generateTimeSlots(startTime: string, endTime: string): string[] {
   const slots: string[] = [];
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);
   const startMins = startH * 60 + startM;
   const endMins = endH * 60 + endM;
-  for (let m = startMins; m + 60 <= endMins; m += 60) {
+  for (let m = startMins; m + SESSION_DURATION_MINUTES <= endMins; m += SESSION_DURATION_MINUTES) {
     const h = Math.floor(m / 60);
     const min = m % 60;
     slots.push(`${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`);
@@ -129,8 +132,12 @@ export default function ReservationPage({
     setSelectedSlot(null);
     if (!practitioner) return;
     const dow = day.getDay();
-    const avail = practitioner.availabilities.find((a) => a.dayOfWeek === dow && a.isActive);
-    setAvailableSlots(avail ? generateTimeSlots(avail.startTime, avail.endTime) : []);
+    // Plusieurs blocs de dispo par jour possibles (ex. matin + après-midi avec pause dîner)
+    const availBlocks = practitioner.availabilities.filter((a) => a.dayOfWeek === dow && a.isActive);
+    const allSlots = availBlocks.flatMap((a) => generateTimeSlots(a.startTime, a.endTime));
+    // Trier par heure pour un affichage propre
+    allSlots.sort();
+    setAvailableSlots(allSlots);
   }
 
   async function handleConfirmAndPay() {
@@ -141,7 +148,7 @@ export default function ReservationPage({
     const [h, m] = selectedSlot.split(':').map(Number);
     const startsAt = new Date(selectedDate);
     startsAt.setHours(h, m, 0, 0);
-    const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000);
+    const endsAt = new Date(startsAt.getTime() + SESSION_DURATION_MINUTES * 60 * 1000);
 
     try {
       const res = await fetch('/api/holistique/checkout', {
@@ -425,7 +432,7 @@ export default function ReservationPage({
               color: 'var(--or-ancien)',
             }}
           >
-            {practitioner.hourlyRate} $ / heure
+            {(practitioner.hourlyRate * SESSION_DURATION_MINUTES / 60).toFixed(2)} $ / séance ({SESSION_DURATION_MINUTES} min)
           </p>
         </div>
       </section>
@@ -669,8 +676,8 @@ export default function ReservationPage({
               {[
                 { label: 'Praticien', value: `${practitioner.user.firstName} ${practitioner.user.lastName}` },
                 { label: 'Date', value: formatDisplayDate(selectedDate) },
-                { label: 'Heure', value: `${selectedSlot} (60 min)` },
-                { label: 'Tarif', value: `${practitioner.hourlyRate} $` },
+                { label: 'Heure', value: `${selectedSlot} (${SESSION_DURATION_MINUTES} min)` },
+                { label: 'Tarif', value: `${(practitioner.hourlyRate * SESSION_DURATION_MINUTES / 60).toFixed(2)} $` },
               ].map((row) => (
                 <div
                   key={row.label}
