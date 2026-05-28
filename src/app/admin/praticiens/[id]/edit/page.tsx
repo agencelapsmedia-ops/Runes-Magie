@@ -55,6 +55,7 @@ export default async function EditPractitionerPage({
         action={updateAction}
         cancelHref="/admin/praticiens"
         submitLabel="Enregistrer les modifications"
+        showPasswordField
         defaults={{
           email: practitioner.user.email,
           firstName: practitioner.user.firstName,

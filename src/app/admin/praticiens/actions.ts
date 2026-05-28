@@ -153,12 +153,23 @@ export async function updatePractitioner(id: string, formData: FormData): Promis
       ? makeSlug(firstName, lastName || firstName)
       : practitioner.slug;
 
+  // Mot de passe : si rempli, hash + remplace ; sinon inchangé
+  const newPassword = String(formData.get('newPassword') ?? '').trim();
+  let hashedPassword: string | undefined = undefined;
+  if (newPassword) {
+    if (newPassword.length < 8) {
+      throw new Error('Le mot de passe doit faire au moins 8 caractères.');
+    }
+    hashedPassword = await bcrypt.hash(newPassword, 12);
+  }
+
   await prisma.holisticUser.update({
     where: { id: practitioner.userId },
     data: {
       email,
       firstName,
       lastName,
+      ...(hashedPassword && { hashedPassword }),
       practitioner: {
         update: {
           slug: newSlug,
