@@ -1,70 +1,22 @@
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import { prisma } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+/**
+ * holistic-auth.ts — Wrapper de compatibilité.
+ *
+ * Historiquement, le site avait DEUX instances NextAuth séparées :
+ *   - `/api/auth/[...nextauth]`        → AdminUser (admin site principal)
+ *   - `/api/holistique/auth/[...nextauth]` → HolisticUser (clients + praticiens)
+ *
+ * Problème : le `signIn()` de `next-auth/react` ne tape QUE `/api/auth/*` par défaut,
+ * donc les inscriptions sur `/soins/auth/register` (qui créent un HolisticUser)
+ * ne pouvaient jamais se reconnecter.
+ *
+ * Fix : on a unifié l'authorize() dans `auth.ts` (tente AdminUser puis HolisticUser).
+ * Ce fichier ré-exporte simplement les helpers de `auth.ts` pour ne pas casser
+ * les imports existants (`holisticSession`, `holisticHandlers`, etc.).
+ */
 
-export const holisticAuth = NextAuth({
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: 'Courriel', type: 'email' },
-        password: { label: 'Mot de passe', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        const user = await prisma.holisticUser.findUnique({
-          where: { email: credentials.email as string },
-          include: { practitioner: true },
-        });
-
-        if (!user) return null;
-
-        const valid = await bcrypt.compare(
-          credentials.password as string,
-          user.hashedPassword
-        );
-        if (!valid) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          role: user.role,
-          practitionerId: user.practitioner?.id ?? null,
-          practitionerStatus: user.practitioner?.status ?? null,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role;
-        token.practitionerId = (user as any).practitionerId;
-        token.practitionerStatus = (user as any).practitionerStatus;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).practitionerId = token.practitionerId;
-        (session.user as any).practitionerStatus = token.practitionerStatus;
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: '/soins/auth/login',
-    error: '/soins/auth/login',
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-});
-
-export const {
-  handlers: holisticHandlers,
-  auth: holisticSession,
-  signIn: holisticSignIn,
-  signOut: holisticSignOut,
-} = holisticAuth;
+export {
+  auth as holisticSession,
+  handlers as holisticHandlers,
+  signIn as holisticSignIn,
+  signOut as holisticSignOut,
+} from '@/lib/auth';

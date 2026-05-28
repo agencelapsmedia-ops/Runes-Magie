@@ -30,8 +30,21 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status === 'unauthenticated' && pathname !== '/admin/login') {
       router.push('/admin/login');
+      return;
     }
-  }, [status, pathname, router]);
+    // Bloquer les non-ADMIN qui auraient pu se loguer via le handler unifié
+    // (depuis la fusion, /api/auth/* accepte aussi les HolisticUser)
+    if (
+      status === 'authenticated' &&
+      pathname !== '/admin/login' &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (session?.user as any)?.role &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (session?.user as any).role !== 'ADMIN'
+    ) {
+      router.push('/soins/dashboard/client');
+    }
+  }, [status, session, pathname, router]);
 
   if (pathname === '/admin/login') {
     return <>{children}</>;
