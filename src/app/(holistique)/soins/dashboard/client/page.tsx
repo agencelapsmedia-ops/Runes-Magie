@@ -129,8 +129,12 @@ export default async function ClientDashboardPage() {
   }
 
   const role = (session.user as any).role as string | undefined;
-  if (role && role !== 'CLIENT') {
-    redirect('/soins/auth/login');
+  // Rediriger vers le bon dashboard selon le rôle (au lieu de boucler vers /login)
+  if (role === 'PRACTITIONER') {
+    redirect('/soins/dashboard/praticien');
+  }
+  if (role === 'ADMIN') {
+    redirect('/admin');
   }
 
   const userId = (session.user as any).id as string;

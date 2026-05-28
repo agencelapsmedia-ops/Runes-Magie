@@ -71,15 +71,20 @@ export default async function PraticienDashboardPage() {
   }
 
   const role = (session.user as any).role as string;
-  if (role !== 'PRACTITIONER') {
-    redirect('/soins/auth/login');
+  // Rediriger vers le bon dashboard selon le rôle (au lieu de boucler vers /login)
+  if (role === 'CLIENT') {
+    redirect('/soins/dashboard/client');
+  }
+  if (role === 'ADMIN') {
+    redirect('/admin');
   }
 
   const userId = (session.user as any).id as string;
   const practitionerId = (session.user as any).practitionerId as string;
 
   if (!practitionerId) {
-    redirect('/soins/auth/login');
+    // Praticien sans fiche (cas anormal) : retour à l'accueil
+    redirect('/soins');
   }
 
   const practitioner = await prisma.practitioner.findUnique({
