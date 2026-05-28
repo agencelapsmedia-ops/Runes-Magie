@@ -2,6 +2,7 @@
    Utilisé par /admin/praticiens/nouveau et /admin/praticiens/[id]/edit. */
 
 import PhotoSection from './PhotoSection';
+import PasswordField from './PasswordField';
 
 interface PractitionerFormProps {
   action: (formData: FormData) => void | Promise<void>;
@@ -169,34 +170,8 @@ export default function PractitionerForm({
       {/* Photo — gérée par client component (preview, upload, suppression) */}
       <PhotoSection currentPhotoUrl={defaults.photoUrl ?? null} />
 
-      {/* Mot de passe (édition uniquement) */}
-      {showPasswordField && (
-        <div
-          style={{
-            borderTop: '1px dashed #E5E7EB',
-            paddingTop: '20px',
-            marginTop: '8px',
-          }}
-        >
-          <label style={labelStyle} htmlFor="newPassword">
-            Nouveau mot de passe (optionnel)
-          </label>
-          <input
-            id="newPassword"
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            style={inputStyle}
-            placeholder="Laisser vide pour ne pas changer"
-          />
-          <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
-            Si rempli, remplace le mot de passe actuel du praticien (minimum 8 caractères).
-            <br />
-            <strong>À transmettre manuellement au praticien.</strong> Aucun email n&apos;est envoyé.
-          </p>
-        </div>
-      )}
+      {/* Mot de passe (édition uniquement) — client component pour le toggle voir/masquer */}
+      {showPasswordField && <PasswordField />}
 
       {/* Boutons */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px', borderTop: '1px solid #E5E7EB', paddingTop: '20px' }}>
