@@ -15,12 +15,10 @@ interface NavLink {
 const NAV_LINKS: NavLink[] = [
   { label: 'Accueil', href: '/' },
   { label: 'Boutique', href: '/boutique' },
-  { label: 'Services', href: '/services' },
+  { label: 'Services & Soins', href: '/soins' },
   { label: 'Runes Vikings', href: '/runes-vikings' },
   { label: '\u00C0 Propos', href: '/a-propos' },
   { label: 'Contact', href: '/contact' },
-  { label: 'R\u00E9server', href: '/reserver' },
-  { label: 'Soins Holistiques', href: '/soins' },
 ];
 
 export default function Navbar() {

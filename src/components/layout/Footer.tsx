@@ -11,10 +11,10 @@ const NAV_LINKS = [
 ];
 
 const SERVICE_LINKS = [
-  { label: 'Tirage de Runes', href: '/services#tirage-runes' },
-  { label: 'Consultations', href: '/services#consultations' },
-  { label: 'Ateliers & Cours', href: '/services#ateliers' },
-  { label: 'Rituels Personnalis\u00E9s', href: '/services#rituels' },
+  { label: 'Tirage de Runes', href: '/soins' },
+  { label: 'Consultations', href: '/soins' },
+  { label: 'Ateliers & Cours', href: '/soins' },
+  { label: 'Rituels Personnalis\u00E9s', href: '/soins' },
 ];
 
 export default function Footer() {

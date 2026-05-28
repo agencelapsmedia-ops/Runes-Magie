@@ -60,7 +60,7 @@ export default function HeroCarousel() {
           </p>
           <div className="mt-8 flex gap-4">
             <Button variant="primary" size="lg" href="/boutique">D&eacute;couvrir la Boutique</Button>
-            <Button variant="secondary" size="lg" href="/reserver">R&eacute;server un Soin</Button>
+            <Button variant="secondary" size="lg" href="/soins">R&eacute;server un Soin</Button>
           </div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function HeroCarousel() {
         </p>
         <div className="mt-4 flex flex-col gap-3 w-full max-w-xs">
           <Button variant="primary" size="lg" href="/boutique">D&eacute;couvrir la Boutique</Button>
-          <Button variant="secondary" size="lg" href="/reserver">R&eacute;server un Soin</Button>
+          <Button variant="secondary" size="lg" href="/soins">R&eacute;server un Soin</Button>
         </div>
       </div>
 
