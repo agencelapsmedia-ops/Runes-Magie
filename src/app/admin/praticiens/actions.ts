@@ -62,8 +62,9 @@ export async function createPractitioner(formData: FormData): Promise<void> {
   }
 
   // Upload photo si fichier fourni, sinon prend l'URL texte
-  let photoUrl: string | null = photoUrlText || null;
-  if (photoFile && photoFile.size > 0) {
+  const wantsDelete = formData.get('deletePhoto') === '1';
+  let photoUrl: string | null = wantsDelete ? null : (photoUrlText || null);
+  if (!wantsDelete && photoFile && photoFile.size > 0) {
     photoUrl = await uploadImage(photoFile, 'praticiens');
   }
 
@@ -122,10 +123,15 @@ export async function updatePractitioner(id: string, formData: FormData): Promis
 
   if (!email || !firstName) throw new Error('Email et prénom sont obligatoires.');
 
-  // Gestion photo : nouveau fichier > URL texte > inchangé
+  // Gestion photo : suppression demandée > nouveau fichier > URL texte > inchangé
+  const wantsDelete = formData.get('deletePhoto') === '1';
   let photoUrl: string | null = practitioner.photoUrl;
-  if (photoFile && photoFile.size > 0) {
-    // Supprime l'ancienne photo Supabase si elle y était
+  if (wantsDelete) {
+    if (practitioner.photoUrl?.includes('/storage/v1/object/public/products/')) {
+      await deleteImage(practitioner.photoUrl).catch(() => {});
+    }
+    photoUrl = null;
+  } else if (photoFile && photoFile.size > 0) {
     if (practitioner.photoUrl?.includes('/storage/v1/object/public/products/')) {
       await deleteImage(practitioner.photoUrl).catch(() => {});
     }

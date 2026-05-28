@@ -1,6 +1,8 @@
 /* Formulaire partagé pour création / modification d'un praticien.
    Utilisé par /admin/praticiens/nouveau et /admin/praticiens/[id]/edit. */
 
+import PhotoSection from './PhotoSection';
+
 interface PractitionerFormProps {
   action: (formData: FormData) => void | Promise<void>;
   cancelHref: string;
@@ -24,6 +26,8 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '6px',
   fontSize: '0.9rem',
   fontFamily: 'inherit',
+  color: '#1F2937', // texte sombre lisible sur fond clair
+  background: '#FFFFFF',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -159,43 +163,8 @@ export default function PractitionerForm({
         </div>
       </div>
 
-      {/* Photo */}
-      <div>
-        <label style={labelStyle}>Photo de profil</label>
-        {defaults.photoUrl && (
-          <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={defaults.photoUrl}
-              alt="Photo actuelle"
-              style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '2px solid #E9D5FF',
-              }}
-            />
-            <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>Photo actuelle (laisser vide pour la garder)</span>
-          </div>
-        )}
-        <input
-          name="photoFile"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          style={{ ...inputStyle, padding: '8px' }}
-        />
-        <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '4px' }}>
-          OU collez une URL d&apos;image ci-dessous (ex. /images/praticiens/noctura.jpg)
-        </p>
-        <input
-          name="photoUrlText"
-          type="text"
-          defaultValue={defaults.photoUrl ?? ''}
-          style={{ ...inputStyle, marginTop: '6px' }}
-          placeholder="https://… ou /images/praticiens/foo.jpg"
-        />
-      </div>
+      {/* Photo — gérée par client component (preview, upload, suppression) */}
+      <PhotoSection currentPhotoUrl={defaults.photoUrl ?? null} />
 
       {/* Boutons */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px', borderTop: '1px solid #E5E7EB', paddingTop: '20px' }}>
