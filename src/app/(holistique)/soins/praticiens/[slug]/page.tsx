@@ -44,10 +44,10 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
           {/* Photo */}
           <div style={{ flexShrink: 0 }}>
             {practitioner.photoUrl ? (
-              <Image src={practitioner.photoUrl} alt={`${practitioner.user.firstName} ${practitioner.user.lastName}`} width={320} height={320}
-                style={{ borderRadius: '50%', border: '3px solid var(--or-ancien)', boxShadow: '0 0 30px rgba(201,168,76,0.3)', objectFit: 'cover', width: '320px', height: '320px', maxWidth: '100%' }} unoptimized />
+              <Image src={practitioner.photoUrl} alt={`${practitioner.user.firstName} ${practitioner.user.lastName}`} width={420} height={420}
+                style={{ borderRadius: '12px', border: '3px solid var(--or-ancien)', boxShadow: '0 0 30px rgba(201,168,76,0.3)', objectFit: 'cover', width: '420px', height: '420px', maxWidth: '100%' }} unoptimized />
             ) : (
-              <div style={{ width: '320px', height: '320px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--violet-royal), var(--violet-mystique))', border: '3px solid var(--or-ancien)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: 'var(--or-clair)', fontFamily: 'var(--font-cinzel)' }}>
+              <div style={{ width: '420px', height: '420px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--violet-royal), var(--violet-mystique))', border: '3px solid var(--or-ancien)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6rem', color: 'var(--or-clair)', fontFamily: 'var(--font-cinzel)' }}>
                 {practitioner.user.firstName[0]}{practitioner.user.lastName[0]}
               </div>
             )}

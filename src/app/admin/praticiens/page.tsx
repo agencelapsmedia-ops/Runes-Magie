@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import DeleteButton from './DeleteButton';
 
 async function getPractitioners(status: string) {
   return prisma.practitioner.findMany({
@@ -37,10 +38,12 @@ function StatusBadge({ status }: { status: string }) {
 export default async function PraticiensAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; newPassword?: string; newEmail?: string }>;
 }) {
   const params = await searchParams;
   const tab = params.tab ?? 'PENDING';
+  const newPassword = params.newPassword;
+  const newEmail = params.newEmail;
 
   const [pending, approved, rejected] = await Promise.all([
     getPractitioners('PENDING'),
@@ -65,14 +68,59 @@ export default async function PraticiensAdminPage({
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '8px' }}>
-          ᚻ Praticiens Holistiques
-        </h1>
-        <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
-          Gérez les demandes d&apos;inscription des praticiens
-        </p>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '8px' }}>
+            ᚻ Praticiens Holistiques
+          </h1>
+          <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
+            Gérez les demandes d&apos;inscription et les fiches des praticiens
+          </p>
+        </div>
+        <a
+          href="/admin/praticiens/nouveau"
+          style={{
+            padding: '10px 20px',
+            background: '#6B3FA0',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            fontFamily: 'var(--font-cinzel, serif)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          + Nouveau praticien
+        </a>
       </div>
+
+      {/* Bandeau mot de passe généré (affiché une seule fois après création) */}
+      {newPassword && newEmail && (
+        <div
+          style={{
+            background: '#FEF3C7',
+            border: '2px solid #FCD34D',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '24px',
+          }}
+        >
+          <h3 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1rem', color: '#92400E', marginBottom: '8px' }}>
+            ⚠ Praticien créé — Mot de passe à transmettre maintenant
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: '#78350F', marginBottom: '12px' }}>
+            Voici les identifiants à communiquer au praticien. <strong>Ils ne seront plus affichés</strong> après avoir quitté cette page.
+          </p>
+          <div style={{ display: 'grid', gap: '8px', fontFamily: 'monospace', background: '#FFFBEB', padding: '12px', borderRadius: '6px' }}>
+            <div><strong>Email :</strong> {newEmail}</div>
+            <div><strong>Mot de passe :</strong> <code style={{ background: '#FDE68A', padding: '2px 8px', borderRadius: '4px', userSelect: 'all' }}>{newPassword}</code></div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '2px solid #E5E7EB' }}>
@@ -151,7 +199,9 @@ export default async function PraticiensAdminPage({
                   {/* Experience */}
                   <td style={{ padding: '14px 16px', color: '#4B5563', fontSize: '0.85rem' }}>{p.yearsExperience} ans</td>
                   {/* Rate */}
-                  <td style={{ padding: '14px 16px', color: '#4B5563', fontSize: '0.85rem' }}>{p.hourlyRate} $/h</td>
+                  <td style={{ padding: '14px 16px', color: '#4B5563', fontSize: '0.85rem' }}>
+                    {(p.hourlyRate * 1.5).toFixed(2)} $/séance
+                  </td>
                   {/* Status */}
                   <td style={{ padding: '14px 16px' }}><StatusBadge status={p.status} /></td>
                   {/* Created */}
@@ -160,8 +210,50 @@ export default async function PraticiensAdminPage({
                   </td>
                   {/* Actions */}
                   <td style={{ padding: '14px 16px' }}>
-                    {p.status === 'PENDING' && (
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <a
+                        href={`/admin/praticiens/${p.id}/edit`}
+                        style={{ padding: '6px 14px', background: '#EDE9FE', color: '#6B3FA0', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)', textDecoration: 'none' }}
+                      >
+                        Modifier
+                      </a>
+                      {p.status === 'PENDING' && (
+                        <>
+                          <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
+                            <input type="hidden" name="_method" value="PUT" />
+                            <input type="hidden" name="action" value="approve" />
+                            <button
+                              type="submit"
+                              style={{ padding: '6px 14px', background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
+                            >
+                              Approuver
+                            </button>
+                          </form>
+                          <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
+                            <input type="hidden" name="_method" value="PUT" />
+                            <input type="hidden" name="action" value="reject" />
+                            <button
+                              type="submit"
+                              style={{ padding: '6px 14px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
+                            >
+                              Rejeter
+                            </button>
+                          </form>
+                        </>
+                      )}
+                      {p.status === 'APPROVED' && (
+                        <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
+                          <input type="hidden" name="_method" value="PUT" />
+                          <input type="hidden" name="action" value="reject" />
+                          <button
+                            type="submit"
+                            style={{ padding: '6px 14px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
+                          >
+                            Suspendre
+                          </button>
+                        </form>
+                      )}
+                      {p.status === 'REJECTED' && (
                         <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
                           <input type="hidden" name="_method" value="PUT" />
                           <input type="hidden" name="action" value="approve" />
@@ -169,45 +261,12 @@ export default async function PraticiensAdminPage({
                             type="submit"
                             style={{ padding: '6px 14px', background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
                           >
-                            Approuver
+                            Réactiver
                           </button>
                         </form>
-                        <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
-                          <input type="hidden" name="_method" value="PUT" />
-                          <input type="hidden" name="action" value="reject" />
-                          <button
-                            type="submit"
-                            style={{ padding: '6px 14px', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
-                          >
-                            Rejeter
-                          </button>
-                        </form>
-                      </div>
-                    )}
-                    {p.status === 'APPROVED' && (
-                      <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
-                        <input type="hidden" name="_method" value="PUT" />
-                        <input type="hidden" name="action" value="reject" />
-                        <button
-                          type="submit"
-                          style={{ padding: '6px 14px', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
-                        >
-                          Suspendre
-                        </button>
-                      </form>
-                    )}
-                    {p.status === 'REJECTED' && (
-                      <form action={`/api/admin/holistic/practitioners/${p.id}`} method="POST">
-                        <input type="hidden" name="_method" value="PUT" />
-                        <input type="hidden" name="action" value="approve" />
-                        <button
-                          type="submit"
-                          style={{ padding: '6px 14px', background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}
-                        >
-                          Réactiver
-                        </button>
-                      </form>
-                    )}
+                      )}
+                      <DeleteButton id={p.id} name={`${p.user.firstName} ${p.user.lastName}`.trim()} />
+                    </div>
                   </td>
                 </tr>
               ))}
