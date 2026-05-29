@@ -1,9 +1,15 @@
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
 
 export async function GET() {
+  const unauthorized = await requireAdmin();
+
+  if (unauthorized) return unauthorized;
+
   const session = await auth();
+
   if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
   try {
@@ -24,7 +30,12 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const unauthorized = await requireAdmin();
+
+  if (unauthorized) return unauthorized;
+
   const session = await auth();
+
   if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
   try {
@@ -62,7 +73,12 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireAdmin();
+
+  if (unauthorized) return unauthorized;
+
   const session = await auth();
+
   if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
   try {

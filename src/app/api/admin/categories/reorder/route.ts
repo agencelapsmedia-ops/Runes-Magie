@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-guard";
 import { tryUpdateCategoryInClover, isCloverConfigured } from "@/lib/clover-queue";
 
 /**
@@ -14,7 +15,12 @@ import { tryUpdateCategoryInClover, isCloverConfigured } from "@/lib/clover-queu
  * Propage le nouvel ordre à Clover si la catégorie y est liée.
  */
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireAdmin();
+
+  if (unauthorized) return unauthorized;
+
   const session = await auth();
+
   if (!session?.user) return NextResponse.json({ error: "Non autorise" }, { status: 401 });
 
   try {

@@ -136,7 +136,8 @@ export async function POST(req: Request) {
       ...(v2BookingId ? { v2BookingId } : {}),
     },
     success_url: `${getAppUrl()}/soins/dashboard/client?booking=success`,
-    cancel_url: `${getAppUrl()}/soins/reserver/${practitionerId}?cancelled=true`,
+    // cancel_url avec appointmentId pour pouvoir supprimer le RDV PENDING fantôme
+    cancel_url: `${getAppUrl()}/soins/reserver/${practitionerId}?cancelled=true&apptId=${appointment.id}`,
     mode: 'payment',
   };
 

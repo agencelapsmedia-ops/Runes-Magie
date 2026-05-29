@@ -102,6 +102,21 @@ export default function ReservationPage({
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ bookingRef: string } | null>(null);
 
+  // Si on revient de Stripe avec ?cancelled=true&apptId=..., on supprime le RDV PENDING fantôme
+  useEffect(() => {
+    const cancelled = searchParams.get('cancelled');
+    const apptId = searchParams.get('apptId');
+    if (cancelled === 'true' && apptId) {
+      fetch('/api/holistique/appointments/cancel-pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appointmentId: apptId }),
+      }).catch(() => {
+        // silencieux : si ça échoue le cron passera plus tard
+      });
+    }
+  }, [searchParams]);
+
   // Charge l'Offering si ?offering=slug est dans l'URL
   useEffect(() => {
     if (!offeringSlug) return;
