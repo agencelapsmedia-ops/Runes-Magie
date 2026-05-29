@@ -54,7 +54,11 @@ export async function createDailyRoomForAppointment(args: CreateRoomArgs): Promi
       },
       body: JSON.stringify({
         name: roomName,
-        privacy: 'private', // salle privée — accès uniquement avec token (à venir si besoin)
+        // Salle "public" : accès direct via URL. La sécurité est assurée par le nom
+        // UUID-style de la salle (impossible à deviner) et le contrôle au niveau
+        // de notre site (seuls le client + praticienne ont l'URL).
+        // Pour upgrade vers token-based auth, voir Daily.co Meeting Tokens API.
+        privacy: 'public',
         properties: {
           // expire 1h après la fin prévue du RDV (marge si la séance dépasse)
           exp: Math.round(endsAt.getTime() / 1000) + 3600,
