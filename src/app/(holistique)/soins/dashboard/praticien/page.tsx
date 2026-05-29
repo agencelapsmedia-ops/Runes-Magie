@@ -4,6 +4,7 @@ import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import Button from '@/components/ui/Button';
 import StripeConnectBanner from './StripeConnectBanner';
+import CompleteAppointmentButton from './CompleteAppointmentButton';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
@@ -237,7 +238,9 @@ export default async function PraticienDashboardPage() {
       where: {
         practitionerId,
         status: { in: ['PENDING', 'CONFIRMED'] },
-        startsAt: { gte: now },
+        // Inclut les RDV dont le début est dans les 6 dernières heures (en cours / juste fini)
+        // pour que la praticienne puisse cliquer « Terminer la séance » dessus
+        startsAt: { gte: new Date(now.getTime() - 6 * 60 * 60 * 1000) },
       },
       include: {
         client: { select: { firstName: true, lastName: true } },
@@ -542,8 +545,16 @@ export default async function PraticienDashboardPage() {
                       </p>
                       <StatusBadge status={appt.status} />
                     </div>
-                    {/* Bouton « Confirmer » manuel retiré — le webhook Stripe confirme automatiquement les RDV payés.
-                        Si un cas exceptionnel survient (paiement hors-Stripe), l'admin peut intervenir via /admin/consultations. */}
+                    {/* Bouton « Terminer la séance » : visible uniquement pour les RDV CONFIRMÉS dont l'heure de début est passée */}
+                    {appt.status === 'CONFIRMED' && new Date(appt.startsAt).getTime() <= Date.now() && (
+                      <CompleteAppointmentButton
+                        appointmentId={appt.id}
+                        clientName={clientDisplay}
+                        remainingAmount={appt.remainingAmount ?? 0}
+                        depositAmount={appt.depositAmount ?? 0}
+                        totalAmount={appt.totalAmount ?? 0}
+                      />
+                    )}
                   </div>
                 );
               })}
