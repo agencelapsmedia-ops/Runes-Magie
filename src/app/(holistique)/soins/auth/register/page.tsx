@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface FormData {
@@ -14,7 +14,19 @@ interface FormData {
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageInner />
+    </Suspense>
+  );
+}
+
+function RegisterPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -104,7 +116,11 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push('/soins/auth/login?registered=1');
+      // Si on venait d'une page (ex: réservation), on garde le ?next= pour y revenir après le login
+      const loginUrl = next
+        ? `/soins/auth/login?registered=1&next=${encodeURIComponent(next)}`
+        : '/soins/auth/login?registered=1';
+      router.push(loginUrl);
     } catch {
       setError('Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.');
     } finally {
@@ -266,7 +282,12 @@ export default function RegisterPage() {
             </div>
 
             {/* Courriel + tél + mots de passe */}
-            {fields.slice(2).map((field) => (
+            {fields.slice(2).map((field) => {
+              const isPwField = field.id === 'password' || field.id === 'confirmPassword';
+              const isShown = field.id === 'password' ? showPassword : showConfirmPassword;
+              const setShown = field.id === 'password' ? setShowPassword : setShowConfirmPassword;
+              const inputType = isPwField && isShown ? 'text' : field.type;
+              return (
               <div key={field.id} className="flex flex-col gap-2">
                 <label
                   htmlFor={field.id}
@@ -274,20 +295,46 @@ export default function RegisterPage() {
                 >
                   {field.label}
                 </label>
-                <input
-                  id={field.id}
-                  name={field.id}
-                  type={field.type}
-                  value={formData[field.id]}
-                  onChange={handleChange}
-                  required={!field.optional}
-                  autoComplete={field.autoComplete}
-                  placeholder={field.placeholder}
-                  className="w-full px-4 py-3 rounded-sm border bg-transparent font-philosopher text-parchemin placeholder:text-parchemin/25 focus:outline-none transition-colors duration-200"
-                  style={inputBaseStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id={field.id}
+                    name={field.id}
+                    type={inputType}
+                    value={formData[field.id]}
+                    onChange={handleChange}
+                    required={!field.optional}
+                    autoComplete={field.autoComplete}
+                    placeholder={field.placeholder}
+                    className="w-full px-4 py-3 rounded-sm border bg-transparent font-philosopher text-parchemin placeholder:text-parchemin/25 focus:outline-none transition-colors duration-200"
+                    style={{ ...inputBaseStyle, paddingRight: isPwField ? '70px' : undefined }}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
+                  {isPwField && (
+                    <button
+                      type="button"
+                      onClick={() => setShown((v) => !v)}
+                      aria-label={isShown ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        color: 'var(--turquoise-cristal)',
+                        fontFamily: 'var(--font-cinzel)',
+                        fontSize: '0.65rem',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {isShown ? 'Masquer' : 'Voir'}
+                    </button>
+                  )}
+                </div>
                 {/* Indicateur de force du mot de passe (uniquement sous le champ password) */}
                 {field.id === 'password' && formData.password && (
                   <div className="mt-1">
@@ -314,7 +361,8 @@ export default function RegisterPage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
 
             {/* Consentements */}
             <div className="space-y-3 pt-2 border-t border-violet-royal/20 mt-2">

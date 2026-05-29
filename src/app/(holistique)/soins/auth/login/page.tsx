@@ -18,6 +18,7 @@ function LoginPageInner() {
   const next = searchParams.get('next');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -147,27 +148,52 @@ function LoginPageInner() {
               >
                 Mot de passe
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-sm border bg-transparent font-philosopher text-parchemin placeholder:text-parchemin/25 focus:outline-none transition-colors duration-200"
-                style={{
-                  borderColor: 'rgba(74, 45, 122, 0.4)',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.5)';
-                  e.currentTarget.style.boxShadow = '0 0 0 1px rgba(201, 168, 76, 0.2)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(74, 45, 122, 0.4)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 rounded-sm border bg-transparent font-philosopher text-parchemin placeholder:text-parchemin/25 focus:outline-none transition-colors duration-200"
+                  style={{
+                    borderColor: 'rgba(74, 45, 122, 0.4)',
+                    paddingRight: '70px',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.5)';
+                    e.currentTarget.style.boxShadow = '0 0 0 1px rgba(201, 168, 76, 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(74, 45, 122, 0.4)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    color: 'var(--turquoise-cristal)',
+                    fontFamily: 'var(--font-cinzel)',
+                    fontSize: '0.65rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {showPassword ? 'Masquer' : 'Voir'}
+                </button>
+              </div>
             </div>
 
             {/* Bouton de connexion */}
