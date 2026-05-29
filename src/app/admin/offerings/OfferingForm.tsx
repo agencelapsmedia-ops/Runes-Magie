@@ -129,7 +129,7 @@ export default function OfferingForm({
         <label style={labelStyle}>Praticien·ne·s qui offrent ce service *</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', padding: '12px', background: '#F9FAFB', borderRadius: '6px' }}>
           {practitioners.map((p) => (
-            <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+            <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: '#1F2937', fontWeight: 500 }}>
               <input
                 type="checkbox"
                 name="practitionerIds"
@@ -137,7 +137,7 @@ export default function OfferingForm({
                 defaultChecked={selectedIds.has(p.id)}
                 style={{ width: '18px', height: '18px' }}
               />
-              <span>{p.firstName}{p.lastName ? ` ${p.lastName}` : ''}</span>
+              <span style={{ color: '#1F2937' }}>{p.firstName}{p.lastName ? ` ${p.lastName}` : ''}</span>
             </label>
           ))}
         </div>
@@ -150,13 +150,13 @@ export default function OfferingForm({
       <div>
         <label style={labelStyle}>Modes de prestation *</label>
         <div style={{ display: 'flex', gap: '20px', padding: '12px', background: '#F9FAFB', borderRadius: '6px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
             <input type="checkbox" name="modeInPerson" defaultChecked={modes.has('IN_PERSON')} style={{ width: '18px', height: '18px' }} />
-            <span>Présentiel</span>
+            <span style={{ color: '#1F2937' }}>Présentiel</span>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
             <input type="checkbox" name="modeVirtual" defaultChecked={modes.has('VIRTUAL')} style={{ width: '18px', height: '18px' }} />
-            <span>Virtuel (Zoom/Daily.co)</span>
+            <span style={{ color: '#1F2937' }}>Virtuel (Zoom/Daily.co)</span>
           </label>
         </div>
       </div>
@@ -207,13 +207,13 @@ export default function OfferingForm({
 
       {/* Options */}
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: '20px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
           <input type="checkbox" name="isFeatured" defaultChecked={defaults.isFeatured ?? false} style={{ width: '18px', height: '18px' }} />
-          <span>À la une (vedette sur la homepage)</span>
+          <span style={{ color: '#1F2937' }}>À la une (vedette sur la homepage)</span>
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', justifySelf: 'start' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', justifySelf: 'start', color: '#1F2937', fontWeight: 500 }}>
           <input type="checkbox" name="isActive" defaultChecked={defaults.isActive ?? true} style={{ width: '18px', height: '18px' }} />
-          <span>Service actif (visible publiquement)</span>
+          <span style={{ color: '#1F2937' }}>Service actif (visible publiquement)</span>
         </label>
         <div>
           <label style={{ ...labelStyle, fontSize: '0.7rem', margin: 0 }} htmlFor="emoji">Emoji / Rune</label>
