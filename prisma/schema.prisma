@@ -280,11 +280,33 @@ model Practitioner {
   availabilities     HolisticAvailability[]
   appointments       HolisticAppointment[]  @relation("PractitionerAppointments")
   reviews            HolisticReview[]
+  pendingChanges     PendingPractitionerChange[]
   // Relations V2 (nouveaux modèles)
   offerings          Offering[]
   schedule           Availability[]
   bookings           Booking[]              @relation("PractitionerBookings")
   bookingReviews     Review[]               @relation("PractitionerBookingReviews")
+}
+
+// Demandes de modification de profil / disponibilités soumises par le praticien
+// et nécessitant l'approbation d'un admin. Le profil/dispos en cours restent
+// visibles publiquement jusqu'à approbation.
+model PendingPractitionerChange {
+  id             String       @id @default(cuid())
+  practitionerId String
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  type           String       // PROFILE | AVAILABILITY
+  // Payload JSON des changements demandés. Pour PROFILE : { bio?, specialties?, yearsExperience?, hourlyRate?, photoUrl?, firstName?, lastName? }
+  // Pour AVAILABILITY : { blocks: [{ dayOfWeek, startTime, endTime, isActive }] } — remplace l'ensemble
+  payload        Json
+  status         String       @default("PENDING") // PENDING | APPROVED | REJECTED
+  requestedAt    DateTime     @default(now())
+  reviewedAt     DateTime?
+  reviewedById   String?      // adminUserId de celui qui a tranché
+  adminNote      String?      // raison du rejet, commentaire, etc.
+
+  @@index([practitionerId, status])
+  @@index([status, requestedAt])
 }
 
 model HolisticAvailability {
