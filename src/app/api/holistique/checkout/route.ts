@@ -35,38 +35,26 @@ export async function POST(req: Request) {
     notes,
   ].filter(Boolean).join('\n') || undefined;
 
-  if (!practitioner.stripeAccountId || !practitioner.stripeAccountReady) {
-    // Pas encore Stripe Connect → créer rdv PENDING sans paiement
-    const appointment = await prisma.holisticAppointment.create({
-      data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes: enrichedNotes, status: 'PENDING' },
-    });
-    // Dual-write V2 (best-effort) — pas de Stripe → V2 = CONFIRMED
-    try {
-      await mirrorAppointmentToBooking({ appointment, noStripeFlow: true });
-    } catch (err) {
-      console.error('[v2-sync] mirrorAppointmentToBooking (no-Stripe) failed', { appointmentId: appointment.id, err });
-    }
-    return NextResponse.json({ success: true, appointmentId: appointment.id });
-  }
-
   const durationHours = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / (1000 * 60 * 60);
   // Prix : prix de l'Offering si fourni, sinon fallback sur hourlyRate × heures
   const amountTotal = offering ? offering.price : practitioner.hourlyRate * durationHours;
-  const commissionRate = parseFloat(process.env.COMMISSION_RATE || '0.35');
+  // Commission : taux par praticien (Practitioner.commissionPct) ou défaut env
+  const commissionRate = (practitioner.commissionPct ?? parseFloat(process.env.COMMISSION_RATE || '35')) / 100;
   const amountCommission = amountTotal * commissionRate;
+  const amountPractitioner = amountTotal - amountCommission;
 
   // Créer le rdv d'abord
   const appointment = await prisma.holisticAppointment.create({
     data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes: enrichedNotes, status: 'PENDING' },
   });
 
-  // Créer enregistrement paiement
+  // Créer enregistrement paiement (pour tracker ce qu'on doit reverser au praticien)
   await prisma.holisticPayment.create({
     data: {
       appointmentId: appointment.id,
       amountTotal,
       amountCommission,
-      amountPractitioner: amountTotal - amountCommission,
+      amountPractitioner,
       status: 'PENDING',
     },
   });
@@ -81,7 +69,7 @@ export async function POST(req: Request) {
         bookingId: booking.id,
         amountTotal,
         amountCommission,
-        amountPractitioner: amountTotal - amountCommission,
+        amountPractitioner,
         commissionPct: commissionRate * 100,
         status: 'PENDING',
       });
@@ -90,6 +78,8 @@ export async function POST(req: Request) {
     console.error('[v2-sync] mirror checkout failed', { appointmentId: appointment.id, err });
   }
 
+  // Compte Stripe central : encaisse tout, redistribution manuelle aux praticien·ne·s
+  // (PAS de transfer_data / application_fee_amount → pas besoin de Stripe Connect)
   const checkoutSession = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
@@ -105,12 +95,11 @@ export async function POST(req: Request) {
       },
       quantity: 1,
     }],
-    payment_intent_data: {
-      application_fee_amount: Math.round(amountCommission * 100),
-      transfer_data: { destination: practitioner.stripeAccountId },
-    },
     metadata: {
       appointmentId: appointment.id,
+      practitionerId,
+      amountPractitionerCad: amountPractitioner.toFixed(2),
+      amountCommissionCad: amountCommission.toFixed(2),
       ...(v2BookingId ? { v2BookingId } : {}),
     },
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/dashboard/client?booking=success`,
