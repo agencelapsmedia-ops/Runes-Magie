@@ -542,33 +542,8 @@ export default async function PraticienDashboardPage() {
                       </p>
                       <StatusBadge status={appt.status} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                      {appt.status === 'PENDING' && (
-                        <form
-                          action={`/api/holistique/appointments/${appt.id}/confirm`}
-                          method="POST"
-                        >
-                          <button
-                            type="submit"
-                            style={{
-                              padding: '9px 20px',
-                              fontFamily: 'var(--font-cinzel)',
-                              fontSize: '0.7rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.1em',
-                              background: 'rgba(46, 196, 182, 0.12)',
-                              color: 'var(--turquoise-cristal)',
-                              border: '1px solid rgba(46, 196, 182, 0.4)',
-                              borderRadius: '2px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                            }}
-                          >
-                            Confirmer
-                          </button>
-                        </form>
-                      )}
-                    </div>
+                    {/* Bouton « Confirmer » manuel retiré — le webhook Stripe confirme automatiquement les RDV payés.
+                        Si un cas exceptionnel survient (paiement hors-Stripe), l'admin peut intervenir via /admin/consultations. */}
                   </div>
                 );
               })}
