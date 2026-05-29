@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.FROM_EMAIL || 'Runes & Magie <noreply@runesetmagie.com>';
+// Par défaut : utiliser l'expéditeur "onboarding" de Resend (toujours vérifié, pas besoin de DNS).
+// En prod, configurer FROM_EMAIL avec un sender vérifié sur ton domaine runesetmagie.ca.
+const FROM = process.env.FROM_EMAIL || 'Runes & Magie <onboarding@resend.dev>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
 
 // Destinataires des notifications de modification praticien (cumul)
