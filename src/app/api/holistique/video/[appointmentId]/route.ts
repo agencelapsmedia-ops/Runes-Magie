@@ -59,6 +59,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ appoint
     clientName: `${appointment.client.firstName} ${appointment.client.lastName ?? ''}`.trim(),
     startsAt: appointment.startsAt.toISOString(),
     myRole,
+    status: appointment.status,
+    totalAmount: appointment.totalAmount,
+    depositAmount: appointment.depositAmount,
+    remainingAmount: appointment.remainingAmount,
   });
 }
 
@@ -99,5 +103,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ appoin
     clientName: `${appointment.client.firstName} ${appointment.client.lastName ?? ''}`.trim(),
     startsAt: appointment.startsAt.toISOString(),
     myRole,
+    status: appointment.status,
+    totalAmount: appointment.totalAmount,
+    depositAmount: appointment.depositAmount,
+    remainingAmount: appointment.remainingAmount,
   });
 }

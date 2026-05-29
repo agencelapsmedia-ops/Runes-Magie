@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
+import CompleteAppointmentButton from '../../dashboard/praticien/CompleteAppointmentButton';
 
 interface ConsultationData {
   dailyRoomUrl: string | null;
@@ -10,6 +11,10 @@ interface ConsultationData {
   clientName: string;
   startsAt: string;
   myRole: 'client' | 'practitioner';
+  status?: string;
+  totalAmount?: number | null;
+  depositAmount?: number | null;
+  remainingAmount?: number | null;
 }
 
 function formatDateTime(iso: string): string {
@@ -288,29 +293,40 @@ export default function ConsultationPage({
           </span>
         </div>
 
-        {/* Quit button */}
-        <button
-          type="button"
-          onClick={handleQuit}
-          disabled={ending}
-          style={{
-            padding: '9px 20px',
-            fontFamily: 'var(--font-cinzel)',
-            fontSize: '0.7rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-            background: 'rgba(196, 29, 110, 0.12)',
-            border: '1px solid rgba(196, 29, 110, 0.35)',
-            borderRadius: '2px',
-            color: '#f87171',
-            cursor: ending ? 'not-allowed' : 'pointer',
-            opacity: ending ? 0.6 : 1,
-            transition: 'all 0.2s',
-            flexShrink: 0,
-          }}
-        >
-          {ending ? 'Fermeture...' : 'Quitter'}
-        </button>
+        {/* Actions à droite */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+          {/* Bouton « Terminer la séance » — uniquement pour la praticienne, RDV CONFIRMÉ */}
+          {data.myRole === 'practitioner' && data.status === 'CONFIRMED' && (
+            <CompleteAppointmentButton
+              appointmentId={appointmentId}
+              clientName={data.clientName}
+              remainingAmount={data.remainingAmount ?? 0}
+              depositAmount={data.depositAmount ?? 0}
+              totalAmount={data.totalAmount ?? 0}
+            />
+          )}
+          <button
+            type="button"
+            onClick={handleQuit}
+            disabled={ending}
+            style={{
+              padding: '9px 20px',
+              fontFamily: 'var(--font-cinzel)',
+              fontSize: '0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              background: 'rgba(196, 29, 110, 0.12)',
+              border: '1px solid rgba(196, 29, 110, 0.35)',
+              borderRadius: '2px',
+              color: '#f87171',
+              cursor: ending ? 'not-allowed' : 'pointer',
+              opacity: ending ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            {ending ? 'Fermeture...' : 'Quitter'}
+          </button>
+        </div>
       </div>
 
       {/* Video area */}

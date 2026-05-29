@@ -569,8 +569,9 @@ export default async function PraticienDashboardPage() {
                           ᛜ Rejoindre la vidéo
                         </Link>
                       )}
-                      {/* Bouton « Terminer la séance » : visible uniquement pour les RDV CONFIRMÉS dont l'heure de début est passée */}
-                      {appt.status === 'CONFIRMED' && new Date(appt.startsAt).getTime() <= Date.now() && (
+                      {/* Bouton « Terminer la séance » : disponible pour tous les RDV CONFIRMÉS
+                          (la praticienne décide quand l'utiliser — typiquement à la fin de la séance) */}
+                      {appt.status === 'CONFIRMED' && (
                         <CompleteAppointmentButton
                           appointmentId={appt.id}
                           clientName={clientDisplay}
