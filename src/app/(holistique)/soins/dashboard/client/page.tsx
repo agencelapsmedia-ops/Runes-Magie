@@ -346,9 +346,12 @@ export default async function ClientDashboardPage() {
             <div style={{ display: 'grid', gap: '14px' }}>
               {upcoming.map((appt) => {
                 const startsAt = new Date(appt.startsAt);
-                const diffMs = startsAt.getTime() - now.getTime();
-                const isWithin15Min = diffMs >= 0 && diffMs <= 15 * 60 * 1000;
-                const canJoin = appt.status === 'CONFIRMED' && isWithin15Min;
+                // RDV virtuel = stocké dans les notes au moment du checkout
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const isVirtual = ((appt as any).notes ?? '').toLowerCase().includes('virtuel');
+                // On affiche le bouton pour TOUS les RDV virtuels CONFIRMÉS (peu importe l'heure)
+                // pour que le client puisse tester sa caméra avant la séance
+                const canJoin = appt.status === 'CONFIRMED' && isVirtual;
                 const practitioner = (appt as any).practitioner;
 
                 return (
