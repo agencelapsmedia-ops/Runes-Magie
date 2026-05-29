@@ -57,6 +57,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function formatDateTime(date: Date): string {
   return new Intl.DateTimeFormat('fr-CA', {
+    timeZone: 'America/Toronto',
     weekday: 'short',
     month: 'long',
     day: 'numeric',

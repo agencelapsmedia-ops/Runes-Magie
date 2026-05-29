@@ -14,6 +14,7 @@ interface ConsultationData {
 
 function formatDateTime(iso: string): string {
   return new Intl.DateTimeFormat('fr-CA', {
+    timeZone: 'America/Toronto',
     weekday: 'long',
     year: 'numeric',
     month: 'long',

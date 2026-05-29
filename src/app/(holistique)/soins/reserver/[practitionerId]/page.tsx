@@ -71,6 +71,7 @@ function generateTimeSlots(startTime: string, endTime: string, durationMinutes: 
 
 function formatDisplayDate(date: Date): string {
   return new Intl.DateTimeFormat('fr-CA', {
+    timeZone: 'America/Toronto',
     weekday: 'long',
     year: 'numeric',
     month: 'long',
