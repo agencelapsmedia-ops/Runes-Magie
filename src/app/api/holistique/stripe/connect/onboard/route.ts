@@ -47,41 +47,60 @@ export async function POST() {
   // Réutilise l'account existant ou en crée un nouveau
   let stripeAccountId = practitioner.stripeAccountId;
 
-  if (!stripeAccountId) {
-    const account = await stripe.accounts.create({
-      type: 'express',
-      country: 'CA',
-      email: practitioner.user.email,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      business_type: 'individual',
-      business_profile: {
-        mcc: '7299', // Other services (incl. spiritual / wellness)
-        product_description: `Soins énergétiques et holistiques offerts par ${practitioner.user.firstName} ${practitioner.user.lastName} via Runes & Magie.`,
-        url: APP_URL,
-      },
-      metadata: {
-        practitionerId: practitioner.id,
-        platform: 'runes-et-magie',
-      },
+  try {
+    if (!stripeAccountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'CA',
+        email: practitioner.user.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: 'individual',
+        business_profile: {
+          mcc: '7299', // Other services (incl. spiritual / wellness)
+          product_description: `Soins énergétiques et holistiques offerts par ${practitioner.user.firstName} ${practitioner.user.lastName} via Runes & Magie.`,
+          url: APP_URL,
+        },
+        metadata: {
+          practitionerId: practitioner.id,
+          platform: 'runes-et-magie',
+        },
+      });
+
+      stripeAccountId = account.id;
+      await prisma.practitioner.update({
+        where: { id: practitionerId },
+        data: { stripeAccountId, stripeAccountReady: false },
+      });
+    }
+
+    // Génère un AccountLink (URL d'onboarding valide ~1h)
+    const accountLink = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: `${APP_URL}/soins/dashboard/praticien?stripe=refresh`,
+      return_url: `${APP_URL}/api/holistique/stripe/connect/return?accountId=${stripeAccountId}`,
+      type: 'account_onboarding',
     });
 
-    stripeAccountId = account.id;
-    await prisma.practitioner.update({
-      where: { id: practitionerId },
-      data: { stripeAccountId, stripeAccountReady: false },
+    return NextResponse.json({ url: accountLink.url });
+  } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const e = err as any;
+    console.error('[stripe-connect-onboard] error:', {
+      message: e?.message,
+      type: e?.type,
+      code: e?.code,
+      raw: e?.raw,
     });
+    return NextResponse.json(
+      {
+        error: e?.message ?? 'Erreur lors de la création du compte Stripe.',
+        stripeCode: e?.code ?? null,
+        stripeType: e?.type ?? null,
+      },
+      { status: 500 },
+    );
   }
-
-  // Génère un AccountLink (URL d'onboarding valide ~1h)
-  const accountLink = await stripe.accountLinks.create({
-    account: stripeAccountId,
-    refresh_url: `${APP_URL}/soins/dashboard/praticien?stripe=refresh`,
-    return_url: `${APP_URL}/api/holistique/stripe/connect/return?accountId=${stripeAccountId}`,
-    type: 'account_onboarding',
-  });
-
-  return NextResponse.json({ url: accountLink.url });
 }

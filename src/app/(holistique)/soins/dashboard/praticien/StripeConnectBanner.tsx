@@ -21,7 +21,11 @@ export default function StripeConnectBanner({ stripeAccountReady, hasStripeAccou
         const res = await fetch('/api/holistique/stripe/connect/onboard', { method: 'POST' });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          setError(data.error ?? 'Erreur lors de la création du compte Stripe.');
+          // Surface l'erreur Stripe complète pour pouvoir debugger
+          const stripeInfo = data.stripeCode || data.stripeType
+            ? ` (${data.stripeType ?? ''}${data.stripeCode ? ` / ${data.stripeCode}` : ''})`
+            : '';
+          setError(`${data.error ?? 'Erreur lors de la création du compte Stripe.'}${stripeInfo}`);
           return;
         }
         const { url } = await res.json();
