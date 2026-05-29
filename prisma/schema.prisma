@@ -283,6 +283,7 @@ model Practitioner {
   pendingChanges     PendingPractitionerChange[]
   // Relations V2 (nouveaux modèles)
   offerings          Offering[]
+  offeringProviders  OfferingProvider[]     @relation("OfferingProviders")
   schedule           Availability[]
   bookings           Booking[]              @relation("PractitionerBookings")
   bookingReviews     Review[]               @relation("PractitionerBookingReviews")
@@ -414,32 +415,56 @@ model User {
 
 model Offering {
   id              String       @id @default(cuid())
+  // Praticien "principal/propriétaire" du service. Le client peut aussi en
+  // choisir un autre via la relation many-to-many `providers` ci-dessous.
   practitionerId  String
   practitioner    Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  type            String // SOIN | COURS | CEREMONIE
+  type            String // SOIN | COURS | CEREMONIE | GUIDANCE | ATELIER | CONSULTATION | SERVICE_EXTERIEUR | ... (libre)
   slug            String       @unique
   name            String
   description     String
   longDescription String       @default("")
   durationMinutes Int
   bufferMinutes   Int          @default(15)
-  price           Float
-  currency        String       @default("CAD")
-  modes           String[]     @default(["IN_PERSON"]) // IN_PERSON | VIRTUAL
-  capacity        Int          @default(1)
-  colorHex        String       @default("#6B3FA0")
-  emoji           String       @default("*")
-  imageUrl        String?
-  features        String[]     @default([])
-  isActive        Boolean      @default(true)
-  isFeatured      Boolean      @default(false)
-  sortOrder       Int          @default(0)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  bookings        Booking[]
+  // Prix : à la carte (par personne), pour 2 personnes (duo), package complet
+  price            Float        // prix de base à la carte / par personne
+  priceForTwo      Float?       // tarif spécial pour duo (couple, ami·e, etc.)
+  pricePackage     Float?       // forfait complet (ex: pack de N cours)
+  pricePackageMsrp Float?       // valeur d'origine du forfait (pour afficher l'économie)
+  numSessions      Int?         // nombre de séances dans le forfait (ex: 20 cours)
+  currency         String       @default("CAD")
+  modes            String[]     @default(["IN_PERSON"]) // IN_PERSON | VIRTUAL
+  capacity         Int          @default(1)
+  colorHex         String       @default("#6B3FA0")
+  emoji            String       @default("*")
+  imageUrl         String?
+  features         String[]     @default([])
+  isActive         Boolean      @default(true)
+  isFeatured       Boolean      @default(false)
+  sortOrder        Int          @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  bookings         Booking[]
+  // Praticien·ne·s additionnel·le·s pouvant offrir ce service (en plus du primaire)
+  providers        OfferingProvider[]
 
   @@index([type, isActive, isFeatured])
   @@index([practitionerId, isActive])
+}
+
+// Table de liaison many-to-many entre Offering et Practitioner.
+// Permet à plusieurs praticien·ne·s d'offrir le même service.
+// Le `practitionerId` sur Offering reste le "propriétaire/primaire".
+model OfferingProvider {
+  id             String       @id @default(cuid())
+  offeringId     String
+  offering       Offering     @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  practitionerId String
+  practitioner   Practitioner @relation("OfferingProviders", fields: [practitionerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([offeringId, practitionerId])
+  @@index([practitionerId])
 }
 
 model Availability {
