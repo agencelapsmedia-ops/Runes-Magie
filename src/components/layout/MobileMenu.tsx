@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 
 interface NavLink {
   label: string;
@@ -15,6 +16,12 @@ interface MobileMenuProps {
   currentPath: string;
 }
 
+interface SessionUser {
+  email?: string;
+  name?: string;
+  role?: string;
+}
+
 export default function MobileMenu({
   isOpen,
   onClose,
@@ -22,6 +29,29 @@ export default function MobileMenu({
   currentPath,
 }: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+
+  // Charge l'état de session pour afficher le bon bouton (Connexion vs Dashboard)
+  useEffect(() => {
+    if (!isOpen) return;
+    async function loadSession() {
+      try {
+        const res = await fetch('/api/holistique/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setSessionUser(data.user ?? null);
+        } else {
+          setSessionUser(null);
+        }
+      } catch {
+        setSessionUser(null);
+      } finally {
+        setSessionLoaded(true);
+      }
+    }
+    loadSession();
+  }, [isOpen]);
 
   // Fermer avec la touche Escape
   useEffect(() => {
@@ -136,18 +166,60 @@ export default function MobileMenu({
           </ul>
         </nav>
 
-        {/* Bouton Connexion */}
-        <div className="px-6 mt-6">
-          <Link
-            href="/admin/login"
-            onClick={onClose}
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-            Connexion
-          </Link>
+        {/* Bouton Connexion / Dashboard — adaptatif selon état de session */}
+        <div className="px-6 mt-6 flex flex-col gap-3">
+          {sessionLoaded && !sessionUser && (
+            <Link
+              href="/soins/auth/login"
+              onClick={onClose}
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              Connexion
+            </Link>
+          )}
+
+          {sessionLoaded && sessionUser && (
+            <>
+              <div className="text-center mb-1">
+                <p className="font-cinzel text-[0.65rem] tracking-widest uppercase text-or-ancien/60">
+                  Connecté en tant que
+                </p>
+                <p className="font-cormorant italic text-parchemin text-base mt-1">
+                  {sessionUser.name ?? sessionUser.email}
+                </p>
+              </div>
+              <Link
+                href={
+                  sessionUser.role === 'PRACTITIONER'
+                    ? '/soins/dashboard/praticien'
+                    : sessionUser.role === 'ADMIN'
+                    ? '/admin'
+                    : '/soins/dashboard/client'
+                }
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-turquoise-cristal/40 text-turquoise-cristal font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-turquoise-cristal/15"
+              >
+                ᛟ {sessionUser.role === 'PRACTITIONER'
+                  ? 'Mon espace praticien'
+                  : sessionUser.role === 'ADMIN'
+                  ? 'Administration'
+                  : 'Mon compte'}
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  signOut({ callbackUrl: '/' });
+                }}
+                className="flex items-center justify-center w-full px-4 py-3 rounded border border-transparent text-parchemin/50 font-cinzel text-xs tracking-wider transition-all duration-300 hover:text-or-ancien hover:border-or-ancien/20"
+              >
+                Déconnexion
+              </button>
+            </>
+          )}
         </div>
 
         {/* Runes decoratives en bas */}
