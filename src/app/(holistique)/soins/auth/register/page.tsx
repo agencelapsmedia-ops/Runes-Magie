@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 
 interface FormData {
@@ -116,11 +117,27 @@ function RegisterPageInner() {
         return;
       }
 
-      // Si on venait d'une page (ex: réservation), on garde le ?next= pour y revenir après le login
-      const loginUrl = next
-        ? `/soins/auth/login?registered=1&next=${encodeURIComponent(next)}`
-        : '/soins/auth/login?registered=1';
-      router.push(loginUrl);
+      // Auto-login : on connecte directement le client avec les identifiants qu'il vient de fournir.
+      // Si on venait d'une page (ex: réservation), retour automatique après login.
+      const callbackUrl = next && next.startsWith('/') ? next : '/soins/dashboard/client';
+      const signInResult = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+        callbackUrl,
+      });
+
+      if (signInResult?.error) {
+        // Le compte a été créé mais l'auto-login a échoué — on redirige vers la page login avec message
+        const loginUrl = next
+          ? `/soins/auth/login?registered=1&next=${encodeURIComponent(next)}`
+          : '/soins/auth/login?registered=1';
+        router.push(loginUrl);
+        return;
+      }
+
+      // Auto-login réussi → redirection vers next ou dashboard
+      window.location.href = signInResult?.url ?? callbackUrl;
     } catch {
       setError('Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.');
     } finally {

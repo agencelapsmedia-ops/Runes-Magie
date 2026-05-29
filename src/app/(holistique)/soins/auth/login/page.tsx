@@ -16,6 +16,7 @@ export default function LoginPage() {
 function LoginPageInner() {
   const searchParams = useSearchParams();
   const next = searchParams.get('next');
+  const justRegistered = searchParams.get('registered') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -94,6 +95,21 @@ function LoginPageInner() {
           }}
         >
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+            {/* Message de succès après inscription */}
+            {justRegistered && !error && (
+              <div
+                className="px-4 py-3 rounded-sm border text-sm font-philosopher"
+                style={{
+                  backgroundColor: 'rgba(46, 196, 182, 0.1)',
+                  borderColor: 'rgba(46, 196, 182, 0.4)',
+                  color: 'var(--turquoise-cristal)',
+                }}
+                role="status"
+              >
+                ✓ Compte créé avec succès. Connecte-toi maintenant avec ton courriel et ton mot de passe.
+              </div>
+            )}
+
             {/* Message d'erreur */}
             {error && (
               <div

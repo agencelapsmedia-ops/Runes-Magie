@@ -499,6 +499,61 @@ export default function ReservationPage({
 
       <div style={{ maxWidth: '860px', margin: '0 auto', padding: '40px 24px 0', display: 'grid', gap: '24px' }}>
 
+        {/* Bandeau de connexion / inscription si pas connecté */}
+        {isAuthenticated === false && (
+          <div
+            style={{
+              background: 'rgba(201, 168, 76, 0.08)',
+              border: '1px solid rgba(201, 168, 76, 0.4)',
+              borderRadius: '8px',
+              padding: '20px 24px',
+            }}
+          >
+            <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '0.8rem', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '8px' }}>
+              ᚨ Connecte-toi pour réserver
+            </p>
+            <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.8, fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '16px' }}>
+              Tu dois avoir un compte client pour finaliser ta réservation. C&apos;est gratuit et ça prend 30 secondes — tu pourras ensuite suivre tes rendez-vous depuis ton tableau de bord.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <Link
+                href={`/soins/auth/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/soins')}`}
+                style={{
+                  padding: '10px 22px',
+                  background: 'linear-gradient(to right, var(--violet-royal), var(--violet-profond))',
+                  border: '1px solid var(--or-ancien)',
+                  color: 'var(--or-ancien)',
+                  fontFamily: 'var(--font-cinzel)',
+                  fontSize: '0.78rem',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  borderRadius: '4px',
+                  textDecoration: 'none',
+                }}
+              >
+                Se connecter
+              </Link>
+              <Link
+                href={`/soins/auth/register?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/soins')}`}
+                style={{
+                  padding: '10px 22px',
+                  background: 'transparent',
+                  border: '1px solid var(--turquoise-cristal)',
+                  color: 'var(--turquoise-cristal)',
+                  fontFamily: 'var(--font-cinzel)',
+                  fontSize: '0.78rem',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  borderRadius: '4px',
+                  textDecoration: 'none',
+                }}
+              >
+                Créer un compte
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Bannière du service choisi */}
         {offering && (
           <div
