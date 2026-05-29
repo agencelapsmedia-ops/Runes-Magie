@@ -11,7 +11,8 @@ export async function POST(req: Request) {
   const session = await holisticSession();
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-  const { practitionerId, startsAt, endsAt, notes } = await req.json();
+  const { practitionerId, startsAt, endsAt, notes, offeringId, mode } = await req.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clientId = (session.user as any).id;
 
   const practitioner = await prisma.practitioner.findUnique({
@@ -19,10 +20,25 @@ export async function POST(req: Request) {
     include: { user: { select: { firstName: true, lastName: true } } },
   });
   if (!practitioner) return NextResponse.json({ error: 'Praticien introuvable' }, { status: 404 });
+
+  // Si une Offering est sélectionnée, utiliser son prix au lieu du hourlyRate du praticien
+  let offering = null;
+  if (offeringId) {
+    offering = await prisma.offering.findUnique({ where: { id: offeringId } });
+  }
+
+  // Construit le bloc de notes enrichi avec le service et le mode pour traçabilité
+  // (HolisticAppointment legacy n'a pas de champ offeringId/mode)
+  const enrichedNotes = [
+    offering ? `Service : ${offering.name}` : null,
+    mode ? `Mode : ${mode === 'IN_PERSON' ? 'Présentiel' : 'Virtuel (vidéo)'}` : null,
+    notes,
+  ].filter(Boolean).join('\n') || undefined;
+
   if (!practitioner.stripeAccountId || !practitioner.stripeAccountReady) {
     // Pas encore Stripe Connect → créer rdv PENDING sans paiement
     const appointment = await prisma.holisticAppointment.create({
-      data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes, status: 'PENDING' },
+      data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes: enrichedNotes, status: 'PENDING' },
     });
     // Dual-write V2 (best-effort) — pas de Stripe → V2 = CONFIRMED
     try {
@@ -34,13 +50,14 @@ export async function POST(req: Request) {
   }
 
   const durationHours = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / (1000 * 60 * 60);
-  const amountTotal = practitioner.hourlyRate * durationHours;
+  // Prix : prix de l'Offering si fourni, sinon fallback sur hourlyRate × heures
+  const amountTotal = offering ? offering.price : practitioner.hourlyRate * durationHours;
   const commissionRate = parseFloat(process.env.COMMISSION_RATE || '0.35');
   const amountCommission = amountTotal * commissionRate;
 
   // Créer le rdv d'abord
   const appointment = await prisma.holisticAppointment.create({
-    data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes, status: 'PENDING' },
+    data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes: enrichedNotes, status: 'PENDING' },
   });
 
   // Créer enregistrement paiement
@@ -79,8 +96,10 @@ export async function POST(req: Request) {
       price_data: {
         currency: 'cad',
         product_data: {
-          name: `Consultation avec ${practitioner.user.firstName} ${practitioner.user.lastName}`,
-          description: `${new Date(startsAt).toLocaleDateString('fr-CA')} — ${durationHours}h`,
+          name: offering
+            ? `${offering.name} — ${practitioner.user.firstName} ${practitioner.user.lastName}`
+            : `Consultation avec ${practitioner.user.firstName} ${practitioner.user.lastName}`,
+          description: `${new Date(startsAt).toLocaleDateString('fr-CA')} — ${durationHours}h${mode ? ` (${mode === 'IN_PERSON' ? 'présentiel' : 'vidéo'})` : ''}`,
         },
         unit_amount: Math.round(amountTotal * 100),
       },

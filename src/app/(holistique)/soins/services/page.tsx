@@ -195,13 +195,13 @@ export default async function ServicesPage() {
 
                       {/* CTA */}
                       <Link
-                        href={`/soins/praticiens/${o.practitioner.slug}`}
+                        href={`/soins/reserver/${o.practitioner.id}?offering=${o.slug}`}
                         style={{
                           marginTop: '8px',
                           display: 'inline-block',
                           textAlign: 'center',
                           padding: '10px 16px',
-                          background: 'transparent',
+                          background: 'linear-gradient(to right, var(--violet-royal), var(--violet-profond))',
                           border: '1px solid rgba(201, 168, 76, 0.4)',
                           color: 'var(--or-ancien)',
                           borderRadius: '4px',
@@ -212,7 +212,7 @@ export default async function ServicesPage() {
                           textDecoration: 'none',
                         }}
                       >
-                        Voir le praticien
+                        Réserver ce soin
                       </Link>
                     </article>
                   );

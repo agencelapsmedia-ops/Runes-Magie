@@ -171,6 +171,26 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
                       </div>
                     )}
                   </div>
+                  <Link
+                    href={`/soins/reserver/${practitioner.id}?offering=${o.slug}`}
+                    style={{
+                      marginTop: '8px',
+                      display: 'block',
+                      textAlign: 'center',
+                      padding: '8px 12px',
+                      background: 'linear-gradient(to right, var(--violet-royal), var(--violet-profond))',
+                      border: '1px solid rgba(201, 168, 76, 0.4)',
+                      color: 'var(--or-ancien)',
+                      borderRadius: '4px',
+                      fontFamily: 'var(--font-cinzel)',
+                      fontSize: '0.7rem',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Réserver
+                  </Link>
                 </article>
               ))}
             </div>
