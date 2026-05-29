@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
   // Redirections étape 1 : tout converger vers /soins (le nouveau système)
   async redirects() {
     return [
-      // Vieux catalogue marketing
-      { source: '/services', destination: '/soins', permanent: true },
-      { source: '/services/:slug', destination: '/soins', permanent: true },
+      // Vieux catalogue marketing → nouvelle page services
+      { source: '/services', destination: '/soins/services', permanent: true },
+      { source: '/services/:slug', destination: '/soins/services', permanent: true },
       // Vieux wizard de réservation
       { source: '/reserver', destination: '/soins', permanent: true },
       { source: '/reserver/:path*', destination: '/soins', permanent: true },

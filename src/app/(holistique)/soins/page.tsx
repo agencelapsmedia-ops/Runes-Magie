@@ -157,7 +157,10 @@ export default async function SoinsPage() {
 
           {/* CTA */}
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button href="/soins/praticiens" variant="primary" size="lg">
+            <Button href="/soins/services" variant="primary" size="lg">
+              Découvrir nos soins
+            </Button>
+            <Button href="/soins/praticiens" variant="secondary" size="lg">
               Explorer les praticiens
             </Button>
             <Button href="/soins/inscription-praticien" variant="secondary" size="lg">

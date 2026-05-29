@@ -27,10 +27,29 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
         take: 10,
       },
       availabilities: { where: { isActive: true }, orderBy: { dayOfWeek: 'asc' } },
+      // Services dont cette praticienne est propriétaire principale
+      offerings: {
+        where: { isActive: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      },
+      // Services où cette praticienne est ajoutée comme alternative
+      offeringProviders: {
+        where: { offering: { isActive: true } },
+        include: { offering: true },
+      },
     },
   });
 
   if (!practitioner) notFound();
+
+  // Fusionne services propres + services où elle est co-praticienne
+  const allOfferings = [
+    ...practitioner.offerings,
+    ...practitioner.offeringProviders.map((op) => op.offering),
+  ]
+    // Déduplique par id (au cas où)
+    .filter((o, idx, arr) => arr.findIndex((x) => x.id === o.id) === idx)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
 
   const avgRating = practitioner.reviews.length
     ? Math.round((practitioner.reviews.reduce((s, r) => s + r.rating, 0) / practitioner.reviews.length) * 10) / 10
@@ -91,6 +110,73 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
       <RuneDivider symbols="ᚢ ᛟ ᚨ" />
 
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 24px 80px', display: 'grid', gridTemplateColumns: '1fr', gap: '40px' }}>
+        {/* Soins offerts */}
+        {allOfferings.length > 0 && (
+          <section>
+            <h2 style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '1.2rem', marginBottom: '16px', letterSpacing: '0.1em' }}>
+              Soins offerts ({allOfferings.length})
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {allOfferings.map((o) => (
+                <article
+                  key={o.id}
+                  style={{
+                    background: 'var(--charbon-mystere)',
+                    border: '1px solid rgba(74, 45, 122, 0.3)',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ fontFamily: 'var(--font-cinzel-decorative)', color: 'var(--or-ancien)', fontSize: '1.6rem', lineHeight: 1 }}>{o.emoji}</span>
+                    <span style={{ padding: '2px 8px', background: 'rgba(46, 196, 182, 0.1)', border: '1px solid rgba(46, 196, 182, 0.3)', color: 'var(--turquoise-cristal)', borderRadius: '10px', fontSize: '0.65rem', fontFamily: 'var(--font-cinzel)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      {o.type.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <h3 style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-clair)', fontSize: '0.95rem', margin: 0, lineHeight: 1.3 }}>{o.name}</h3>
+                  <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.9rem', lineHeight: 1.5, margin: 0, flex: 1 }}>
+                    {o.description}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', fontSize: '0.7rem' }}>
+                    <span style={{ padding: '2px 8px', background: 'rgba(74, 45, 122, 0.25)', borderRadius: '10px', color: 'var(--parchemin)' }}>
+                      {o.durationMinutes} min
+                    </span>
+                    {o.modes.map((m) => (
+                      <span key={m} style={{ padding: '2px 8px', background: m === 'VIRTUAL' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(34, 197, 94, 0.15)', color: m === 'VIRTUAL' ? '#60a5fa' : '#4ade80', borderRadius: '10px' }}>
+                        {m === 'IN_PERSON' ? 'Présentiel' : 'Virtuel'}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid rgba(74, 45, 122, 0.3)' }}>
+                    {o.price > 0 ? (
+                      <div style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '1.05rem', fontWeight: 600 }}>
+                        {o.price.toFixed(2)} $
+                        {o.priceForTwo && (
+                          <span style={{ fontFamily: 'var(--font-cormorant)', fontSize: '0.85rem', opacity: 0.7, marginLeft: '6px', fontWeight: 400 }}>
+                            ({o.priceForTwo.toFixed(2)} $ duo)
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin)', opacity: 0.6, fontSize: '0.9rem' }}>
+                        Tarif sur demande
+                      </span>
+                    )}
+                    {o.pricePackage && (
+                      <div style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--or-clair)', fontSize: '0.85rem', marginTop: '2px' }}>
+                        Forfait : <strong>{o.pricePackage.toFixed(0)} $</strong>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Disponibilités */}
         {practitioner.availabilities.length > 0 && (
           <section>
