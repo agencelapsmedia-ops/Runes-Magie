@@ -3,12 +3,19 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Si ?next=/soins/reserver/... est passé, on y retourne après login.
+  // Sinon, on laisse le dashboard rediriger vers le bon dashboard selon le rôle.
+  const callbackUrl = next && next.startsWith('/') ? next : '/soins/dashboard/client';
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +27,7 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
-        callbackUrl: '/soins/dashboard/client',
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -181,7 +188,7 @@ export default function LoginPage() {
           <p className="text-center font-philosopher text-sm text-parchemin/40">
             Pas encore de compte ?{' '}
             <Link
-              href="/soins/auth/register"
+              href={next ? `/soins/auth/register?next=${encodeURIComponent(next)}` : '/soins/auth/register'}
               className="text-turquoise-cristal hover:text-or-ancien transition-colors duration-200 underline underline-offset-2"
             >
               S&apos;inscrire

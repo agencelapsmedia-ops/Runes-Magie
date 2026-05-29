@@ -13,7 +13,6 @@ interface SessionUser {
 export default function UserNav() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     async function loadSession() {
@@ -37,7 +36,7 @@ export default function UserNav() {
   if (loading) {
     return (
       <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '0.7rem', color: 'rgba(232, 220, 190, 0.3)', letterSpacing: '0.1em' }}>
-        ...
+        …
       </span>
     );
   }
@@ -54,8 +53,8 @@ export default function UserNav() {
     );
   }
 
-  // Connecté : afficher nom + menu déroulant avec déconnexion
-  const firstName = user.name?.split(' ')[0] ?? user.email ?? 'Mon compte';
+  // Connecté : bouton Tableau de bord (selon rôle) + petit lien Déconnexion
+  const firstName = user.name?.split(' ')[0] ?? '';
   const dashboardHref =
     user.role === 'PRACTITIONER'
       ? '/soins/dashboard/praticien'
@@ -63,107 +62,59 @@ export default function UserNav() {
       ? '/admin'
       : '/soins/dashboard/client';
 
+  const dashboardLabel =
+    user.role === 'PRACTITIONER'
+      ? 'Mon espace praticien'
+      : user.role === 'ADMIN'
+      ? 'Administration'
+      : 'Mon tableau de bord';
+
   return (
-    <div style={{ position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => setMenuOpen((v) => !v)}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <Link
+        href={dashboardHref}
+        title={firstName ? `Connecté en tant que ${firstName}` : undefined}
         style={{
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
-          padding: '6px 12px',
-          background: 'rgba(46, 196, 182, 0.08)',
-          border: '1px solid rgba(46, 196, 182, 0.3)',
+          padding: '8px 16px',
+          background: 'rgba(46, 196, 182, 0.1)',
+          border: '1px solid rgba(46, 196, 182, 0.4)',
           borderRadius: '4px',
           color: 'var(--turquoise-cristal)',
           fontFamily: 'var(--font-cinzel)',
           fontSize: '0.72rem',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          textDecoration: 'none',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ fontSize: '0.85rem' }}>ᛟ</span>
+        <span className="hidden sm:inline">{dashboardLabel}</span>
+        <span className="sm:hidden">Mon compte</span>
+      </Link>
+
+      <button
+        type="button"
+        onClick={() => signOut({ callbackUrl: '/soins' })}
+        title="Se déconnecter"
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: 'rgba(232, 220, 190, 0.5)',
+          fontFamily: 'var(--font-cinzel)',
+          fontSize: '0.7rem',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
           cursor: 'pointer',
+          padding: '4px 6px',
         }}
+        className="hover:text-or-ancien transition-colors"
       >
-        <span style={{ fontSize: '0.9rem' }}>ᛟ</span>
-        <span>{firstName}</span>
-        <span style={{ fontSize: '0.6rem', opacity: 0.6 }}>{menuOpen ? '▲' : '▼'}</span>
+        Déconnexion
       </button>
-
-      {menuOpen && (
-        <>
-          {/* Overlay pour fermer en cliquant ailleurs */}
-          <div
-            onClick={() => setMenuOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-          />
-          {/* Menu déroulant */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              right: 0,
-              minWidth: '220px',
-              background: 'rgba(10, 10, 18, 0.98)',
-              border: '1px solid rgba(74, 45, 122, 0.5)',
-              borderRadius: '6px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-              padding: '8px',
-              zIndex: 50,
-            }}
-          >
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(74, 45, 122, 0.3)', marginBottom: '8px' }}>
-              <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>
-                Connecté en tant que
-              </p>
-              <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', fontSize: '0.95rem', margin: 0, fontStyle: 'italic' }}>
-                {user.name ?? user.email}
-              </p>
-              {user.role && (
-                <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--turquoise-cristal)', fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '4px 0 0' }}>
-                  {user.role === 'CLIENT' ? 'Client·e' : user.role === 'PRACTITIONER' ? 'Praticien·ne' : 'Administrateur·rice'}
-                </p>
-              )}
-            </div>
-
-            <Link
-              href={dashboardHref}
-              onClick={() => setMenuOpen(false)}
-              style={{
-                display: 'block',
-                padding: '8px 16px',
-                fontFamily: 'var(--font-cinzel)',
-                fontSize: '0.78rem',
-                color: 'var(--parchemin)',
-                textDecoration: 'none',
-                borderRadius: '4px',
-                letterSpacing: '0.05em',
-              }}
-            >
-              Mon tableau de bord
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => signOut({ callbackUrl: '/soins' })}
-              style={{
-                width: '100%',
-                padding: '8px 16px',
-                background: 'transparent',
-                border: 'none',
-                color: '#f87171',
-                fontFamily: 'var(--font-cinzel)',
-                fontSize: '0.78rem',
-                letterSpacing: '0.05em',
-                textAlign: 'left',
-                cursor: 'pointer',
-                borderRadius: '4px',
-              }}
-            >
-              Déconnexion
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }
