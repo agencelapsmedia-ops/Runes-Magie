@@ -67,7 +67,7 @@ export default function UserNav() {
       ? 'Mon espace praticien'
       : user.role === 'ADMIN'
       ? 'Administration'
-      : 'Mon tableau de bord';
+      : 'Mon compte';
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
