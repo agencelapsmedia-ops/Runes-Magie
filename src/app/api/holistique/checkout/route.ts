@@ -49,6 +49,23 @@ export async function POST(req: Request) {
   });
   if (!practitioner) return NextResponse.json({ error: 'Praticien introuvable' }, { status: 404 });
 
+  // Anti double-booking : vérifie qu'aucun autre RDV ne chevauche ce créneau
+  const conflictingAppointment = await prisma.holisticAppointment.findFirst({
+    where: {
+      practitionerId,
+      status: { in: ['CONFIRMED', 'PENDING'] },
+      // Chevauchement : (startsAt < existing.endsAt) AND (endsAt > existing.startsAt)
+      startsAt: { lt: new Date(endsAt) },
+      endsAt: { gt: new Date(startsAt) },
+    },
+  });
+  if (conflictingAppointment) {
+    return NextResponse.json(
+      { error: 'Ce créneau vient d\'être réservé par quelqu\'un d\'autre. Choisis un autre créneau.' },
+      { status: 409 },
+    );
+  }
+
   // Si une Offering est sélectionnée, utiliser son prix au lieu du hourlyRate du praticien
   let offering = null;
   if (offeringId) {

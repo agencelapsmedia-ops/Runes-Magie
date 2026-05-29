@@ -12,5 +12,23 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     },
   });
   if (!p) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json(p);
+
+  // Charge les RDV qui occupent un créneau dans les 60 prochains jours
+  // (CONFIRMED = paiement reçu, ou PENDING < 1h = en cours de paiement)
+  const now = new Date();
+  const future = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const bookedAppointments = await prisma.holisticAppointment.findMany({
+    where: {
+      practitionerId: id,
+      startsAt: { gte: now, lt: future },
+      OR: [
+        { status: 'CONFIRMED' },
+        { status: 'PENDING', createdAt: { gte: oneHourAgo } }, // ignore les vieux PENDING fantômes
+      ],
+    },
+    select: { startsAt: true, endsAt: true, status: true },
+  });
+
+  return NextResponse.json({ ...p, bookedAppointments });
 }

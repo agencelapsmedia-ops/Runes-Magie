@@ -13,6 +13,12 @@ interface Availability {
   isActive: boolean;
 }
 
+interface BookedAppointment {
+  startsAt: string;
+  endsAt: string;
+  status: string;
+}
+
 interface Practitioner {
   id: string;
   bio: string;
@@ -21,6 +27,7 @@ interface Practitioner {
   hourlyRate: number;
   photoUrl: string | null;
   availabilities: Availability[];
+  bookedAppointments?: BookedAppointment[];
   user: { firstName: string; lastName: string; email?: string };
 }
 
@@ -191,9 +198,32 @@ export default function ReservationPage({
     // Plusieurs blocs de dispo par jour possibles (ex. matin + après-midi avec pause dîner)
     const availBlocks = practitioner.availabilities.filter((a) => a.dayOfWeek === dow && a.isActive);
     const allSlots = availBlocks.flatMap((a) => generateTimeSlots(a.startTime, a.endTime, sessionDuration));
-    // Trier par heure pour un affichage propre
-    allSlots.sort();
-    setAvailableSlots(allSlots);
+
+    // Filtre les créneaux déjà bookés (CONFIRMED ou PENDING récent)
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const booked = (practitioner.bookedAppointments ?? []).filter((b) => {
+      const t = new Date(b.startsAt).getTime();
+      return t >= dayStart.getTime() && t < dayEnd.getTime();
+    });
+
+    const freeSlots = allSlots.filter((slot) => {
+      const [h, m] = slot.split(':').map(Number);
+      const slotStart = new Date(day);
+      slotStart.setHours(h, m, 0, 0);
+      const slotEnd = new Date(slotStart.getTime() + sessionDuration * 60 * 1000);
+      // Chevauchement si : slotStart < bookedEnd ET slotEnd > bookedStart
+      return !booked.some((b) => {
+        const bStart = new Date(b.startsAt).getTime();
+        const bEnd = new Date(b.endsAt).getTime();
+        return slotStart.getTime() < bEnd && slotEnd.getTime() > bStart;
+      });
+    });
+
+    freeSlots.sort();
+    setAvailableSlots(freeSlots);
   }
 
   async function handleConfirmAndPay() {
