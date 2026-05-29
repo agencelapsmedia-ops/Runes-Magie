@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
+import { notifyAdminsPractitionerChange } from '@/lib/practitioner-change-email';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -38,16 +39,28 @@ export async function requestProfileChange(payload: ProfilePayload): Promise<voi
   const practitionerId = (session.user as { practitionerId?: string }).practitionerId;
   if (!practitionerId) throw new Error('Praticien introuvable.');
 
-  await prisma.pendingPractitionerChange.create({
+  const change = await prisma.pendingPractitionerChange.create({
     data: {
       practitionerId,
       type: 'PROFILE',
       payload: payload as object,
       status: 'PENDING',
     },
+    include: {
+      practitioner: {
+        include: { user: { select: { firstName: true, lastName: true } } },
+      },
+    },
   });
 
-  // TODO Livraison 3 : envoyer email Resend aux admins
+  // Email aux admins (fail-safe — log si Resend non configuré, n'interrompt jamais le flow)
+  await notifyAdminsPractitionerChange({
+    practitionerName: `${change.practitioner.user.firstName} ${change.practitioner.user.lastName}`.trim(),
+    changeType: 'PROFILE',
+    fieldsChanged: Object.keys(payload),
+    changeId: change.id,
+  });
+
   revalidatePath('/soins/dashboard/praticien');
   revalidatePath('/admin/praticiens/modifications');
 }
@@ -60,13 +73,25 @@ export async function requestAvailabilityChange(payload: AvailabilityPayload): P
   const practitionerId = (session.user as { practitionerId?: string }).practitionerId;
   if (!practitionerId) throw new Error('Praticien introuvable.');
 
-  await prisma.pendingPractitionerChange.create({
+  const change = await prisma.pendingPractitionerChange.create({
     data: {
       practitionerId,
       type: 'AVAILABILITY',
       payload: payload as object,
       status: 'PENDING',
     },
+    include: {
+      practitioner: {
+        include: { user: { select: { firstName: true, lastName: true } } },
+      },
+    },
+  });
+
+  await notifyAdminsPractitionerChange({
+    practitionerName: `${change.practitioner.user.firstName} ${change.practitioner.user.lastName}`.trim(),
+    changeType: 'AVAILABILITY',
+    fieldsChanged: [`${payload.blocks?.length ?? 0} créneau(x)`],
+    changeId: change.id,
   });
 
   revalidatePath('/soins/dashboard/praticien');

@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Services', href: '/admin/services', icon: 'ᚹ' },
   { label: 'Disponibilites', href: '/admin/disponibilites', icon: 'ᛟ' },
   { label: 'Praticiens', href: '/admin/praticiens', icon: 'ᚻ' },
+  { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚷ' },
   { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
   { label: 'Revenus Holistique', href: '/admin/revenus-holistique', icon: 'ᚴ' },
   { label: 'Parametres', href: '/admin/parametres', icon: 'ᚱ' },
