@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import Button from '@/components/ui/Button';
+import StripeConnectBanner from './StripeConnectBanner';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
@@ -332,6 +333,12 @@ export default async function PraticienDashboardPage() {
             </Link>
           ))}
         </nav>
+
+        {/* Bandeau Stripe Connect (toujours affiché — soit ✓ vert, soit CTA configuration) */}
+        <StripeConnectBanner
+          stripeAccountReady={practitioner.stripeAccountReady}
+          hasStripeAccount={!!practitioner.stripeAccountId}
+        />
 
         {/* Bandeau modifications en attente */}
         {pendingChangesCount > 0 && (

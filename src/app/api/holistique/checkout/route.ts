@@ -78,9 +78,13 @@ export async function POST(req: Request) {
     console.error('[v2-sync] mirror checkout failed', { appointmentId: appointment.id, err });
   }
 
-  // Compte Stripe central : encaisse tout, redistribution manuelle aux praticien·ne·s
-  // (PAS de transfer_data / application_fee_amount → pas besoin de Stripe Connect)
-  const checkoutSession = await stripe.checkout.sessions.create({
+  // 2 modes de paiement supportés :
+  //  - Stripe Connect prêt : split auto au moment du paiement (65 % praticienne, 35 % plateforme)
+  //  - Stripe Connect pas prêt : encaisse tout sur le compte plateforme, redistribution manuelle plus tard
+  const usesStripeConnect = !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkoutParams: any = {
     payment_method_types: ['card'],
     line_items: [{
       price_data: {
@@ -100,12 +104,22 @@ export async function POST(req: Request) {
       practitionerId,
       amountPractitionerCad: amountPractitioner.toFixed(2),
       amountCommissionCad: amountCommission.toFixed(2),
+      payoutMode: usesStripeConnect ? 'auto-split' : 'manual',
       ...(v2BookingId ? { v2BookingId } : {}),
     },
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/dashboard/client?booking=success`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/reserver/${practitionerId}?cancelled=true`,
     mode: 'payment',
-  });
+  };
+
+  if (usesStripeConnect) {
+    checkoutParams.payment_intent_data = {
+      application_fee_amount: Math.round(amountCommission * 100),
+      transfer_data: { destination: practitioner.stripeAccountId },
+    };
+  }
+
+  const checkoutSession = await stripe.checkout.sessions.create(checkoutParams);
 
   return NextResponse.json({ url: checkoutSession.url });
 }
