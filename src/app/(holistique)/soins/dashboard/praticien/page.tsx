@@ -88,12 +88,37 @@ export default async function PraticienDashboardPage() {
     redirect('/soins');
   }
 
-  const practitioner = await prisma.practitioner.findUnique({
+  let practitioner = await prisma.practitioner.findUnique({
     where: { id: practitionerId },
     include: {
       user: { select: { firstName: true, lastName: true } },
     },
   });
+
+  // Auto-refresh du statut Stripe Connect : si on a un account mais qu'il n'est
+  // pas encore marqué "ready", on re-demande à Stripe (capacités peuvent passer
+  // à actif après upload de documents). Best-effort, n'échoue jamais le rendu.
+  if (practitioner?.stripeAccountId && !practitioner.stripeAccountReady) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const Stripe = (await import('stripe')).default as any;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        apiVersion: '2026-03-25.dahlia' as any,
+      });
+      const account = await stripe.accounts.retrieve(practitioner.stripeAccountId);
+      const ready = !!(account.charges_enabled && account.payouts_enabled && account.details_submitted);
+      if (ready !== practitioner.stripeAccountReady) {
+        await prisma.practitioner.update({
+          where: { id: practitionerId },
+          data: { stripeAccountReady: ready },
+        });
+        practitioner = { ...practitioner, stripeAccountReady: ready };
+      }
+    } catch (err) {
+      console.error('[dashboard] auto-refresh Stripe status failed', err);
+    }
+  }
 
   if (!practitioner) {
     redirect('/soins/auth/login');
