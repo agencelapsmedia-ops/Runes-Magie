@@ -6,7 +6,15 @@ import Stripe from 'stripe';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
+// URL de la plateforme — toujours forcer un format valide (https + sans trailing slash)
+function getAppUrl(): string {
+  const raw = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca').trim();
+  // Garantit https://
+  const withProtocol = raw.startsWith('http://') || raw.startsWith('https://') ? raw : `https://${raw}`;
+  // Retire le slash final
+  return withProtocol.replace(/\/$/, '');
+}
+const APP_URL = getAppUrl();
 
 /**
  * POST /api/holistique/stripe/connect/onboard
@@ -61,7 +69,8 @@ export async function POST() {
         business_profile: {
           mcc: '7299', // Other services (incl. spiritual / wellness)
           product_description: `Soins énergétiques et holistiques offerts par ${practitioner.user.firstName} ${practitioner.user.lastName} via Runes & Magie.`,
-          url: APP_URL,
+          // url omis volontairement — Stripe demande à la praticienne pendant l'onboarding
+          // (évite l'erreur url_invalid si NEXT_PUBLIC_APP_URL est mal configuré)
         },
         metadata: {
           practitionerId: practitioner.id,
