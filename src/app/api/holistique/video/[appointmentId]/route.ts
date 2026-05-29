@@ -1,45 +1,52 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { holisticSession } from '@/lib/holistic-auth';
+import { auth } from '@/lib/auth';
+import { createDailyRoomForAppointment } from '@/lib/daily-co';
 
+/**
+ * POST /api/holistique/video/[appointmentId]
+ *
+ * Récupère ou crée la salle vidéo Daily.co pour un RDV.
+ * Sécurité : seuls le client du RDV et la praticienne associée peuvent y accéder.
+ */
 export async function POST(_req: Request, { params }: { params: Promise<{ appointmentId: string }> }) {
-  const session = await holisticSession();
+  const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sessionUserId = (session.user as any).id;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sessionRole = (session.user as any).role;
 
   const { appointmentId } = await params;
-  const appointment = await prisma.holisticAppointment.findUnique({ where: { id: appointmentId } });
+  const appointment = await prisma.holisticAppointment.findUnique({
+    where: { id: appointmentId },
+    include: { practitioner: { select: { userId: true } } },
+  });
   if (!appointment) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
 
-  if (appointment.dailyRoomUrl) {
-    return NextResponse.json({ url: appointment.dailyRoomUrl });
+  // Vérif autorisation : doit être le client OU la praticienne du RDV (ou admin)
+  const isClient = appointment.clientId === sessionUserId;
+  const isPractitioner = appointment.practitioner.userId === sessionUserId;
+  const isAdmin = sessionRole === 'ADMIN';
+  if (!isClient && !isPractitioner && !isAdmin) {
+    return NextResponse.json({ error: 'Tu ne peux pas accéder à cette salle.' }, { status: 403 });
   }
 
-  const roomName = `rm-${appointmentId.slice(0, 12)}`;
+  if (appointment.status !== 'CONFIRMED' && appointment.status !== 'COMPLETED') {
+    return NextResponse.json({ error: 'Le RDV doit être confirmé pour accéder à la vidéo.' }, { status: 400 });
+  }
 
-  const response = await fetch('https://api.daily.co/v1/rooms', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
-    },
-    body: JSON.stringify({
-      name: roomName,
-      properties: {
-        exp: Math.round(appointment.endsAt.getTime() / 1000) + 3600,
-        max_participants: 2,
-        enable_screenshare: false,
-        enable_chat: true,
-        lang: 'fr',
-      },
-    }),
+  const url = await createDailyRoomForAppointment({
+    appointmentId,
+    endsAt: appointment.endsAt,
   });
 
-  const room = await response.json();
+  if (!url) {
+    return NextResponse.json(
+      { error: 'Daily.co n\'est pas configuré ou a refusé la création de la salle. Contacte l\'administrateur.' },
+      { status: 500 },
+    );
+  }
 
-  await prisma.holisticAppointment.update({
-    where: { id: appointmentId },
-    data: { dailyRoomUrl: room.url, dailyRoomName: roomName },
-  });
-
-  return NextResponse.json({ url: room.url });
+  return NextResponse.json({ url });
 }

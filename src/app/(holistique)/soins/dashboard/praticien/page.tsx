@@ -546,16 +546,40 @@ export default async function PraticienDashboardPage() {
                       </p>
                       <StatusBadge status={appt.status} />
                     </div>
-                    {/* Bouton « Terminer la séance » : visible uniquement pour les RDV CONFIRMÉS dont l'heure de début est passée */}
-                    {appt.status === 'CONFIRMED' && new Date(appt.startsAt).getTime() <= Date.now() && (
-                      <CompleteAppointmentButton
-                        appointmentId={appt.id}
-                        clientName={clientDisplay}
-                        remainingAmount={appt.remainingAmount ?? 0}
-                        depositAmount={appt.depositAmount ?? 0}
-                        totalAmount={appt.totalAmount ?? 0}
-                      />
-                    )}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      {/* Bouton « Rejoindre la séance vidéo » — si le RDV est virtuel et bientôt/maintenant */}
+                      {appt.status === 'CONFIRMED' && appt.notes?.toLowerCase().includes('virtuel') && (
+                        <Link
+                          href={`/soins/consultation/${appt.id}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '9px 20px',
+                            fontFamily: 'var(--font-cinzel)',
+                            fontSize: '0.7rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em',
+                            background: 'rgba(46, 196, 182, 0.15)',
+                            color: 'var(--turquoise-cristal)',
+                            border: '1px solid rgba(46, 196, 182, 0.4)',
+                            borderRadius: '2px',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          ᛜ Rejoindre la vidéo
+                        </Link>
+                      )}
+                      {/* Bouton « Terminer la séance » : visible uniquement pour les RDV CONFIRMÉS dont l'heure de début est passée */}
+                      {appt.status === 'CONFIRMED' && new Date(appt.startsAt).getTime() <= Date.now() && (
+                        <CompleteAppointmentButton
+                          appointmentId={appt.id}
+                          clientName={clientDisplay}
+                          remainingAmount={appt.remainingAmount ?? 0}
+                          depositAmount={appt.depositAmount ?? 0}
+                          totalAmount={appt.totalAmount ?? 0}
+                        />
+                      )}
+                    </div>
                   </div>
                 );
               })}

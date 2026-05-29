@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
 import { markBookingPaidV2 } from '@/lib/holistic-v2-sync';
+import { createDailyRoomForAppointment } from '@/lib/daily-co';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
@@ -61,6 +62,25 @@ export async function POST(req: Request) {
         paidAt: usesDeposit ? null : new Date(),
       },
     });
+
+    // Création auto de la salle vidéo Daily.co si le RDV est virtuel
+    // (best-effort — si échec, la salle sera créée à la demande quand quelqu'un visite /soins/consultation/[id])
+    try {
+      const apptForVideo = await prisma.holisticAppointment.findUnique({
+        where: { id: appointmentId },
+        select: { endsAt: true, notes: true },
+      });
+      // Le mode est stocké dans les notes (« Mode : Virtuel (vidéo) » ou « Mode : Présentiel »)
+      const isVirtual = apptForVideo?.notes?.toLowerCase().includes('virtuel');
+      if (apptForVideo && isVirtual) {
+        await createDailyRoomForAppointment({
+          appointmentId,
+          endsAt: apptForVideo.endsAt,
+        });
+      }
+    } catch (err) {
+      console.error('[webhook] daily room creation failed (non-blocking)', err);
+    }
 
     // Dual-write V2 (best-effort) — marque Booking V2 + Payment V2 comme payés
     if (v2BookingId) {
