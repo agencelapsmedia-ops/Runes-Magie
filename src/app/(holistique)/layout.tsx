@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import UserNav from './UserNav';
 
 export default function HolistiqueLayout({ children }: { children: ReactNode }) {
   return (
@@ -38,12 +39,7 @@ export default function HolistiqueLayout({ children }: { children: ReactNode }) 
 
           {/* Boutons d'action */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/soins/auth/login"
-              className="font-cinzel text-xs uppercase tracking-widest text-parchemin/70 hover:text-or-ancien transition-colors duration-300 hidden sm:block"
-            >
-              Connexion
-            </Link>
+            <UserNav />
             <Button href="/soins/inscription-praticien" variant="primary" size="sm">
               Devenir praticien
             </Button>

@@ -183,6 +183,14 @@ export default function ReservationPage({
 
   async function handleConfirmAndPay() {
     if (!selectedDate || !selectedSlot || !practitioner) return;
+
+    // Vérif d'abord : doit être connecté en tant que client
+    if (isAuthenticated === false) {
+      const currentUrl = window.location.pathname + window.location.search;
+      window.location.href = `/soins/auth/login?next=${encodeURIComponent(currentUrl)}`;
+      return;
+    }
+
     setBookingError(null);
     setBooking(true);
 
@@ -204,6 +212,13 @@ export default function ReservationPage({
           mode: selectedMode,
         }),
       });
+
+      // 401 = pas connecté → redirige vers login en gardant la résa en mémoire
+      if (res.status === 401) {
+        const currentUrl = window.location.pathname + window.location.search;
+        window.location.href = `/soins/auth/login?next=${encodeURIComponent(currentUrl)}`;
+        return;
+      }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
