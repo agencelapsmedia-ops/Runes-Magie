@@ -334,6 +334,20 @@ model HolisticAppointment {
   cancelledAt    DateTime?
   cancelledBy    String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
   notes          String?
+
+  // ─── Modèle acompte + solde (Phase 2 MVP - paiement en 2 temps) ──────────
+  // Pour services individuels : acompte de 25 $ à la résa, solde facturé après la séance.
+  // Pour services de groupe (capacity > 1) : paiement complet à la résa, pas d'acompte.
+  totalAmount             Float?    // prix total de la séance (offering.price ou hourlyRate × heures)
+  depositAmount           Float?    // montant de l'acompte facturé à la résa (25 $ par défaut)
+  remainingAmount         Float?    // ce qu'il reste à facturer (totalAmount - depositAmount)
+  stripeCustomerId        String?   // Stripe Customer ID — pour réutiliser la carte
+  stripePaymentMethodId   String?   // PaymentMethod ID sauvegardé — pour charger le solde off-session
+  depositPaidAt           DateTime? // moment où l'acompte a été reçu (webhook Stripe)
+  remainderChargedAt      DateTime? // moment où le solde a été chargé (clic praticienne)
+  remainderPaymentIntentId String?  // PaymentIntent ID du paiement du solde (pour reçu)
+  completionOutcome       String?   // CHARGED | GIFTED | NO_SHOW (set quand la praticienne clique « Terminer »)
+
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
   payment        HolisticPayment?

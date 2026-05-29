@@ -83,17 +83,37 @@ export async function POST(req: Request) {
   const durationHours = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / (1000 * 60 * 60);
   // Prix : prix de l'Offering si fourni, sinon fallback sur hourlyRate × heures
   const amountTotal = offering ? offering.price : practitioner.hourlyRate * durationHours;
+
+  // ─── Modèle acompte + solde ──────────────────────────────────────────────
+  // Services individuels (capacity = 1) : acompte 25 $ à la résa, solde après séance
+  // Services de groupe (capacity > 1) : paiement complet à la résa (pas d'acompte)
+  const DEPOSIT_AMOUNT = 25;
+  const isGroupService = (offering?.capacity ?? 1) > 1;
+  const usesDeposit = !isGroupService && amountTotal > DEPOSIT_AMOUNT;
+  const amountToCharge = usesDeposit ? DEPOSIT_AMOUNT : amountTotal;
+  const amountRemaining = usesDeposit ? amountTotal - DEPOSIT_AMOUNT : 0;
+
   // Commission : taux par praticien (Practitioner.commissionPct) ou défaut env
   const commissionRate = (practitioner.commissionPct ?? parseFloat(process.env.COMMISSION_RATE || '35')) / 100;
   const amountCommission = amountTotal * commissionRate;
   const amountPractitioner = amountTotal - amountCommission;
 
-  // Créer le rdv d'abord
+  // Créer le rdv avec les infos acompte/solde
   const appointment = await prisma.holisticAppointment.create({
-    data: { clientId, practitionerId, startsAt: new Date(startsAt), endsAt: new Date(endsAt), notes: enrichedNotes, status: 'PENDING' },
+    data: {
+      clientId,
+      practitionerId,
+      startsAt: new Date(startsAt),
+      endsAt: new Date(endsAt),
+      notes: enrichedNotes,
+      status: 'PENDING',
+      totalAmount: amountTotal,
+      depositAmount: usesDeposit ? DEPOSIT_AMOUNT : amountTotal,
+      remainingAmount: amountRemaining,
+    },
   });
 
-  // Créer enregistrement paiement (pour tracker ce qu'on doit reverser au praticien)
+  // Enregistrement paiement (tracker ce qu'on doit au praticien sur le TOTAL au final)
   await prisma.holisticPayment.create({
     data: {
       appointmentId: appointment.id,
@@ -128,19 +148,25 @@ export async function POST(req: Request) {
   //  - Stripe Connect pas prêt : encaisse tout sur le compte plateforme, redistribution manuelle plus tard
   const usesStripeConnect = !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
 
+  // Description claire selon acompte ou total
+  const itemDescription = usesDeposit
+    ? `Acompte de ${DEPOSIT_AMOUNT} $ — solde de ${amountRemaining.toFixed(2)} $ facturé à la fin de la séance`
+    : `${new Date(startsAt).toLocaleDateString('fr-CA')} — ${durationHours}h${mode ? ` (${mode === 'IN_PERSON' ? 'présentiel' : 'vidéo'})` : ''}`;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const checkoutParams: any = {
     payment_method_types: ['card'],
+    customer_creation: 'always', // crée toujours un Stripe Customer pour sauvegarder la carte
     line_items: [{
       price_data: {
         currency: 'cad',
         product_data: {
           name: offering
-            ? `${offering.name} — ${practitioner.user.firstName} ${practitioner.user.lastName}`
-            : `Consultation avec ${practitioner.user.firstName} ${practitioner.user.lastName}`,
-          description: `${new Date(startsAt).toLocaleDateString('fr-CA')} — ${durationHours}h${mode ? ` (${mode === 'IN_PERSON' ? 'présentiel' : 'vidéo'})` : ''}`,
+            ? `${offering.name} — ${practitioner.user.firstName} ${practitioner.user.lastName}`.trim()
+            : `Consultation avec ${practitioner.user.firstName} ${practitioner.user.lastName}`.trim(),
+          description: itemDescription,
         },
-        unit_amount: Math.round(amountTotal * 100),
+        unit_amount: Math.round(amountToCharge * 100),
       },
       quantity: 1,
     }],
@@ -149,6 +175,10 @@ export async function POST(req: Request) {
       practitionerId,
       amountPractitionerCad: amountPractitioner.toFixed(2),
       amountCommissionCad: amountCommission.toFixed(2),
+      amountTotalCad: amountTotal.toFixed(2),
+      depositCad: usesDeposit ? DEPOSIT_AMOUNT.toFixed(2) : '0',
+      remainingCad: amountRemaining.toFixed(2),
+      usesDeposit: usesDeposit ? 'true' : 'false',
       payoutMode: usesStripeConnect ? 'auto-split' : 'manual',
       ...(v2BookingId ? { v2BookingId } : {}),
     },
@@ -158,9 +188,27 @@ export async function POST(req: Request) {
     mode: 'payment',
   };
 
-  if (usesStripeConnect) {
+  // Si acompte : sauvegarder la carte pour facturer le solde plus tard (off-session)
+  if (usesDeposit) {
     checkoutParams.payment_intent_data = {
-      application_fee_amount: Math.round(amountCommission * 100),
+      ...(checkoutParams.payment_intent_data ?? {}),
+      setup_future_usage: 'off_session',
+    };
+    // Ajoute un texte personnalisé sur la page Stripe Checkout pour informer du modèle 2-temps
+    checkoutParams.custom_text = {
+      submit: {
+        message: `En réservant, vous autorisez Runes & Magie à prélever le solde de ${amountRemaining.toFixed(2)} $ sur cette carte à la fin de votre séance.`,
+      },
+    };
+  }
+
+  if (usesStripeConnect) {
+    // Split 65/35 sur le MONTANT CHARGÉ (l'acompte si modèle 2-temps, sinon le total)
+    // Le split du solde se fera de la même façon au moment du clic « Terminer »
+    const commissionOnThisCharge = amountToCharge * commissionRate;
+    checkoutParams.payment_intent_data = {
+      ...(checkoutParams.payment_intent_data ?? {}),
+      application_fee_amount: Math.round(commissionOnThisCharge * 100),
       transfer_data: { destination: practitioner.stripeAccountId },
     };
   }
