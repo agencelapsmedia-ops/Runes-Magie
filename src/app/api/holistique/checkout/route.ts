@@ -7,6 +7,13 @@ import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
 
+// URL de la plateforme — toujours forcer un format valide (https + sans trailing slash)
+function getAppUrl(): string {
+  const raw = (process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca').trim();
+  const withProtocol = raw.startsWith('http://') || raw.startsWith('https://') ? raw : `https://${raw}`;
+  return withProtocol.replace(/\/$/, '');
+}
+
 export async function POST(req: Request) {
   try {
   const session = await holisticSession();
@@ -128,8 +135,8 @@ export async function POST(req: Request) {
       payoutMode: usesStripeConnect ? 'auto-split' : 'manual',
       ...(v2BookingId ? { v2BookingId } : {}),
     },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/dashboard/client?booking=success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/soins/reserver/${practitionerId}?cancelled=true`,
+    success_url: `${getAppUrl()}/soins/dashboard/client?booking=success`,
+    cancel_url: `${getAppUrl()}/soins/reserver/${practitionerId}?cancelled=true`,
     mode: 'payment',
   };
 
