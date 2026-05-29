@@ -4,8 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import MobileMenu from './MobileMenu';
 import GhostCaracal from '@/components/hero/GhostCaracal';
+
+interface SessionUser {
+  email?: string;
+  name?: string;
+  role?: string;
+}
 
 interface NavLink {
   label: string;
@@ -28,13 +35,62 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount] = useState(0);
   const [ghostTrigger, setGhostTrigger] = useState(0);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
 
-  const handleConnexion = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setGhostTrigger((n) => n + 1);
-    // Laisse l'animation démarrer, puis navigue
-    setTimeout(() => router.push('/admin/login'), 1800);
-  }, [router]);
+  // Charge la session côté client pour adapter le bouton « Connexion »
+  useEffect(() => {
+    async function loadSession() {
+      try {
+        const res = await fetch('/api/holistique/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setSessionUser(data.user ?? null);
+        }
+      } catch {
+        // ignore — pas connecté
+      } finally {
+        setSessionLoaded(true);
+      }
+    }
+    loadSession();
+  }, [pathname]); // recharge quand on change de page (utile après login/logout)
+
+  // Détermine la destination du bouton selon le rôle
+  const dashboardHref = sessionUser
+    ? sessionUser.role === 'PRACTITIONER'
+      ? '/soins/dashboard/praticien'
+      : sessionUser.role === 'ADMIN'
+      ? '/admin'
+      : '/soins/dashboard/client'
+    : '/soins/auth/login';
+
+  const dashboardLabel = sessionUser
+    ? sessionUser.role === 'PRACTITIONER'
+      ? 'Mon espace'
+      : sessionUser.role === 'ADMIN'
+      ? 'Admin'
+      : 'Mon compte'
+    : 'Connexion';
+
+  const handleConnexion = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      // Animation caracal fantôme uniquement vers /admin/login (route préservée pour la nostalgie)
+      // Sinon, redirection directe vers la bonne page
+      if (sessionUser) {
+        router.push(dashboardHref);
+      } else {
+        setGhostTrigger((n) => n + 1);
+        setTimeout(() => router.push('/soins/auth/login'), 1800);
+      }
+    },
+    [router, sessionUser, dashboardHref],
+  );
+
+  const handleLogout = useCallback(async () => {
+    await signOut({ callbackUrl: '/' });
+  }, []);
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 20);
@@ -128,16 +184,30 @@ export default function Navbar() {
 
             {/* Actions droites */}
             <div className="flex items-center gap-3">
-              {/* Bouton Connexion — déclenche le caracal fantôme puis navigue */}
-              <button
-                onClick={handleConnexion}
-                className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-xs tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70 hover:shadow-[0_0_10px_rgba(201,168,76,0.2)]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                </svg>
-                Connexion
-              </button>
+              {/* Bouton Connexion / Dashboard — adaptatif selon état de session */}
+              {sessionLoaded && (
+                <button
+                  onClick={handleConnexion}
+                  title={sessionUser ? `Connecté en tant que ${sessionUser.name ?? sessionUser.email}` : 'Se connecter'}
+                  className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-xs tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70 hover:shadow-[0_0_10px_rgba(201,168,76,0.2)]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                  {dashboardLabel}
+                </button>
+              )}
+
+              {/* Bouton Déconnexion (visible uniquement si connecté) */}
+              {sessionLoaded && sessionUser && (
+                <button
+                  onClick={handleLogout}
+                  className="hidden sm:flex items-center px-3 py-1.5 text-parchemin/50 hover:text-or-ancien font-cinzel text-[0.65rem] uppercase tracking-wider transition-colors duration-300"
+                  title="Se déconnecter"
+                >
+                  Déconnexion
+                </button>
+              )}
 
               {/* Icone panier */}
               <Link
