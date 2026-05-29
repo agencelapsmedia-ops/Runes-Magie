@@ -222,7 +222,11 @@ export default function ReservationPage({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setBookingError(data.error ?? 'Erreur lors de la réservation. Veuillez réessayer.');
+        // Surface l'erreur complète pour debug
+        const debugInfo = data.stripeCode || data.prismaCode
+          ? ` [${data.stripeType ?? ''}${data.stripeCode ? ` / ${data.stripeCode}` : ''}${data.prismaCode ? ` / Prisma:${data.prismaCode}` : ''}]`
+          : '';
+        setBookingError(`${data.error ?? 'Erreur lors de la réservation.'}${debugInfo}`);
         return;
       }
 

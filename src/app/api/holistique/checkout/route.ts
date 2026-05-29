@@ -8,12 +8,33 @@ import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
 
 export async function POST(req: Request) {
+  try {
   const session = await holisticSession();
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
   const { practitionerId, startsAt, endsAt, notes, offeringId, mode } = await req.json();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clientId = (session.user as any).id;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sessionRole = (session.user as any).role;
+
+  // Si la session est un AdminUser (admin via /admin/login), il n'existe pas dans HolisticUser
+  // → blocage : il faut un vrai compte CLIENT
+  if (sessionRole === 'ADMIN') {
+    return NextResponse.json(
+      { error: 'Le compte administrateur ne peut pas réserver. Crée-toi un compte client séparé pour tester.' },
+      { status: 400 },
+    );
+  }
+
+  // Vérifie que le clientId existe bien dans HolisticUser (sinon foreign key crash)
+  const clientExists = await prisma.holisticUser.findUnique({ where: { id: clientId } });
+  if (!clientExists) {
+    return NextResponse.json(
+      { error: `Compte client introuvable (id=${clientId}). Déconnecte-toi et reconnecte-toi.` },
+      { status: 400 },
+    );
+  }
 
   const practitioner = await prisma.practitioner.findUnique({
     where: { id: practitionerId },
@@ -122,4 +143,24 @@ export async function POST(req: Request) {
   const checkoutSession = await stripe.checkout.sessions.create(checkoutParams);
 
   return NextResponse.json({ url: checkoutSession.url });
+  } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const e = err as any;
+    console.error('[POST /api/holistique/checkout] error:', {
+      message: e?.message,
+      type: e?.type,
+      code: e?.code,
+      meta: e?.meta,
+      stack: e?.stack,
+    });
+    return NextResponse.json(
+      {
+        error: e?.message ?? 'Erreur lors de la réservation.',
+        stripeCode: e?.code ?? null,
+        stripeType: e?.type ?? null,
+        prismaCode: e?.code ?? null,
+      },
+      { status: 500 },
+    );
+  }
 }
