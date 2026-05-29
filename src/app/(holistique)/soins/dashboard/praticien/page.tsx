@@ -206,7 +206,7 @@ export default async function PraticienDashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [upcomingAppointments, monthRevenue, totalCompleted] = await Promise.all([
+  const [upcomingAppointments, monthRevenue, totalCompleted, pendingChangesCount] = await Promise.all([
     prisma.holisticAppointment.findMany({
       where: {
         practitionerId,
@@ -230,6 +230,9 @@ export default async function PraticienDashboardPage() {
     }),
     prisma.holisticAppointment.count({
       where: { practitionerId, status: 'COMPLETED' },
+    }),
+    prisma.pendingPractitionerChange.count({
+      where: { practitionerId, status: 'PENDING' },
     }),
   ]);
 
@@ -295,6 +298,60 @@ export default async function PraticienDashboardPage() {
       </section>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px' }}>
+        {/* Navigation espace praticien */}
+        <nav
+          style={{
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+            padding: '24px 0 12px',
+          }}
+        >
+          {[
+            { label: 'Tableau de bord', href: '/soins/dashboard/praticien' },
+            { label: 'Mon profil', href: '/soins/dashboard/praticien/profil' },
+            { label: 'Mes disponibilités', href: '/soins/dashboard/praticien/disponibilites' },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              style={{
+                fontFamily: 'var(--font-cinzel)',
+                fontSize: '0.78rem',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--turquoise-cristal)',
+                textDecoration: 'none',
+                padding: '8px 16px',
+                border: '1px solid rgba(46, 196, 182, 0.3)',
+                borderRadius: '4px',
+                background: 'rgba(46, 196, 182, 0.05)',
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Bandeau modifications en attente */}
+        {pendingChangesCount > 0 && (
+          <div
+            style={{
+              marginTop: '16px',
+              background: 'rgba(201, 168, 76, 0.08)',
+              border: '1px solid rgba(201, 168, 76, 0.4)',
+              borderRadius: '8px',
+              padding: '14px 18px',
+              fontFamily: 'var(--font-cormorant)',
+              color: 'var(--parchemin)',
+            }}
+          >
+            <span style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '0.8rem', letterSpacing: '0.08em' }}>
+              ⏳ {pendingChangesCount} demande{pendingChangesCount > 1 ? 's' : ''} en attente d&apos;approbation
+            </span>
+          </div>
+        )}
+
         {/* Divider */}
         <div
           style={{
