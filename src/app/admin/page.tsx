@@ -1,90 +1,48 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  inStock: boolean;
-  featured: boolean;
-  image: string;
-}
+const modules = [
+  { rune: 'ᚹ', label: 'Services', href: '/admin/services', desc: 'Soins, praticiens, modifications et revenus.' },
+  { rune: 'ᛗ', label: 'Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.' },
+  { rune: 'ᚲ', label: 'Commandes', href: '/admin/commandes', desc: 'Suivi des commandes de la boutique.' },
+  { rune: 'ᚤ', label: 'Inventaire', href: '/admin/produits/grid', desc: 'Catalogue, stock et édition des produits.' },
+  { rune: 'ᛚ', label: 'Catégories', href: '/admin/categories', desc: 'Catégories de produits et synchronisation.' },
+  { rune: 'ᚷ', label: 'Clover', href: '/admin/clover', desc: 'Synchronisation avec la caisse Clover.' },
+  { rune: 'ᛜ', label: 'Consultations', href: '/admin/consultations', desc: 'Rendez-vous et consultations holistiques.' },
+];
 
-interface BoutiqueStats {
-  totalProducts: number;
-  inStockCount: number;
-  outOfStockCount: number;
-  featuredCount: number;
-  categoriesCount: number;
-}
-
-function computeBoutiqueStats(products: Product[]): BoutiqueStats {
-  const categories = new Set(products.map((p) => p.category));
-  return {
-    totalProducts: products.length,
-    inStockCount: products.filter((p) => p.inStock).length,
-    outOfStockCount: products.filter((p) => !p.inStock).length,
-    featuredCount: products.filter((p) => p.featured).length,
-    categoriesCount: categories.size,
-  };
-}
+// Étoiles décoratives — positions déterministes (stables SSR/CSR, pas de Math.random au rendu)
+const STARS = Array.from({ length: 50 }, (_, i) => ({
+  size: 1 + ((i * 13) % 26) / 10,
+  top: (i * 17) % 100,
+  left: (i * 41) % 100,
+  duration: (1.5 + ((i * 7) % 30) / 10).toFixed(1),
+  opacity: (0.2 + ((i * 11) % 60) / 100).toFixed(2),
+  delay: ((i * 23) % 40) / 10,
+}));
 
 export default function AdminDashboardPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/admin/products')
-      .then((res) => res.json())
-      .then((data) => (Array.isArray(data) ? data : data.products || []))
-      .catch(() => [])
-      .then((prods) => {
-        setProducts(prods);
-        setLoading(false);
-      });
-  }, []);
-
-  const boutStats = computeBoutiqueStats(products);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
-      </div>
-    );
-  }
-
   return (
     <div>
       {/* Banner de bienvenue mystique */}
       <div className="relative min-h-[280px] flex flex-col items-center justify-center overflow-hidden bg-[#0d0a1a] rounded-2xl p-10 text-center mb-8">
         {/* Etoiles animees */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {Array.from({ length: 50 }).map((_, i) => {
-            const size = Math.random() * 2.5 + 1;
-            const top = Math.random() * 100;
-            const left = Math.random() * 100;
-            const duration = (Math.random() * 3 + 1.5).toFixed(1);
-            const opacity = (Math.random() * 0.6 + 0.2).toFixed(2);
-            const delay = (Math.random() * 4).toFixed(1);
-            return (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white animate-[twinkle_var(--d)_ease-in-out_infinite_alternate]"
-                style={{
-                  width: size, height: size,
-                  top: `${top}%`, left: `${left}%`,
-                  '--d': `${duration}s`,
-                  '--o': opacity,
-                  animationDelay: `${delay}s`,
-                  opacity: 0,
-                } as React.CSSProperties}
-              />
-            );
-          })}
+          {STARS.map((s, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white animate-[twinkle_var(--d)_ease-in-out_infinite_alternate]"
+              style={{
+                width: s.size, height: s.size,
+                top: `${s.top}%`, left: `${s.left}%`,
+                '--d': `${s.duration}s`,
+                '--o': s.opacity,
+                animationDelay: `${s.delay}s`,
+                opacity: 0,
+              } as React.CSSProperties}
+            />
+          ))}
         </div>
 
         {/* Lune */}
@@ -129,110 +87,26 @@ export default function AdminDashboardPage() {
         `}</style>
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Tableau de bord</h1>
-
-      {/* Two module cards */}
-      <div className="grid grid-cols-1 gap-6 mb-8">
-        {/* ====== MODULE BOUTIQUE ====== */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-          {/* Header */}
-          <div className="px-6 py-4 bg-gradient-to-r from-teal-600 to-teal-500 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">&#128722;</span>
-              <div>
-                <h2 className="text-lg font-bold text-white">Boutique</h2>
-                <p className="text-teal-200 text-xs">Gestion des produits</p>
-              </div>
+      {/* ====== MODULES ====== */}
+      <p className="font-cinzel text-xs tracking-[0.3em] text-violet-profond/60 uppercase mb-4">
+        Modules
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {modules.map((m) => (
+          <Link
+            key={m.href}
+            href={m.href}
+            className="group flex items-start gap-4 bg-charbon-mystere border border-violet-royal/40 rounded-lg p-5 transition-all duration-300 hover:border-or-ancien/60 hover:shadow-[0_0_20px_rgba(201,168,76,0.15)]"
+          >
+            <span className="text-4xl text-or-ancien select-none leading-none">{m.rune}</span>
+            <div>
+              <h3 className="font-cinzel text-lg text-parchemin group-hover:text-or-ancien transition-colors">
+                {m.label}
+              </h3>
+              <p className="font-cormorant text-sm text-parchemin-vieilli/70 mt-1">{m.desc}</p>
             </div>
-            <Link
-              href="/admin/produits"
-              className="text-xs font-medium text-white/80 hover:text-white bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Gerer
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-px bg-gray-100">
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">Total produits</p>
-              <p className="text-2xl font-bold text-teal-700">{boutStats.totalProducts}</p>
-            </div>
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">En stock</p>
-              <p className="text-2xl font-bold text-green-600">{boutStats.inStockCount}</p>
-            </div>
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">Rupture de stock</p>
-              <p className="text-2xl font-bold text-red-500">{boutStats.outOfStockCount}</p>
-            </div>
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">Produits vedettes</p>
-              <p className="text-2xl font-bold text-yellow-600">{boutStats.featuredCount}</p>
-            </div>
-          </div>
-
-          {/* Categories breakdown */}
-          <div className="border-t border-gray-100">
-            <div className="px-5 py-3 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Par categorie ({boutStats.categoriesCount})
-              </p>
-            </div>
-            <ul className="divide-y divide-gray-50">
-              {Object.entries(
-                products.reduce<Record<string, { count: number; inStock: number }>>(
-                  (acc, p) => {
-                    if (!acc[p.category]) acc[p.category] = { count: 0, inStock: 0 };
-                    acc[p.category].count++;
-                    if (p.inStock) acc[p.category].inStock++;
-                    return acc;
-                  },
-                  {}
-                )
-              )
-                .sort(([, a], [, b]) => b.count - a.count)
-                .map(([category, info]) => (
-                  <li
-                    key={category}
-                    className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-teal-500" />
-                      <p className="text-sm font-medium text-gray-900 capitalize">
-                        {category.replace('-', ' & ').replace('herbes encens', 'Herbes & Encens')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600">
-                        {info.count} produit{info.count > 1 ? 's' : ''}
-                      </span>
-                      <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                        {info.inStock} en stock
-                      </span>
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          </div>
-
-          {/* Quick links */}
-          <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex gap-2">
-            <Link
-              href="/admin/produits"
-              className="text-xs text-teal-600 hover:text-teal-800 font-medium"
-            >
-              Tous les produits
-            </Link>
-            <span className="text-gray-300">|</span>
-            <Link
-              href="/boutique"
-              className="text-xs text-teal-600 hover:text-teal-800 font-medium"
-            >
-              Voir la boutique
-            </Link>
-          </div>
-        </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

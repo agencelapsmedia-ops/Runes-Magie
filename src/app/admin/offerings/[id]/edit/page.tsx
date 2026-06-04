@@ -10,23 +10,37 @@ export default async function EditOfferingPage({
 }) {
   const { id } = await params;
 
-  const [offering, practitioners, existingOfferings] = await Promise.all([
-    prisma.offering.findUnique({
-      where: { id },
-      include: {
-        practitioner: { include: { user: { select: { firstName: true } } } },
-        providers: true,
-      },
-    }),
+  const offering = await prisma.offering.findUnique({
+    where: { id },
+    include: {
+      practitioner: { include: { user: { select: { firstName: true } } } },
+      providers: true,
+    },
+  });
+
+  if (!offering) notFound();
+
+  // Praticien·ne·s déjà rattaché·e·s à ce service (primaire + providers),
+  // qu'on doit toujours pouvoir re-sélectionner même s'ils ne sont pas APPROVED —
+  // sinon l'enregistrement échoue (au moins 1 praticien·ne obligatoire).
+  const associatedPractitionerIds = [
+    offering.practitionerId,
+    ...offering.providers.map((p) => p.practitionerId),
+  ];
+
+  const [practitioners, existingOfferings] = await Promise.all([
     prisma.practitioner.findMany({
-      where: { status: 'APPROVED' },
+      where: {
+        OR: [
+          { status: 'APPROVED' },
+          { id: { in: associatedPractitionerIds } },
+        ],
+      },
       include: { user: { select: { firstName: true, lastName: true } } },
       orderBy: { user: { firstName: 'asc' } },
     }),
     prisma.offering.findMany({ select: { type: true }, distinct: ['type'] }),
   ]);
-
-  if (!offering) notFound();
 
   const existingTypes = existingOfferings.map((o) => o.type).sort();
   const updateAction = updateOffering.bind(null, id);
