@@ -98,10 +98,10 @@ Helpers de données dans `services.ts` : `getByCategory(category)`,
 du menu — leurs pages restent accessibles par URL directe / CTA, mais plus dans le menu
 principal.)
 
-**Footer** (`src/components/layout/Footer.tsx`) — aligné sur le menu du haut :
-`Séances · École · Boutique · À Propos · Infolettre · Contact`.
-Pour la cohérence, « Runes Vikings » est retiré du pied de page. Le sort de « Accueil »
-dans le pied de page reste **à confirmer** (gardé lors d'un changement précédent).
+**Footer** (`src/components/layout/Footer.tsx`) — ordre final :
+`Accueil · Séances · École · Boutique · À Propos · Infolettre · Contact`.
+« Séances » et « École » sont ajoutés ; « Runes Vikings » est retiré ; « Accueil » est
+**conservé** dans le pied de page (choix confirmé par la cliente).
 
 ## Hors scope
 
