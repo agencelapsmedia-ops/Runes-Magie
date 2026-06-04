@@ -64,11 +64,11 @@ const aettir = [
 const SLIDER_GROUPS: { title: string; slugs: string[] }[] = [
   {
     title: 'Séances Rituels',
-    slugs: ['soin-rituel', 'connexion-vegetale', 'rituel-fertilite', 'soin-chantant-sonore'],
+    slugs: ['soin-rituel', 'rituel-fertilite', 'soin-chantant-sonore'],
   },
   {
     title: 'École de Sorcellerie',
-    slugs: ['cours-formations', 'formation-runes-futhark'],
+    slugs: ['cours-formations', 'formation-runes-futhark', 'connexion-vegetale'],
   },
 ];
 
