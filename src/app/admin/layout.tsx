@@ -12,16 +12,11 @@ const navItems = [
   { label: 'Inventaire', href: '/admin/produits/grid', icon: 'ᚤ' },
   { label: 'Catégories', href: '/admin/categories', icon: 'ᛚ' },
   { label: 'Clover', href: '/admin/clover', icon: 'ᚷ' },
-  { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛃ' },
-  { label: 'Rendez-vous', href: '/admin/rendez-vous', icon: 'ᛈ' },
-  { label: 'Services', href: '/admin/services', icon: 'ᚹ' },
-  { label: 'Disponibilites', href: '/admin/disponibilites', icon: 'ᛟ' },
   { label: 'Praticiens', href: '/admin/praticiens', icon: 'ᚻ' },
   { label: 'Services & Soins', href: '/admin/offerings', icon: 'ᚹ' },
   { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚷ' },
   { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
   { label: 'Revenus Holistique', href: '/admin/revenus-holistique', icon: 'ᚴ' },
-  { label: 'Parametres', href: '/admin/parametres', icon: 'ᚱ' },
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {

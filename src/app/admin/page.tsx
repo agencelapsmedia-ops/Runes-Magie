@@ -3,19 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-interface Appointment {
-  id: string;
-  clientName: string;
-  clientEmail: string;
-  serviceName: string;
-  serviceEmoji: string;
-  date: string;
-  time: string;
-  duration: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  price: number;
-}
-
 interface Product {
   id: string;
   name: string;
@@ -26,44 +13,12 @@ interface Product {
   image: string;
 }
 
-interface ReservationStats {
-  todayCount: number;
-  weekCount: number;
-  pendingCount: number;
-  weekRevenue: number;
-}
-
 interface BoutiqueStats {
   totalProducts: number;
   inStockCount: number;
   outOfStockCount: number;
   featuredCount: number;
   categoriesCount: number;
-}
-
-function computeReservationStats(appointments: Appointment[]): ReservationStats {
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay() + 1);
-  const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
-
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
-
-  const todayCount = appointments.filter((a) => a.date === todayStr).length;
-  const weekAppts = appointments.filter(
-    (a) => a.date >= startOfWeekStr && a.date <= endOfWeekStr
-  );
-  const weekCount = weekAppts.length;
-  const pendingCount = appointments.filter((a) => a.status === 'pending').length;
-  const weekRevenue = weekAppts
-    .filter((a) => a.status !== 'cancelled')
-    .reduce((sum, a) => sum + (a.price || 0), 0);
-
-  return { todayCount, weekCount, pendingCount, weekRevenue };
 }
 
 function computeBoutiqueStats(products: Product[]): BoutiqueStats {
@@ -77,53 +32,22 @@ function computeBoutiqueStats(products: Product[]): BoutiqueStats {
   };
 }
 
-const statusLabels: Record<string, string> = {
-  pending: 'En attente',
-  confirmed: 'Confirme',
-  completed: 'Termine',
-  cancelled: 'Annule',
-};
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
-
 export default function AdminDashboardPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/admin/appointments')
-        .then((res) => res.json())
-        .then((data) => data.appointments || data || [])
-        .catch(() => []),
-      fetch('/api/admin/products')
-        .then((res) => res.json())
-        .then((data) => (Array.isArray(data) ? data : data.products || []))
-        .catch(() => []),
-    ]).then(([appts, prods]) => {
-      setAppointments(appts);
-      setProducts(prods);
-      setLoading(false);
-    });
+    fetch('/api/admin/products')
+      .then((res) => res.json())
+      .then((data) => (Array.isArray(data) ? data : data.products || []))
+      .catch(() => [])
+      .then((prods) => {
+        setProducts(prods);
+        setLoading(false);
+      });
   }, []);
 
-  const resStats = computeReservationStats(appointments);
   const boutStats = computeBoutiqueStats(products);
-
-  const upcoming = appointments
-    .filter(
-      (a) =>
-        a.status !== 'cancelled' &&
-        a.date >= new Date().toISOString().split('T')[0]
-    )
-    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
-    .slice(0, 5);
 
   if (loading) {
     return (
@@ -208,124 +132,7 @@ export default function AdminDashboardPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-8">Tableau de bord</h1>
 
       {/* Two module cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* ====== MODULE RESERVATION ====== */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-          {/* Header */}
-          <div className="px-6 py-4 bg-gradient-to-r from-violet-600 to-violet-500 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">&#128197;</span>
-              <div>
-                <h2 className="text-lg font-bold text-white">Reservations</h2>
-                <p className="text-violet-200 text-xs">Gestion des rendez-vous</p>
-              </div>
-            </div>
-            <Link
-              href="/admin/rendez-vous"
-              className="text-xs font-medium text-white/80 hover:text-white bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Voir tout
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-px bg-gray-100">
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">Aujourd&apos;hui</p>
-              <p className="text-2xl font-bold text-violet-700">{resStats.todayCount}</p>
-            </div>
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">Cette semaine</p>
-              <p className="text-2xl font-bold text-blue-700">{resStats.weekCount}</p>
-            </div>
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">En attente</p>
-              <p className="text-2xl font-bold text-yellow-600">{resStats.pendingCount}</p>
-            </div>
-            <div className="bg-white p-4">
-              <p className="text-xs text-gray-500 mb-1">Revenus semaine</p>
-              <p className="text-2xl font-bold text-green-600">
-                {resStats.weekRevenue.toFixed(2)} $
-              </p>
-            </div>
-          </div>
-
-          {/* Upcoming list */}
-          <div className="border-t border-gray-100">
-            <div className="px-5 py-3 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Prochains rendez-vous
-              </p>
-            </div>
-            {upcoming.length === 0 ? (
-              <div className="px-5 py-6 text-center text-gray-400 text-sm">
-                Aucun rendez-vous a venir.
-              </div>
-            ) : (
-              <ul className="divide-y divide-gray-50">
-                {upcoming.map((appt) => (
-                  <li
-                    key={appt.id}
-                    className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{appt.serviceEmoji}</span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {appt.clientName}
-                        </p>
-                        <p className="text-xs text-gray-500">{appt.serviceName}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-sm text-gray-900">
-                          {new Date(appt.date).toLocaleDateString('fr-CA', {
-                            day: 'numeric',
-                            month: 'short',
-                          })}
-                        </p>
-                        <p className="text-xs text-gray-500">{appt.time}</p>
-                      </div>
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          statusColors[appt.status] || 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {statusLabels[appt.status] || appt.status}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Quick links */}
-          <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex gap-2">
-            <Link
-              href="/admin/calendrier"
-              className="text-xs text-violet-600 hover:text-violet-800 font-medium"
-            >
-              Calendrier
-            </Link>
-            <span className="text-gray-300">|</span>
-            <Link
-              href="/admin/services"
-              className="text-xs text-violet-600 hover:text-violet-800 font-medium"
-            >
-              Services
-            </Link>
-            <span className="text-gray-300">|</span>
-            <Link
-              href="/admin/disponibilites"
-              className="text-xs text-violet-600 hover:text-violet-800 font-medium"
-            >
-              Disponibilites
-            </Link>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-6 mb-8">
         {/* ====== MODULE BOUTIQUE ====== */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           {/* Header */}
