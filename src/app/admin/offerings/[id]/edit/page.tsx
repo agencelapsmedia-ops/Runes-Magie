@@ -84,6 +84,7 @@ export default async function EditOfferingPage({
           pricePackageMsrp: offering.pricePackageMsrp,
           numSessions: offering.numSessions,
           emoji: offering.emoji,
+          imageUrl: offering.imageUrl,
           sortOrder: offering.sortOrder,
           isFeatured: offering.isFeatured,
           isActive: offering.isActive,

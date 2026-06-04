@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { OfferingView } from '@/lib/offerings';
 
 export default function OfferingCard({ offering }: { offering: OfferingView }) {
@@ -7,16 +8,36 @@ export default function OfferingCard({ offering }: { offering: OfferingView }) {
       href={offering.detailHref}
       className="group block bg-charbon-mystere border border-violet-royal/40 rounded-lg p-8 transition-all duration-500 hover:border-violet-mystique/70 hover:shadow-[0_0_30px_rgba(107,63,160,0.15)]"
     >
-      <div className="flex items-start justify-between mb-6">
-        <div className="text-5xl text-or-ancien opacity-80 group-hover:opacity-100 transition-opacity duration-300 select-none">
-          {offering.emoji}
+      {offering.imageUrl ? (
+        <div className="relative mb-6">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-violet-royal/30">
+            <Image
+              src={offering.imageUrl}
+              alt={offering.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              unoptimized={offering.imageUrl.includes('supabase.co')}
+            />
+          </div>
+          {offering.isFormation && (
+            <span className="absolute top-3 right-3 font-cinzel text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-turquoise-cristal/40 bg-charbon-mystere/80 text-turquoise-cristal whitespace-nowrap backdrop-blur-sm">
+              Formation{offering.sessionsLabel ? ` · ${offering.sessionsLabel}` : ''}
+            </span>
+          )}
         </div>
-        {offering.isFormation && (
-          <span className="font-cinzel text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-turquoise-cristal/40 text-turquoise-cristal whitespace-nowrap">
-            Formation{offering.sessionsLabel ? ` · ${offering.sessionsLabel}` : ''}
-          </span>
-        )}
-      </div>
+      ) : (
+        <div className="flex items-start justify-between mb-6">
+          <div className="text-5xl text-or-ancien opacity-80 group-hover:opacity-100 transition-opacity duration-300 select-none">
+            {offering.emoji}
+          </div>
+          {offering.isFormation && (
+            <span className="font-cinzel text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-turquoise-cristal/40 text-turquoise-cristal whitespace-nowrap">
+              Formation{offering.sessionsLabel ? ` · ${offering.sessionsLabel}` : ''}
+            </span>
+          )}
+        </div>
+      )}
 
       <h2 className="font-cinzel text-2xl text-parchemin mb-2 group-hover:text-or-ancien transition-colors duration-300">
         {offering.name}

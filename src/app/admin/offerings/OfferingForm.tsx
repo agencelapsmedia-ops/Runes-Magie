@@ -1,5 +1,6 @@
 import DeleteOfferingButton from './DeleteOfferingButton';
 import SubmitButton from './SubmitButton';
+import OfferingImageField from './OfferingImageField';
 
 interface Practitioner {
   id: string;
@@ -28,6 +29,7 @@ interface OfferingFormProps {
     pricePackageMsrp?: number | null;
     numSessions?: number | null;
     emoji?: string;
+    imageUrl?: string | null;
     sortOrder?: number;
     isFeatured?: boolean;
     isActive?: boolean;
@@ -124,6 +126,9 @@ export default function OfferingForm({
         <label style={labelStyle} htmlFor="longDescription">Description longue (page détail)</label>
         <textarea id="longDescription" name="longDescription" rows={5} defaultValue={defaults.longDescription ?? ''} style={{ ...inputStyle, resize: 'vertical' }} />
       </div>
+
+      {/* Image du service (carte + page détail) */}
+      <OfferingImageField defaultValue={defaults.imageUrl ?? ''} />
 
       {/* Praticien·ne·s — multi-select */}
       <div>

@@ -39,6 +39,7 @@ function readOfferingFields(formData: FormData) {
   const pricePackageMsrpStr = String(formData.get('pricePackageMsrp') ?? '').trim();
   const numSessionsStr = String(formData.get('numSessions') ?? '').trim();
   const emoji = String(formData.get('emoji') ?? '*').trim() || '*';
+  const imageUrlStr = String(formData.get('imageUrl') ?? '').trim();
   const sortOrder = Number(formData.get('sortOrder') ?? 0);
   const isFeatured = formData.get('isFeatured') === 'on';
   const isActive = formData.get('isActive') !== 'off'; // default true
@@ -56,6 +57,7 @@ function readOfferingFields(formData: FormData) {
     pricePackageMsrp: pricePackageMsrpStr ? Number(pricePackageMsrpStr) : null,
     numSessions: numSessionsStr ? Number(numSessionsStr) : null,
     emoji,
+    imageUrl: imageUrlStr || null,
     sortOrder,
     isFeatured,
     isActive,
@@ -102,7 +104,7 @@ export async function createOffering(formData: FormData): Promise<void> {
       capacity: fields.capacity,
       colorHex: '#6B3FA0',
       emoji: fields.emoji,
-      imageUrl: null,
+      imageUrl: fields.imageUrl,
       features: [],
       isActive: fields.isActive,
       isFeatured: fields.isFeatured,
@@ -118,6 +120,8 @@ export async function createOffering(formData: FormData): Promise<void> {
 
   revalidatePath('/admin/offerings');
   revalidatePath('/soins');
+  revalidatePath('/seances');
+  revalidatePath('/ecole');
   redirect('/admin/offerings');
 }
 
@@ -153,6 +157,7 @@ export async function updateOffering(id: string, formData: FormData): Promise<vo
       modes,
       capacity: fields.capacity,
       emoji: fields.emoji,
+      imageUrl: fields.imageUrl,
       isActive: fields.isActive,
       isFeatured: fields.isFeatured,
       sortOrder: fields.sortOrder,
@@ -169,6 +174,8 @@ export async function updateOffering(id: string, formData: FormData): Promise<vo
 
   revalidatePath('/admin/offerings');
   revalidatePath('/soins');
+  revalidatePath('/seances');
+  revalidatePath('/ecole');
   redirect('/admin/offerings');
 }
 
@@ -188,6 +195,8 @@ export async function deleteOffering(
   await prisma.offering.delete({ where: { id } });
   revalidatePath('/admin/offerings');
   revalidatePath('/soins');
+  revalidatePath('/seances');
+  revalidatePath('/ecole');
   return { ok: true };
 }
 
@@ -200,4 +209,6 @@ export async function toggleOfferingActive(id: string): Promise<void> {
   });
   revalidatePath('/admin/offerings');
   revalidatePath('/soins');
+  revalidatePath('/seances');
+  revalidatePath('/ecole');
 }
