@@ -172,12 +172,23 @@ export async function updateOffering(id: string, formData: FormData): Promise<vo
   redirect('/admin/offerings');
 }
 
-export async function deleteOffering(id: string): Promise<void> {
+export async function deleteOffering(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  // Un service avec des réservations ne peut pas être supprimé sans effacer
+  // l'historique (réservations + paiements). On bloque proprement.
+  const bookingsCount = await prisma.booking.count({ where: { offeringId: id } });
+  if (bookingsCount > 0) {
+    return {
+      ok: false,
+      error: `Impossible de supprimer : ce service a ${bookingsCount} réservation${bookingsCount > 1 ? 's' : ''} (la suppression effacerait l'historique). Décochez plutôt « Service actif » pour le retirer du site.`,
+    };
+  }
   await prisma.offeringProvider.deleteMany({ where: { offeringId: id } });
   await prisma.offering.delete({ where: { id } });
   revalidatePath('/admin/offerings');
   revalidatePath('/soins');
-  redirect('/admin/offerings');
+  return { ok: true };
 }
 
 export async function toggleOfferingActive(id: string): Promise<void> {

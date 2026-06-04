@@ -18,7 +18,7 @@ export default async function EcolePage() {
   return (
     <section className="py-16 md:py-24 px-4">
       <div className="max-w-6xl mx-auto">
-        <SectionTitle title="École de Sorcellerie" subtitle="Cours & ateliers" as="h1" />
+        <SectionTitle title="École de Sorcellerie" subtitle="Formations, cours et ateliers" as="h1" />
         <RuneDivider className="my-12" />
         {items.length === 0 ? (
           <p className="text-center font-cormorant italic text-parchemin/50">

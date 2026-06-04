@@ -1,4 +1,5 @@
 import DeleteOfferingButton from './DeleteOfferingButton';
+import SubmitButton from './SubmitButton';
 
 interface Practitioner {
   id: string;
@@ -230,9 +231,7 @@ export default function OfferingForm({
           <a href={cancelHref} style={{ padding: '10px 20px', background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)' }}>
             Annuler
           </a>
-          <button type="submit" style={{ padding: '10px 24px', background: '#6B3FA0', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}>
-            {submitLabel}
-          </button>
+          <SubmitButton label={submitLabel} />
         </div>
       </div>
     </form>
