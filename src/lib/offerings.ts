@@ -33,6 +33,8 @@ export interface OfferingView {
   isFormation: boolean;
   sessionsLabel: string | null;
   bookingHref: string;
+  imageUrl: string | null;
+  detailHref: string;
 }
 
 function money(n: number): string {
@@ -47,6 +49,9 @@ function toView(o: OfferingRow): OfferingView {
     `${o.durationMinutes} min` + (o.capacity > 1 ? ` · ${o.capacity} places` : '');
   const lastName = o.practitioner.user.lastName;
   const practitionerName = `${o.practitioner.user.firstName}${lastName ? ' ' + lastName : ''}`;
+  const detailHref = (SEANCES_TYPES as readonly string[]).includes(o.type)
+    ? `/seances/${o.slug}`
+    : `/ecole/${o.slug}`;
 
   return {
     slug: o.slug,
@@ -62,6 +67,8 @@ function toView(o: OfferingRow): OfferingView {
     isFormation: o.pricePackage != null || (o.numSessions ?? 0) > 1,
     sessionsLabel: o.numSessions ? `${o.numSessions} séances` : null,
     bookingHref: `/soins/reserver/${o.practitionerId}?offering=${o.slug}`,
+    imageUrl: o.imageUrl,
+    detailHref,
   };
 }
 
@@ -80,6 +87,17 @@ export function getSeancesOfferings(): Promise<OfferingView[]> {
 
 export function getEcoleOfferings(): Promise<OfferingView[]> {
   return fetchByTypes(ECOLE_TYPES);
+}
+
+/** Aperçu pour la page d'accueil : un échantillon de séances + cours/ateliers. */
+export async function getHomeOfferings(limit = 6): Promise<OfferingView[]> {
+  const rows = await prisma.offering.findMany({
+    where: { type: { in: [...SEANCES_TYPES, ...ECOLE_TYPES] }, isActive: true },
+    include: offeringInclude,
+    orderBy: [{ isFeatured: 'desc' }, { sortOrder: 'asc' }],
+    take: limit,
+  });
+  return rows.map(toView);
 }
 
 export async function getOfferingViewBySlug(

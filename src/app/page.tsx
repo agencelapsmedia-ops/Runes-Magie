@@ -8,8 +8,8 @@ import ProductCard from '@/components/boutique/ProductCard';
 import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
-import { services } from '@/data/services';
-import { formatPrice } from '@/lib/utils';
+import OfferingCard from '@/components/services/OfferingCard';
+import { getHomeOfferings } from '@/lib/offerings';
 
 /* ── Elder Futhark — the three Aettir ──────────────────────── */
 const aettir = [
@@ -60,6 +60,7 @@ export default async function HomePage() {
     orderBy: { category: 'asc' },
     take: 8,
   });
+  const homeOfferings = await getHomeOfferings(6);
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
@@ -78,52 +79,8 @@ export default async function HomePage() {
         />
 
         <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {services.slice(0, 6).map((service) => (
-            <Link
-              key={service.id}
-              href={`/services/${service.slug}`}
-              className="group relative flex flex-col rounded-sm overflow-hidden
-                bg-charbon-mystere border border-violet-royal/20
-                transition-all duration-300
-                hover:-translate-y-1
-                hover:shadow-[0_8px_30px_rgba(107,63,160,0.25),0_0_15px_rgba(201,168,76,0.1)]
-                hover:border-violet-royal/40"
-            >
-              {/* Image */}
-              <div className="relative aspect-[4/3] overflow-hidden bg-gris-fumee">
-                <Image
-                  src={service.image}
-                  alt={service.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                {/* Rune icon overlay */}
-                <span className="absolute top-3 right-3 text-3xl text-or-ancien drop-shadow-[0_0_8px_rgba(201,168,76,0.6)]">
-                  {service.icon}
-                </span>
-              </div>
-
-              {/* Content */}
-              <div className="flex flex-col flex-1 p-5 gap-3">
-                <h3 className="font-cinzel text-lg text-parchemin leading-snug">
-                  {service.name}
-                </h3>
-                <p className="text-parchemin-vieilli text-sm leading-relaxed line-clamp-3 flex-1">
-                  {service.description}
-                </p>
-                <div className="flex items-center justify-between mt-auto pt-2 border-t border-violet-royal/15">
-                  <span className="text-or-ancien font-cinzel text-base">
-                    {typeof service.price === 'number'
-                      ? formatPrice(service.price)
-                      : service.price}
-                  </span>
-                  <span className="text-parchemin-vieilli text-xs">
-                    {service.duration}
-                  </span>
-                </div>
-              </div>
-            </Link>
+          {homeOfferings.map((offering) => (
+            <OfferingCard key={offering.slug} offering={offering} />
           ))}
         </div>
       </section>
@@ -244,10 +201,10 @@ export default async function HomePage() {
             <p className="text-parchemin-vieilli leading-relaxed text-lg font-philosopher">
               Praticienne des arts ancestraux, Noctura Anna canalise la sagesse
               des runes vikings, la magie des cristaux et les traditions de
-              sorcellerie depuis plus de vingt ans. Son chemin spirituel l'a
+              sorcellerie depuis plus de vingt ans. Son chemin spirituel l&rsquo;a
               men&eacute;e &agrave; cr&eacute;er Runes &amp; Magie, un espace
-              sacr&eacute; d&eacute;di&eacute; &agrave; l'&eacute;veil
-              mystique et &agrave; la gu&eacute;rison de l'&acirc;me.
+              sacr&eacute; d&eacute;di&eacute; &agrave; l&rsquo;&eacute;veil
+              mystique et &agrave; la gu&eacute;rison de l&rsquo;&acirc;me.
             </p>
             <p className="text-parchemin-vieilli/80 leading-relaxed font-philosopher">
               &Agrave; travers ses lectures intuitives, ses soins

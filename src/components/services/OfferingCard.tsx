@@ -1,16 +1,10 @@
 import Link from 'next/link';
 import type { OfferingView } from '@/lib/offerings';
 
-export default function OfferingCard({
-  offering,
-  hrefBase,
-}: {
-  offering: OfferingView;
-  hrefBase: string;
-}) {
+export default function OfferingCard({ offering }: { offering: OfferingView }) {
   return (
     <Link
-      href={`${hrefBase}/${offering.slug}`}
+      href={offering.detailHref}
       className="group block bg-charbon-mystere border border-violet-royal/40 rounded-lg p-8 transition-all duration-500 hover:border-violet-mystique/70 hover:shadow-[0_0_30px_rgba(107,63,160,0.15)]"
     >
       <div className="flex items-start justify-between mb-6">

@@ -27,7 +27,7 @@ export default async function SeancesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {seances.map((offering) => (
-              <OfferingCard key={offering.slug} offering={offering} hrefBase="/seances" />
+              <OfferingCard key={offering.slug} offering={offering} />
             ))}
           </div>
         )}
