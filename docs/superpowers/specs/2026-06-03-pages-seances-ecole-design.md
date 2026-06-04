@@ -99,9 +99,9 @@ du menu — leurs pages restent accessibles par URL directe / CTA, mais plus dan
 principal.)
 
 **Footer** (`src/components/layout/Footer.tsx`) — ordre final :
-`Accueil · Séances · École · Boutique · À Propos · Infolettre · Contact`.
-« Séances » et « École » sont ajoutés ; « Runes Vikings » est retiré ; « Accueil » est
-**conservé** dans le pied de page (choix confirmé par la cliente).
+`Séances · École · Boutique · À Propos · Infolettre · Contact`.
+« Séances » et « École » sont ajoutés ; « Runes Vikings » **et « Accueil »** sont retirés
+(le logo mène toujours à l'accueil). Pied de page entièrement aligné sur le menu du haut.
 
 ## Hors scope
 

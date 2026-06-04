@@ -781,11 +781,10 @@ git commit -m "Met à jour le menu principal : Séances, École en tête, retire
 **Files:**
 - Modify: `src/components/layout/Footer.tsx` (`NAV_LINKS`, lignes 4-11)
 
-- [ ] **Step 1 : Remplacer `NAV_LINKS`** (ajoute Séances/École, retire Runes Vikings, garde Accueil)
+- [ ] **Step 1 : Remplacer `NAV_LINKS`** (ajoute Séances/École, retire Runes Vikings **et Accueil**)
 
 ```tsx
 const NAV_LINKS = [
-  { label: 'Accueil', href: '/' },
   { label: 'Séances', href: '/seances' },
   { label: 'École', href: '/ecole' },
   { label: 'Boutique', href: '/boutique' },
@@ -801,7 +800,7 @@ const NAV_LINKS = [
 
 ```bash
 git add src/components/layout/Footer.tsx
-git commit -m "Aligne le pied de page : ajoute Séances et École, retire Runes Vikings"
+git commit -m "Aligne le pied de page : ajoute Séances et École, retire Runes Vikings et Accueil"
 ```
 
 ---
@@ -827,7 +826,7 @@ Vérifier :
 - `/seances` : 3 cartes (Soin Rituel, 2 tirages) ; une carte → `/seances/[slug]` affiche le détail.
 - `/ecole` : 4 cours + la « Formation de Base » (badge « Formation · 3 cours »).
 - Clic « Formation de Base » → `/ecole/formation-de-base` liste ses 3 cours ; clic sur un cours → `/ecole/[slug]` détail.
-- Pied de page : `Accueil · Séances · École · Boutique · À Propos · Infolettre · Contact`.
+- Pied de page : `Séances · École · Boutique · À Propos · Infolettre · Contact` (plus d'Accueil).
 
 - [ ] **Step 4 : Commit éventuel des derniers ajustements** (s'il y en a)
 
