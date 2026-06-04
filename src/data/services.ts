@@ -1,3 +1,6 @@
+export type ServiceCategory = 'seances' | 'ecole' | 'animations' | 'ceremonies';
+export type EcoleType = 'cours' | 'formation';
+
 export interface Service {
   id: string;
   slug: string;
@@ -9,6 +12,9 @@ export interface Service {
   image: string;
   icon: string;
   features: string[];
+  category: ServiceCategory;
+  type?: EcoleType; // École uniquement
+  includedCourses?: string[]; // Formation uniquement : slugs des cours regroupés
 }
 
 export const services: Service[] = [
@@ -34,6 +40,7 @@ export const services: Service[] = [
       'Fumigation d\'herbes sacrees',
       'Chaque seance est unique et adaptee a vos besoins',
     ],
+    category: 'seances',
   },
   {
     id: 'service-002',
@@ -55,6 +62,7 @@ export const services: Service[] = [
       'Analyse des risques et resultats potentiels de chaque chemin',
       'Guidance pour percevoir l\'avenue la plus interessante',
     ],
+    category: 'seances',
   },
   {
     id: 'service-003',
@@ -75,6 +83,7 @@ export const services: Service[] = [
       'Guidance rapide mais profonde',
       'Disponible en personne ou a distance',
     ],
+    category: 'seances',
   },
   {
     id: 'service-004',
@@ -98,6 +107,7 @@ export const services: Service[] = [
       'Magie des cristaux et lithotherapie',
       'Fondations solides dans l\'univers energetique et spirituel',
     ],
+    category: 'ecole',
   },
   {
     id: 'service-005',
@@ -121,6 +131,7 @@ export const services: Service[] = [
       'Capsules au choix : Tarot, Projection d\'energie, Lithomancie, Runes Futhark',
       'Location de salle, tables et chaises incluses',
     ],
+    category: 'animations',
   },
   {
     id: 'service-006',
@@ -144,5 +155,21 @@ export const services: Service[] = [
       'Plans de paiement disponibles pour les mariages',
       'Deplacement inclus ou virtuel si trop eloigne',
     ],
+    category: 'ceremonies',
   },
 ];
+
+export function getServicesByCategory(category: ServiceCategory): Service[] {
+  return services.filter((s) => s.category === category);
+}
+
+export function getServiceBySlug(slug: string): Service | undefined {
+  return services.find((s) => s.slug === slug);
+}
+
+export function getCoursesForFormation(formation: Service): Service[] {
+  if (!formation.includedCourses) return [];
+  return formation.includedCourses
+    .map((slug) => services.find((s) => s.slug === slug))
+    .filter((s): s is Service => Boolean(s));
+}
