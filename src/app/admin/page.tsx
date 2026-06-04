@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 const modules = [
   { rune: 'ᚹ', label: 'Services', href: '/admin/services', desc: 'Soins, praticiens, modifications et revenus.', sub: 'Hub holistique' },
+  { rune: 'ᛗ', label: 'Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.', sub: 'CRM & infolettre' },
   { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Inventaire, catégories et caisse Clover (POS).', sub: 'Hub e-commerce' },
 ];
 
@@ -86,7 +87,7 @@ export default function AdminDashboardPage() {
       <p className="font-cinzel text-xs tracking-[0.3em] text-violet-profond/60 uppercase mb-4">
         Modules
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {modules.map((m) => (
           <Link
             key={m.href}
