@@ -31,6 +31,14 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
                 className="object-cover"
                 unoptimized={offering.imageUrl.includes('supabase.co')}
               />
+              {offering.emoji && offering.emoji !== '*' && (
+                <span
+                  aria-hidden
+                  className="absolute top-2 left-2 flex h-10 w-10 items-center justify-center rounded-full border border-or-ancien/50 bg-charbon-mystere/70 text-xl text-or-ancien shadow-[0_2px_10px_rgba(0,0,0,0.45)] backdrop-blur-sm select-none"
+                >
+                  {offering.emoji}
+                </span>
+              )}
             </div>
           ) : (
             <div className="text-7xl md:text-8xl text-or-ancien mt-8 mb-6 animate-glow-pulse select-none">
