@@ -34,7 +34,7 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
               {offering.emoji && offering.emoji !== '*' && (
                 <span
                   aria-hidden
-                  className="absolute top-2 left-2 flex h-10 w-10 items-center justify-center rounded-full border border-or-ancien/50 bg-charbon-mystere/70 text-xl text-or-ancien shadow-[0_2px_10px_rgba(0,0,0,0.45)] backdrop-blur-sm select-none"
+                  className="absolute top-2 left-3 text-4xl text-or-ancien select-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
                 >
                   {offering.emoji}
                 </span>
