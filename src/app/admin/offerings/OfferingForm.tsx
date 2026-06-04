@@ -14,6 +14,7 @@ interface OfferingFormProps {
   action: (formData: FormData) => void | Promise<void>;
   practitioners: Practitioner[];
   existingTypes: string[];
+  categories?: { id: string; name: string; depth: number }[];
   cancelHref: string;
   submitLabel: string;
   offeringId?: string;
@@ -31,6 +32,7 @@ interface OfferingFormProps {
     numSessions?: number | null;
     emoji?: string;
     imageUrl?: string | null;
+    categoryId?: string | null;
     sortOrder?: number;
     isFeatured?: boolean;
     isActive?: boolean;
@@ -66,6 +68,7 @@ export default function OfferingForm({
   action,
   practitioners,
   existingTypes,
+  categories = [],
   cancelHref,
   submitLabel,
   offeringId,
@@ -126,6 +129,20 @@ export default function OfferingForm({
       <div>
         <label style={labelStyle} htmlFor="longDescription">Description longue (page détail)</label>
         <textarea id="longDescription" name="longDescription" rows={5} defaultValue={defaults.longDescription ?? ''} style={{ ...inputStyle, resize: 'vertical' }} />
+      </div>
+
+      {/* Catégorie (pilote les sliders de l'accueil) */}
+      <div>
+        <label style={labelStyle} htmlFor="categoryId">Catégorie</label>
+        <select id="categoryId" name="categoryId" defaultValue={defaults.categoryId ?? ''} style={inputStyle}>
+          <option value="">— Aucune catégorie —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.depth > 0 ? '  ↳ ' : ''}{c.name}</option>
+          ))}
+        </select>
+        <p style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>
+          Gérées dans Gestion site web → Catégories de services. Détermine dans quel slider de l&apos;accueil le service apparaît.
+        </p>
       </div>
 
       {/* Image du service (carte + page détail) */}

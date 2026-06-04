@@ -1,15 +1,17 @@
 import { prisma } from '@/lib/db';
 import OfferingForm from '../OfferingForm';
 import { createOffering } from '../actions';
+import { getServiceCategoryOptions } from '@/lib/service-categories';
 
 export default async function NewOfferingPage() {
-  const [practitioners, existingOfferings] = await Promise.all([
+  const [practitioners, existingOfferings, categories] = await Promise.all([
     prisma.practitioner.findMany({
       where: { status: 'APPROVED' },
       include: { user: { select: { firstName: true, lastName: true } } },
       orderBy: { user: { firstName: 'asc' } },
     }),
     prisma.offering.findMany({ select: { type: true }, distinct: ['type'] }),
+    getServiceCategoryOptions(),
   ]);
 
   const existingTypes = existingOfferings.map((o) => o.type).sort();
@@ -40,6 +42,7 @@ export default async function NewOfferingPage() {
           slug: p.slug,
         }))}
         existingTypes={existingTypes}
+        categories={categories}
         cancelHref="/admin/offerings"
         submitLabel="Créer le service"
       />

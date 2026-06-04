@@ -482,9 +482,38 @@ model Offering {
   bookings         Booking[]
   // Praticien·ne·s additionnel·le·s pouvant offrir ce service (en plus du primaire)
   providers        OfferingProvider[]
+  // Catégorie (gérée dans /admin/site/categories) — une seule par service
+  categoryId       String?
+  category         ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([type, isActive, isFeatured])
   @@index([practitionerId, isActive])
+  @@index([categoryId])
+}
+
+// ════════════════════════════════════════════════════════════════
+// CATÉGORIES DE SERVICES — gérées dans /admin/site/categories
+//  Hiérarchie 2 niveaux : parentId == null => catégorie principale, sinon
+//  sous-catégorie. showOnHome => affichée comme slider sur l'accueil.
+//  Chaque Offering appartient à UNE seule catégorie (Offering.categoryId).
+// ════════════════════════════════════════════════════════════════
+model ServiceCategory {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  description String            @default("")
+  emoji       String            @default("")
+  parentId    String?
+  parent      ServiceCategory?  @relation("ServiceCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    ServiceCategory[] @relation("ServiceCategoryTree")
+  sortOrder   Int               @default(0)
+  showOnHome  Boolean           @default(false)
+  isActive    Boolean           @default(true)
+  offerings   Offering[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([parentId, sortOrder])
 }
 
 // Table de liaison many-to-many entre Offering et Practitioner.

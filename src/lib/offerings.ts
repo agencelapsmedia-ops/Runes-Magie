@@ -127,3 +127,17 @@ export async function getOfferingsBySlugs(slugs: string[]): Promise<OfferingView
     .map(toView)
     .sort((a, b) => (order.get(a.slug) ?? 0) - (order.get(b.slug) ?? 0));
 }
+
+/**
+ * Services actifs appartenant à l'une des catégories données (par id),
+ * triés. Sert aux sliders de l'accueil pilotés par les catégories.
+ */
+export async function getOfferingsByCategoryIds(ids: string[]): Promise<OfferingView[]> {
+  if (ids.length === 0) return [];
+  const rows = await prisma.offering.findMany({
+    where: { categoryId: { in: ids }, isActive: true },
+    include: offeringInclude,
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+  });
+  return rows.map(toView);
+}

@@ -14,6 +14,12 @@ const cards = [
     href: '/admin/site/menu',
     desc: 'Liens du menu du haut et du pied de page : ajouter, réordonner, masquer.',
   },
+  {
+    rune: 'ᛒ',
+    label: 'Catégories de services',
+    href: '/admin/site/categories',
+    desc: 'Catégories et sous-catégories des services, et les sliders de la page d’accueil.',
+  },
 ];
 
 export default function SiteHubPage() {

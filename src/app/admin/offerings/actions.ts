@@ -40,6 +40,7 @@ function readOfferingFields(formData: FormData) {
   const numSessionsStr = String(formData.get('numSessions') ?? '').trim();
   const emoji = String(formData.get('emoji') ?? '*').trim() || '*';
   const imageUrlStr = String(formData.get('imageUrl') ?? '').trim();
+  const categoryIdStr = String(formData.get('categoryId') ?? '').trim();
   const sortOrder = Number(formData.get('sortOrder') ?? 0);
   const isFeatured = formData.get('isFeatured') === 'on';
   const isActive = formData.get('isActive') !== 'off'; // default true
@@ -58,6 +59,7 @@ function readOfferingFields(formData: FormData) {
     numSessions: numSessionsStr ? Number(numSessionsStr) : null,
     emoji,
     imageUrl: imageUrlStr || null,
+    categoryId: categoryIdStr || null,
     sortOrder,
     isFeatured,
     isActive,
@@ -105,6 +107,7 @@ export async function createOffering(formData: FormData): Promise<void> {
       colorHex: '#6B3FA0',
       emoji: fields.emoji,
       imageUrl: fields.imageUrl,
+      categoryId: fields.categoryId,
       features: [],
       isActive: fields.isActive,
       isFeatured: fields.isFeatured,
@@ -158,6 +161,7 @@ export async function updateOffering(id: string, formData: FormData): Promise<vo
       capacity: fields.capacity,
       emoji: fields.emoji,
       imageUrl: fields.imageUrl,
+      categoryId: fields.categoryId,
       isActive: fields.isActive,
       isFeatured: fields.isFeatured,
       sortOrder: fields.sortOrder,

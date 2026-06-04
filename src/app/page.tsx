@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
 import OfferingSlider from '@/components/services/OfferingSlider';
-import { getOfferingsBySlugs, getEcoleOfferings } from '@/lib/offerings';
+import { getHomeSliders } from '@/lib/service-categories';
 
 // Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
 // reflète immédiatement la base de données — images, prix et liens des
@@ -59,11 +59,8 @@ const aettir = [
   },
 ];
 
-// Sliders de services de l'accueil :
-//  - « Séances Rituels »      : une sélection de soins (par slug, ci-dessous).
-//  - « École de Sorcellerie » : TOUS les cours / ateliers / formations de l'École
-//                               (dynamique → un nouveau cours apparaît tout seul).
-const SEANCES_SLIDER_SLUGS = ['soin-rituel', 'rituel-fertilite', 'soin-chantant-sonore'];
+// Les sliders de l'accueil sont pilotés par les catégories de services cochées
+// « afficher sur l'accueil » (gérées dans Gestion site web → Catégories de services).
 
 export default async function HomePage() {
   const featuredProducts = await prisma.product.findMany({
@@ -71,14 +68,7 @@ export default async function HomePage() {
     orderBy: { category: 'asc' },
     take: 8,
   });
-  const [seancesOfferings, ecoleOfferings] = await Promise.all([
-    getOfferingsBySlugs(SEANCES_SLIDER_SLUGS),
-    getEcoleOfferings(),
-  ]);
-  const sliderGroups = [
-    { title: 'Séances Rituels', offerings: seancesOfferings },
-    { title: 'École de Sorcellerie', offerings: ecoleOfferings },
-  ];
+  const sliderGroups = await getHomeSliders();
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
@@ -98,7 +88,7 @@ export default async function HomePage() {
 
         <div className="mt-12">
           {sliderGroups.map((group) => (
-            <OfferingSlider key={group.title} title={group.title} offerings={group.offerings} />
+            <OfferingSlider key={group.id} title={group.title} offerings={group.offerings} />
           ))}
         </div>
       </section>
