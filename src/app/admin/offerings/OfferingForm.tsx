@@ -1,6 +1,7 @@
 import DeleteOfferingButton from './DeleteOfferingButton';
 import SubmitButton from './SubmitButton';
 import OfferingImageField from './OfferingImageField';
+import RunePicker from './RunePicker';
 
 interface Practitioner {
   id: string;
@@ -211,20 +212,22 @@ export default function OfferingForm({
         </div>
       </div>
 
+      {/* Emoji / Rune — sélecteur visuel des 24 runes */}
+      <div>
+        <label style={labelStyle}>Emoji / Rune (icône du service)</label>
+        <RunePicker defaultValue={defaults.emoji ?? '*'} />
+      </div>
+
       {/* Options */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: '20px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '24px' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
           <input type="checkbox" name="isFeatured" defaultChecked={defaults.isFeatured ?? false} style={{ width: '18px', height: '18px' }} />
           <span style={{ color: '#1F2937' }}>À la une (vedette sur la homepage)</span>
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', justifySelf: 'start', color: '#1F2937', fontWeight: 500 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
           <input type="checkbox" name="isActive" defaultChecked={defaults.isActive ?? true} style={{ width: '18px', height: '18px' }} />
           <span style={{ color: '#1F2937' }}>Service actif (visible publiquement)</span>
         </label>
-        <div>
-          <label style={{ ...labelStyle, fontSize: '0.7rem', margin: 0 }} htmlFor="emoji">Emoji / Rune</label>
-          <input id="emoji" name="emoji" type="text" maxLength={4} defaultValue={defaults.emoji ?? '*'} style={{ ...inputStyle, width: '70px', textAlign: 'center', fontSize: '1.2rem' }} />
-        </div>
       </div>
 
       {/* Boutons */}
