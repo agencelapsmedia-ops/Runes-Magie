@@ -100,6 +100,27 @@ model Category {
   @@index([displayOrder])
 }
 
+// ════════════════════════════════════════════════════════════════
+// MENU DE NAVIGATION — géré dynamiquement depuis /admin/site/menu
+//  location : HEADER (barre du haut) | FOOTER (colonne « Navigation » du pied)
+//  type     : PAGE (page interne du site) | CUSTOM (lien libre)
+//  isVisible : false = en réserve (masqué du site, conservé en admin)
+// ════════════════════════════════════════════════════════════════
+model MenuItem {
+  id           String   @id @default(cuid())
+  label        String
+  href         String
+  type         String   @default("PAGE")
+  location     String   @default("HEADER")
+  isVisible    Boolean  @default(true)
+  openInNewTab Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([location, sortOrder])
+}
+
 model Product {
   id               String    @id @default(cuid())
   slug             String    @unique

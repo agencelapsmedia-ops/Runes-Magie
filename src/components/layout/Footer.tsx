@@ -1,14 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import FooterNav from './FooterNav';
 
-const NAV_LINKS = [
-  { label: 'S\u00E9ances', href: '/seances' },
-  { label: '\u00C9cole', href: '/ecole' },
-  { label: 'Boutique', href: '/boutique' },
-  { label: '\u00C0 Propos', href: '/a-propos' },
-  { label: 'Infolettre', href: '/infolettre' },
-  { label: 'Contact', href: '/contact' },
-];
+// Les liens \u00AB Navigation \u00BB du pied de page sont g\u00E9r\u00E9s dans l'admin
+// (composant client FooterNav, /api/menu).
 
 const SERVICE_LINKS = [
   { label: 'Tirage de Runes', href: '/soins' },
@@ -82,18 +77,7 @@ export default function Footer() {
             <h3 className="font-cinzel text-sm font-semibold uppercase tracking-widest text-or-ancien mb-5">
               Navigation
             </h3>
-            <ul className="flex flex-col gap-3">
-              {NAV_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="font-cormorant text-base text-parchemin/60 transition-colors duration-300 hover:text-turquoise-cristal"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <FooterNav />
           </div>
 
           {/* Colonne 3 : Services */}

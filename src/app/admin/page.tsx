@@ -6,6 +6,7 @@ const modules = [
   { rune: 'ᚹ', label: 'Services', href: '/admin/services', desc: 'Soins, praticiens, modifications et revenus.', sub: 'Hub holistique' },
   { rune: 'ᛗ', label: 'Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.', sub: 'CRM & infolettre' },
   { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Inventaire, catégories et caisse Clover (POS).', sub: 'Hub e-commerce' },
+  { rune: 'ᛟ', label: 'Gestion site web', href: '/admin/site', desc: 'Menu de navigation et structure du site public.', sub: 'Navigation & pages' },
 ];
 
 // Étoiles décoratives — positions déterministes (stables SSR/CSR, pas de Math.random au rendu)

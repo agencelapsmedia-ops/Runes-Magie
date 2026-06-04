@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import MobileMenu from './MobileMenu';
 import GhostCaracal from '@/components/hero/GhostCaracal';
+import { DEFAULT_HEADER_LINKS, type MenuLink } from '@/lib/menu-defaults';
 
 interface SessionUser {
   email?: string;
@@ -14,18 +15,8 @@ interface SessionUser {
   role?: string;
 }
 
-interface NavLink {
-  label: string;
-  href: string;
-}
-
-const NAV_LINKS: NavLink[] = [
-  { label: 'S\u00E9ances', href: '/seances' },
-  { label: '\u00C9cole', href: '/ecole' },
-  { label: 'Boutique', href: '/boutique' },
-  { label: '\u00C0 Propos', href: '/a-propos' },
-  { label: 'Contact', href: '/contact' },
-];
+// Le menu est charg\u00E9 dynamiquement depuis /api/menu (g\u00E9r\u00E9 dans l'admin).
+// DEFAULT_HEADER_LINKS sert d'\u00E9tat initial et de repli si la base est indisponible.
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -36,6 +27,21 @@ export default function Navbar() {
   const [ghostTrigger, setGhostTrigger] = useState(0);
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [navLinks, setNavLinks] = useState<MenuLink[]>(DEFAULT_HEADER_LINKS);
+
+  // Charge le menu géré dans l'admin (/api/menu) ; repli sur les liens par défaut.
+  useEffect(() => {
+    let active = true;
+    fetch('/api/menu')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (active && Array.isArray(data?.header)) setNavLinks(data.header);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Charge la session côté client pour adapter le bouton « Connexion »
   useEffect(() => {
@@ -155,12 +161,14 @@ export default function Navbar() {
 
             {/* Navigation desktop */}
             <div className="hidden lg:flex lg:items-center lg:gap-1">
-              {NAV_LINKS.map((link) => {
+              {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    target={link.openInNewTab ? '_blank' : undefined}
+                    rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
                     className={`font-cinzel relative px-4 py-2 text-sm font-medium uppercase tracking-wide transition-all duration-300 rounded-md ${
                       isActive
                         ? 'text-or-clair'
@@ -267,7 +275,7 @@ export default function Navbar() {
       <MobileMenu
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        links={NAV_LINKS}
+        links={navLinks}
         currentPath={pathname}
       />
 
