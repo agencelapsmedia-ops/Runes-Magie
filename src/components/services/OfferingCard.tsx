@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import Button from '@/components/ui/Button';
 import type { OfferingView } from '@/lib/offerings';
 
 export default function OfferingCard({ offering }: { offering: OfferingView }) {
@@ -66,17 +67,9 @@ export default function OfferingCard({ offering }: { offering: OfferingView }) {
       </Link>
 
       {/* Bouton doré « Réserver » → page de réservation */}
-      <Link
-        href={offering.bookingHref}
-        aria-label={`Réserver : ${offering.name}`}
-        className="mt-6 inline-flex items-center justify-center rounded-sm px-6 py-3 font-cinzel text-sm font-semibold uppercase tracking-[0.15em] border border-or-clair/60 transition-all duration-300 hover:shadow-[0_0_25px_rgba(201,168,76,0.55)] hover:brightness-110 active:scale-[0.98]"
-        style={{
-          background: 'linear-gradient(135deg, var(--or-ancien), var(--or-clair))',
-          color: 'var(--charbon-mystere)',
-        }}
-      >
+      <Button href={offering.bookingHref} variant="or" size="md" className="mt-6 w-full">
         Réserver
-      </Link>
+      </Button>
     </div>
   );
 }

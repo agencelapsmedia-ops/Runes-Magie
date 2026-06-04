@@ -87,7 +87,7 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
             <p className="text-parchemin-vieilli/70 mb-8 font-philosopher text-lg">
               Choisissez votre moment et réservez en ligne.
             </p>
-            <Button href={offering.bookingHref} variant="cta" size="lg">
+            <Button href={offering.bookingHref} variant="or" size="lg">
               Réserver
             </Button>
           </div>
