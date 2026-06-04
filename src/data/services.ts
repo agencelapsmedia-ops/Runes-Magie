@@ -257,7 +257,7 @@ export function getServiceBySlug(slug: string): Service | undefined {
 }
 
 export function getCoursesForFormation(formation: Service): Service[] {
-  if (!formation.includedCourses) return [];
+  if (formation.type !== 'formation' || !formation.includedCourses) return [];
   return formation.includedCourses
     .map((slug) => services.find((s) => s.slug === slug))
     .filter((s): s is Service => Boolean(s));
