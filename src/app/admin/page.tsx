@@ -3,13 +3,9 @@
 import Link from 'next/link';
 
 const modules = [
-  { rune: 'ᚹ', label: 'Services', href: '/admin/services', desc: 'Soins, praticiens, modifications et revenus.' },
-  { rune: 'ᛗ', label: 'Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.' },
-  { rune: 'ᚲ', label: 'Commandes', href: '/admin/commandes', desc: 'Suivi des commandes de la boutique.' },
-  { rune: 'ᚤ', label: 'Inventaire', href: '/admin/produits/grid', desc: 'Catalogue, stock et édition des produits.' },
-  { rune: 'ᛚ', label: 'Catégories', href: '/admin/categories', desc: 'Catégories de produits et synchronisation.' },
-  { rune: 'ᚷ', label: 'Clover', href: '/admin/clover', desc: 'Synchronisation avec la caisse Clover.' },
-  { rune: 'ᛜ', label: 'Consultations', href: '/admin/consultations', desc: 'Rendez-vous et consultations holistiques.' },
+  { rune: 'ᚹ', label: 'Services', href: '/admin/services', desc: 'Soins, praticiens, modifications et revenus.', sub: 'Hub holistique' },
+  { rune: 'ᛗ', label: 'Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.', sub: 'CRM & infolettre' },
+  { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Inventaire, catégories et caisse Clover (POS).', sub: 'Hub e-commerce' },
 ];
 
 // Étoiles décoratives — positions déterministes (stables SSR/CSR, pas de Math.random au rendu)
@@ -91,19 +87,22 @@ export default function AdminDashboardPage() {
       <p className="font-cinzel text-xs tracking-[0.3em] text-violet-profond/60 uppercase mb-4">
         Modules
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {modules.map((m) => (
           <Link
             key={m.href}
             href={m.href}
-            className="group flex items-start gap-4 bg-charbon-mystere border border-violet-royal/40 rounded-lg p-5 transition-all duration-300 hover:border-or-ancien/60 hover:shadow-[0_0_20px_rgba(201,168,76,0.15)]"
+            className="group flex items-start gap-5 bg-charbon-mystere border border-violet-royal/40 rounded-xl p-8 transition-all duration-300 hover:border-or-ancien/60 hover:shadow-[0_0_25px_rgba(201,168,76,0.18)]"
           >
-            <span className="text-4xl text-or-ancien select-none leading-none">{m.rune}</span>
+            <span className="text-6xl text-or-ancien select-none leading-none">{m.rune}</span>
             <div>
-              <h3 className="font-cinzel text-lg text-parchemin group-hover:text-or-ancien transition-colors">
+              <h3 className="font-cinzel text-2xl text-parchemin group-hover:text-or-ancien transition-colors">
                 {m.label}
               </h3>
-              <p className="font-cormorant text-sm text-parchemin-vieilli/70 mt-1">{m.desc}</p>
+              <p className="font-cormorant text-base text-parchemin-vieilli/70 mt-1">{m.desc}</p>
+              <span className="font-cinzel text-[0.6rem] tracking-[0.2em] uppercase text-turquoise-cristal/70 mt-3 block">
+                {m.sub}
+              </span>
             </div>
           </Link>
         ))}
