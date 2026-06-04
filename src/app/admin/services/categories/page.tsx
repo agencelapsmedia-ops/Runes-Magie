@@ -242,8 +242,8 @@ export default function ServiceCategoriesPage() {
     <div style={{ fontFamily: 'sans-serif' }}>
       {/* En-tête */}
       <div style={{ marginBottom: '20px' }}>
-        <Link href="/admin/site" style={{ fontSize: '0.8rem', color: '#6B3FA0', textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          ← Gestion site web
+        <Link href="/admin/services" style={{ fontSize: '0.8rem', color: '#6B3FA0', textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          ← Services
         </Link>
         <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', margin: '8px 0 4px' }}>
           ᛒ Catégories de services

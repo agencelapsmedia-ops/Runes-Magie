@@ -15,12 +15,6 @@ const cards = [
     desc: 'Liens du menu du haut et du pied de page : ajouter, réordonner, masquer.',
   },
   {
-    rune: 'ᛒ',
-    label: 'Catégories de services',
-    href: '/admin/site/categories',
-    desc: 'Catégories et sous-catégories des services (classification).',
-  },
-  {
     rune: 'ᛜ',
     label: 'Sliders de l’accueil',
     href: '/admin/site/sliders',

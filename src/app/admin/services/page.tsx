@@ -11,7 +11,7 @@ const TONE: Record<string, string> = {
 };
 
 export default async function ServicesHubPage() {
-  const [offeringsCount, pendingPractitioners, pendingChanges, revenue] = await Promise.all([
+  const [offeringsCount, pendingPractitioners, pendingChanges, revenue, categoriesCount] = await Promise.all([
     prisma.offering.count(),
     prisma.practitioner.count({ where: { status: 'PENDING' } }),
     prisma.pendingPractitionerChange.count({ where: { status: 'PENDING' } }),
@@ -19,6 +19,7 @@ export default async function ServicesHubPage() {
       _sum: { amountTotal: true },
       where: { status: 'PAID' },
     }),
+    prisma.serviceCategory.count(),
   ]);
   const totalRevenue = revenue._sum.amountTotal ?? 0;
 
@@ -29,6 +30,14 @@ export default async function ServicesHubPage() {
       href: '/admin/offerings',
       desc: 'Soins, séances, cours et formations.',
       badge: `${offeringsCount} service${offeringsCount > 1 ? 's' : ''}`,
+      tone: 'gold' as const,
+    },
+    {
+      rune: 'ᛒ',
+      label: 'Catégories de services',
+      href: '/admin/services/categories',
+      desc: 'Catégories et sous-catégories — onglets de Services & Soins.',
+      badge: `${categoriesCount} catégorie${categoriesCount > 1 ? 's' : ''}`,
       tone: 'gold' as const,
     },
     {

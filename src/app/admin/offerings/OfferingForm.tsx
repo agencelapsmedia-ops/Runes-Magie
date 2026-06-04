@@ -118,7 +118,7 @@ export default function OfferingForm({
           ))}
         </select>
         <p style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>
-          Gérées dans Gestion site web → Catégories de services. Détermine dans quel slider de l&apos;accueil le service apparaît.
+          Gérées dans Services → Catégories de services. Détermine dans quel slider de l&apos;accueil le service apparaît.
         </p>
       </div>
 
