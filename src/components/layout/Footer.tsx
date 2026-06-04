@@ -2,9 +2,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 const NAV_LINKS = [
-  { label: 'Accueil', href: '/' },
+  { label: 'S\u00E9ances', href: '/seances' },
+  { label: '\u00C9cole', href: '/ecole' },
   { label: 'Boutique', href: '/boutique' },
-  { label: 'Runes Vikings', href: '/runes-vikings' },
   { label: '\u00C0 Propos', href: '/a-propos' },
   { label: 'Infolettre', href: '/infolettre' },
   { label: 'Contact', href: '/contact' },
