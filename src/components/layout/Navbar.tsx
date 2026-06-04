@@ -20,7 +20,6 @@ interface NavLink {
 }
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'Accueil', href: '/' },
   { label: 'Boutique', href: '/boutique' },
   { label: 'Services & Soins', href: '/soins' },
   { label: 'Runes Vikings', href: '/runes-vikings' },
