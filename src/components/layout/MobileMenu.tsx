@@ -152,10 +152,10 @@ export default function MobileMenu({
                   <Link
                     href={link.href}
                     onClick={onClose}
-                    className={`font-cinzel block rounded-lg px-4 py-3.5 text-lg font-medium tracking-wider transition-all duration-300 ${
+                    className={`font-cinzel block rounded-lg px-4 py-3.5 text-lg font-medium uppercase tracking-wider transition-all duration-300 ${
                       isActive
-                        ? 'text-turquoise-cristal bg-turquoise-cristal/10 border-l-2 border-turquoise-cristal'
-                        : 'text-parchemin/80 hover:text-or-clair hover:bg-or-ancien/5 border-l-2 border-transparent'
+                        ? 'text-or-clair bg-or-ancien/10 border-l-2 border-or-ancien'
+                        : 'text-or-ancien hover:text-or-clair hover:bg-or-ancien/5 border-l-2 border-transparent'
                     }`}
                   >
                     {link.label}
@@ -232,3 +232,4 @@ export default function MobileMenu({
     </>
   );
 }
+                  

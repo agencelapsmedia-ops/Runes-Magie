@@ -162,10 +162,10 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`font-cinzel relative px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300 rounded-md ${
+                    className={`font-cinzel relative px-4 py-2 text-sm font-medium uppercase tracking-wide transition-all duration-300 rounded-md ${
                       isActive
-                        ? 'text-turquoise-cristal'
-                        : 'text-parchemin/80 hover:text-or-clair'
+                        ? 'text-or-clair'
+                        : 'text-or-ancien hover:text-or-clair'
                     }`}
                   >
                     {link.label}
@@ -277,3 +277,4 @@ export default function Navbar() {
     </>
   );
 }
+  
