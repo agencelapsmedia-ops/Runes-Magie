@@ -503,6 +503,9 @@ model ServiceCategory {
   slug        String            @unique
   description String            @default("")
   emoji       String            @default("")
+  // Pont vers le champ technique Offering.type (SOIN, COURS, ATELIER, …) afin
+  // de garder /seances et /ecole fonctionnels sans champ « type » dans le form.
+  typeCode    String?
   parentId    String?
   parent      ServiceCategory?  @relation("ServiceCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
   children    ServiceCategory[] @relation("ServiceCategoryTree")
@@ -514,6 +517,23 @@ model ServiceCategory {
   updatedAt   DateTime          @updatedAt
 
   @@index([parentId, sortOrder])
+}
+
+// ════════════════════════════════════════════════════════════════
+// SLIDERS DE L'ACCUEIL — gérés dans /admin/site/sliders
+//  Titre libre + liste de catégories/sous-catégories (categoryIds). Le slider
+//  affiche les services rattachés à ces catégories (et à leurs sous-catégories).
+// ════════════════════════════════════════════════════════════════
+model HomeSlider {
+  id          String   @id @default(cuid())
+  title       String
+  categoryIds String[] @default([])
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
 }
 
 // Table de liaison many-to-many entre Offering et Practitioner.

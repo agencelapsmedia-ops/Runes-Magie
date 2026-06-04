@@ -18,7 +18,13 @@ const cards = [
     rune: 'ᛒ',
     label: 'Catégories de services',
     href: '/admin/site/categories',
-    desc: 'Catégories et sous-catégories des services, et les sliders de la page d’accueil.',
+    desc: 'Catégories et sous-catégories des services (classification).',
+  },
+  {
+    rune: 'ᛜ',
+    label: 'Sliders de l’accueil',
+    href: '/admin/site/sliders',
+    desc: 'Carrousels de l’accueil : titre libre + catégories à afficher.',
   },
 ];
 

@@ -4,20 +4,14 @@ import { createOffering } from '../actions';
 import { getServiceCategoryOptions } from '@/lib/service-categories';
 
 export default async function NewOfferingPage() {
-  const [practitioners, existingOfferings, categories] = await Promise.all([
+  const [practitioners, categories] = await Promise.all([
     prisma.practitioner.findMany({
       where: { status: 'APPROVED' },
       include: { user: { select: { firstName: true, lastName: true } } },
       orderBy: { user: { firstName: 'asc' } },
     }),
-    prisma.offering.findMany({ select: { type: true }, distinct: ['type'] }),
     getServiceCategoryOptions(),
   ]);
-
-  const existingTypes = existingOfferings.map((o) => o.type).sort();
-  if (existingTypes.length === 0) {
-    existingTypes.push('SOIN', 'COURS', 'CEREMONIE', 'GUIDANCE', 'ATELIER', 'CONSULTATION');
-  }
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
@@ -41,7 +35,6 @@ export default async function NewOfferingPage() {
           lastName: p.user.lastName,
           slug: p.slug,
         }))}
-        existingTypes={existingTypes}
         categories={categories}
         cancelHref="/admin/offerings"
         submitLabel="Créer le service"

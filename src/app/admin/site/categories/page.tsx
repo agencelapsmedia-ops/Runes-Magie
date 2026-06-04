@@ -128,24 +128,6 @@ export default function ServiceCategoriesPage() {
     }
   }
 
-  async function toggleShowOnHome(node: CatNode) {
-    setSavingId(node.id);
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/service-categories/${node.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ showOnHome: !node.showOnHome }),
-      });
-      if (!res.ok) throw new Error('Erreur');
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur');
-    } finally {
-      setSavingId(null);
-    }
-  }
-
   async function removeCategory(node: CatNode) {
     if (!confirm(`Supprimer la catégorie « ${node.name} » ?`)) return;
     setSavingId(node.id);
@@ -247,20 +229,7 @@ export default function ServiceCategoriesPage() {
             <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 600, background: '#EDE9FE', color: '#6B3FA0' }}>
               {node.offeringCount} service{node.offeringCount > 1 ? 's' : ''}
             </span>
-            {node.showOnHome && (
-              <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 600, background: 'rgba(201,168,76,0.15)', color: '#8A6D1F', border: '1px solid rgba(201,168,76,0.4)' }}>
-                Slider accueil
-              </span>
-            )}
 
-            <button
-              onClick={() => toggleShowOnHome(node)}
-              disabled={isSaving}
-              title={node.showOnHome ? 'Affichée comme slider sur l’accueil — cliquer pour retirer' : 'Cliquer pour afficher comme slider sur l’accueil'}
-              style={iconBtn(node.showOnHome ? '#059669' : '#9CA3AF', node.showOnHome ? '#6EE7B7' : '#D1D5DB')}
-            >
-              {node.showOnHome ? <EyeOpen /> : <EyeOff />}
-            </button>
             <button onClick={() => startEdit(node)} disabled={isSaving} style={btnStyle('#2D1B4E')} title="Modifier">✎</button>
             <button onClick={() => removeCategory(node)} disabled={isSaving} style={btnStyle('#991B1B')} title="Supprimer">🗑</button>
           </>
@@ -280,7 +249,7 @@ export default function ServiceCategoriesPage() {
           ᛒ Catégories de services
         </h1>
         <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
-          Organise tes services en catégories (et sous-catégories). L’œil 👁 choisit lesquelles deviennent des sliders sur l’accueil.
+          Organise tes services en catégories (et sous-catégories). Les carrousels de l’accueil se composent dans « Sliders de l’accueil ».
         </p>
       </div>
 
@@ -344,30 +313,12 @@ export default function ServiceCategoriesPage() {
       )}
 
       <p style={{ color: '#6B7280', fontSize: '0.85rem', lineHeight: 1.6, marginTop: '16px' }}>
-        💡 Glisse-dépose (poignée ⋮⋮) pour réordonner au sein d’un niveau. L’œil 👁 affiche/retire la catégorie comme
-        slider sur l’accueil. Pour assigner un service à une catégorie, va dans la fiche du service (Services &amp; Soins).
+        💡 Glisse-dépose (poignée ⋮⋮) pour réordonner au sein d’un niveau. Pour assigner un service à une catégorie,
+        va dans la fiche du service (Services &amp; Soins). Les carrousels se composent dans « Sliders de l’accueil ».
         <br />
         ⚠ Une catégorie avec des sous-catégories ou des services assignés ne peut pas être supprimée — vide-la d’abord.
       </p>
     </div>
-  );
-}
-
-/* ─── Icônes ─── */
-function EyeOpen() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-function EyeOff() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
   );
 }
 
@@ -399,20 +350,5 @@ function btnStyle(bg: string): React.CSSProperties {
     fontSize: '0.8rem',
     fontWeight: 600,
     whiteSpace: 'nowrap',
-  };
-}
-function iconBtn(color: string, borderColor: string): React.CSSProperties {
-  return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '30px',
-    height: '30px',
-    border: `1px solid ${borderColor}`,
-    borderRadius: '6px',
-    background: '#FFF',
-    color,
-    padding: 0,
-    cursor: 'pointer',
   };
 }

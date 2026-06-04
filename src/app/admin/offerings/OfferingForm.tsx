@@ -13,7 +13,6 @@ interface Practitioner {
 interface OfferingFormProps {
   action: (formData: FormData) => void | Promise<void>;
   practitioners: Practitioner[];
-  existingTypes: string[];
   categories?: { id: string; name: string; depth: number }[];
   cancelHref: string;
   submitLabel: string;
@@ -67,7 +66,6 @@ const labelStyle: React.CSSProperties = {
 export default function OfferingForm({
   action,
   practitioners,
-  existingTypes,
   categories = [],
   cancelHref,
   submitLabel,
@@ -93,31 +91,10 @@ export default function OfferingForm({
         maxWidth: '780px',
       }}
     >
-      {/* Nom + type */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={labelStyle} htmlFor="name">Nom du service *</label>
-          <input id="name" name="name" type="text" required defaultValue={defaults.name ?? ''} style={inputStyle} placeholder="Ex: Le Soin Rituel" />
-        </div>
-        <div>
-          <label style={labelStyle} htmlFor="type">Type *</label>
-          <input
-            id="type"
-            name="type"
-            type="text"
-            required
-            defaultValue={defaults.type ?? ''}
-            style={inputStyle}
-            placeholder="Ex: SOIN"
-            list="existingTypes"
-          />
-          <datalist id="existingTypes">
-            {existingTypes.map((t) => <option key={t} value={t} />)}
-          </datalist>
-          <p style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>
-            Tape ou choisis : {existingTypes.join(', ')}
-          </p>
-        </div>
+      {/* Nom */}
+      <div>
+        <label style={labelStyle} htmlFor="name">Nom du service *</label>
+        <input id="name" name="name" type="text" required defaultValue={defaults.name ?? ''} style={inputStyle} placeholder="Ex: Le Soin Rituel" />
       </div>
 
       {/* Description */}

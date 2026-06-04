@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { resolveTypeCode } from '@/lib/service-categories';
 
 function makeSlug(name: string): string {
   return name
@@ -28,7 +29,6 @@ function parseModes(formData: FormData): string[] {
 
 function readOfferingFields(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
-  const type = String(formData.get('type') ?? '').trim().toUpperCase().replace(/\s+/g, '_');
   const description = String(formData.get('description') ?? '').trim();
   const longDescription = String(formData.get('longDescription') ?? '').trim();
   const durationMinutes = Number(formData.get('durationMinutes') ?? 60);
@@ -47,7 +47,6 @@ function readOfferingFields(formData: FormData) {
 
   return {
     name,
-    type,
     description: description || name,
     longDescription,
     durationMinutes,
@@ -71,8 +70,8 @@ export async function createOffering(formData: FormData): Promise<void> {
   const practitionerIds = parsePractitioners(formData);
   const modes = parseModes(formData);
 
-  if (!fields.name || !fields.type || !practitionerIds.length || !modes.length) {
-    throw new Error('Nom, type, au moins 1 praticien·ne et au moins 1 mode sont obligatoires.');
+  if (!fields.name || !practitionerIds.length || !modes.length) {
+    throw new Error('Nom, au moins 1 praticien·ne et au moins 1 mode sont obligatoires.');
   }
 
   const baseSlug = makeSlug(fields.name);
@@ -89,7 +88,7 @@ export async function createOffering(formData: FormData): Promise<void> {
   const offering = await prisma.offering.create({
     data: {
       practitionerId: primaryId,
-      type: fields.type,
+      type: await resolveTypeCode(fields.categoryId),
       slug,
       name: fields.name,
       description: fields.description,
@@ -136,8 +135,8 @@ export async function updateOffering(id: string, formData: FormData): Promise<vo
   const practitionerIds = parsePractitioners(formData);
   const modes = parseModes(formData);
 
-  if (!fields.name || !fields.type || !practitionerIds.length || !modes.length) {
-    throw new Error('Nom, type, au moins 1 praticien·ne et au moins 1 mode sont obligatoires.');
+  if (!fields.name || !practitionerIds.length || !modes.length) {
+    throw new Error('Nom, au moins 1 praticien·ne et au moins 1 mode sont obligatoires.');
   }
 
   const primaryId = practitionerIds[0];
@@ -147,7 +146,7 @@ export async function updateOffering(id: string, formData: FormData): Promise<vo
     where: { id },
     data: {
       practitionerId: primaryId,
-      type: fields.type,
+      type: await resolveTypeCode(fields.categoryId),
       name: fields.name,
       description: fields.description,
       longDescription: fields.longDescription,

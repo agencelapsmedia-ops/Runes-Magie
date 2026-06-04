@@ -76,28 +76,55 @@ export async function getServiceCategoryOptions(): Promise<ServiceCategoryOption
 export interface HomeSlider {
   id: string;
   title: string;
-  emoji: string;
   offerings: OfferingView[];
 }
 
 /**
- * Sliders de la page d'accueil : chaque catégorie cochée « afficher sur
- * l'accueil » (showOnHome) et active devient un slider, rempli des services
- * qui lui sont assignés ET de ceux de ses sous-catégories.
- * Une catégorie sans service n'affiche aucun slider (géré par OfferingSlider).
+ * Sliders de la page d'accueil : pilotés par les objets HomeSlider (gérés dans
+ * /admin/site/sliders). Chaque slider a un titre libre + une liste de
+ * catégories/sous-catégories ; il affiche les services rattachés à ces
+ * catégories ET à leurs sous-catégories. Un slider sans service ne s'affiche
+ * pas (géré par OfferingSlider).
  */
 export async function getHomeSliders(): Promise<HomeSlider[]> {
-  const cats = await prisma.serviceCategory.findMany({
-    where: { showOnHome: true, isActive: true },
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    include: { children: { select: { id: true } } },
-  });
+  const [sliders, cats] = await Promise.all([
+    prisma.homeSlider.findMany({ where: { isVisible: true }, orderBy: [{ sortOrder: 'asc' }] }),
+    prisma.serviceCategory.findMany({ select: { id: true, parentId: true } }),
+  ]);
 
-  const sliders: HomeSlider[] = [];
-  for (const cat of cats) {
-    const ids = [cat.id, ...cat.children.map((c) => c.id)];
-    const offerings = await getOfferingsByCategoryIds(ids);
-    sliders.push({ id: cat.id, title: cat.name, emoji: cat.emoji, offerings });
+  // parent → ids des sous-catégories (pour étendre une sélection à ses enfants)
+  const childrenOf = new Map<string, string[]>();
+  for (const c of cats) {
+    if (c.parentId) {
+      const arr = childrenOf.get(c.parentId) ?? [];
+      arr.push(c.id);
+      childrenOf.set(c.parentId, arr);
+    }
   }
-  return sliders;
+
+  const result: HomeSlider[] = [];
+  for (const s of sliders) {
+    const ids = new Set<string>();
+    for (const id of s.categoryIds) {
+      ids.add(id);
+      for (const childId of childrenOf.get(id) ?? []) ids.add(childId);
+    }
+    const offerings = ids.size ? await getOfferingsByCategoryIds([...ids]) : [];
+    result.push({ id: s.id, title: s.title, offerings });
+  }
+  return result;
+}
+
+/**
+ * Code « type » technique associé à une catégorie (pour tenir Offering.type à
+ * jour sans champ libre). Renvoie le typeCode de la catégorie, sinon celui de
+ * son parent, sinon '' (service non rattaché à une page publique /seances ou /ecole).
+ */
+export async function resolveTypeCode(categoryId: string | null): Promise<string> {
+  if (!categoryId) return '';
+  const cat = await prisma.serviceCategory.findUnique({
+    where: { id: categoryId },
+    select: { typeCode: true, parent: { select: { typeCode: true } } },
+  });
+  return cat?.typeCode ?? cat?.parent?.typeCode ?? '';
 }

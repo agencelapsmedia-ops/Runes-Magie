@@ -29,7 +29,7 @@ export default async function EditOfferingPage({
     ...offering.providers.map((p) => p.practitionerId),
   ];
 
-  const [practitioners, existingOfferings, categories] = await Promise.all([
+  const [practitioners, categories] = await Promise.all([
     prisma.practitioner.findMany({
       where: {
         OR: [
@@ -40,11 +40,9 @@ export default async function EditOfferingPage({
       include: { user: { select: { firstName: true, lastName: true } } },
       orderBy: { user: { firstName: 'asc' } },
     }),
-    prisma.offering.findMany({ select: { type: true }, distinct: ['type'] }),
     getServiceCategoryOptions(),
   ]);
 
-  const existingTypes = existingOfferings.map((o) => o.type).sort();
   const updateAction = updateOffering.bind(null, id);
 
   return (
@@ -69,7 +67,6 @@ export default async function EditOfferingPage({
           lastName: p.user.lastName,
           slug: p.slug,
         }))}
-        existingTypes={existingTypes}
         categories={categories}
         cancelHref="/admin/offerings"
         submitLabel="Enregistrer les modifications"
