@@ -211,6 +211,17 @@ export default async function PraticiensAdminPage({
                   {/* Actions */}
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {p.status === 'APPROVED' && (
+                        <a
+                          href={`/soins/praticiens/${p.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Voir la fiche publique du praticien (nouvel onglet)"
+                          style={{ padding: '6px 14px', background: '#CCFBF1', color: '#0F766E', border: '1px solid #5EEAD4', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)', textDecoration: 'none' }}
+                        >
+                          Voir
+                        </a>
+                      )}
                       <a
                         href={`/admin/praticiens/${p.id}/edit`}
                         style={{ padding: '6px 14px', background: '#EDE9FE', color: '#6B3FA0', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)', textDecoration: 'none' }}
