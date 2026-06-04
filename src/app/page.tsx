@@ -11,6 +11,11 @@ import { prisma } from '@/lib/db';
 import OfferingCard from '@/components/services/OfferingCard';
 import { getHomeOfferings } from '@/lib/offerings';
 
+// Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
+// reflète immédiatement la base de données — images, prix et liens des
+// services restent à jour sans attendre un redéploiement.
+export const dynamic = 'force-dynamic';
+
 /* ── Elder Futhark — the three Aettir ──────────────────────── */
 const aettir = [
   {
