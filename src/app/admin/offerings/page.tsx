@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import OfferingRowActions from './OfferingRowActions';
 
 export default async function OfferingsAdminPage({
   searchParams,
@@ -172,12 +173,7 @@ export default async function OfferingsAdminPage({
                           )}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          <a
-                            href={`/admin/offerings/${o.id}/edit`}
-                            style={{ padding: '6px 14px', background: '#EDE9FE', color: '#6B3FA0', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)' }}
-                          >
-                            Modifier
-                          </a>
+                          <OfferingRowActions offeringId={o.id} isActive={o.isActive} />
                         </td>
                       </tr>
                     );
