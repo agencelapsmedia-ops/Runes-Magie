@@ -1,6 +1,3 @@
-export type ServiceCategory = 'seances' | 'ecole' | 'animations' | 'ceremonies';
-export type EcoleType = 'cours' | 'formation';
-
 export interface Service {
   id: string;
   slug: string;
@@ -12,9 +9,6 @@ export interface Service {
   image: string;
   icon: string;
   features: string[];
-  category: ServiceCategory;
-  type?: EcoleType; // École uniquement
-  includedCourses?: string[]; // Formation uniquement : slugs des cours regroupés
 }
 
 export const services: Service[] = [
@@ -40,7 +34,6 @@ export const services: Service[] = [
       'Fumigation d\'herbes sacrees',
       'Chaque seance est unique et adaptee a vos besoins',
     ],
-    category: 'seances',
   },
   {
     id: 'service-002',
@@ -62,7 +55,6 @@ export const services: Service[] = [
       'Analyse des risques et resultats potentiels de chaque chemin',
       'Guidance pour percevoir l\'avenue la plus interessante',
     ],
-    category: 'seances',
   },
   {
     id: 'service-003',
@@ -83,119 +75,28 @@ export const services: Service[] = [
       'Guidance rapide mais profonde',
       'Disponible en personne ou a distance',
     ],
-    category: 'seances',
   },
-  // ─── ÉCOLE : COURS UNIQUES ───
   {
     id: 'service-004',
-    slug: 'cours-prive',
-    name: 'Cours Privé',
+    slug: 'cours-formations',
+    name: 'Formations & Cours Prives',
     price: 89.99,
     duration: '60 minutes',
     description:
-      "Session individuelle de formation, sur place ou en virtuel, adaptée à vos besoins et à votre rythme.",
+      "Session individuelle de formation, sur place ou en virtuel, selon vos besoins. Ideale pour developper des fondations solides dans l'univers energetique et spirituel.",
     longDescription:
-      "Le Cours Privé est une session individuelle entièrement personnalisée. Sur place ou en virtuel, Noctura adapte le contenu à vos besoins et à votre rythme. Idéal pour approfondir un sujet précis de l'univers énergétique et spirituel, à votre convenance.",
+      "Les Formations & Cours Prives de Runes & Magie vous offrent un apprentissage personnalise dans l'univers energetique et spirituel. Que ce soit en session individuelle (Cours Prive) ou en Formation de Base, chaque cours est adapte a vos besoins et a votre rythme. Les sessions sont disponibles sur place ou en virtuel. Les formations couvrent un large eventail de sujets : initiation aux runes et au Futhark ancien, lecture du Tarot, magie des cristaux et lithotherapie, herbalisme magique, creation de rituels, et bien plus encore. Chaque cours allie theorie et pratique pour vous transmettre un savoir authentique et applicable.",
     image: '/images/services/cours-formations.svg',
     icon: 'ᚱ',
     features: [
-      'Session individuelle personnalisée',
-      'Sur place ou en virtuel',
-      'Contenu adapté à vos besoins',
-      'Théorie et pratique',
-    ],
-    category: 'ecole',
-    type: 'cours',
-  },
-  {
-    id: 'service-007',
-    slug: 'cours-initiation-runes',
-    name: 'Initiation aux Runes & Futhark',
-    price: 89.99,
-    duration: '60 minutes',
-    description:
-      "Découverte des Runes Futhark, l'alphabet sacré nordique vieux de plus de 3 millénaires.",
-    longDescription:
-      "Ce cours d'initiation vous fait découvrir les 25 Runes du Futhark ancien, leur histoire viking et leur usage divinatoire. Vous apprendrez à reconnaître chaque symbole, sa signification, et les bases du tirage de runes.",
-    image: '/images/services/cours-formations.svg',
-    icon: 'ᚠ',
-    features: [
-      'Histoire et origine des Runes Futhark',
-      'Signification des 25 symboles',
-      'Bases du tirage de runes',
-      'Théorie et pratique',
-    ],
-    category: 'ecole',
-    type: 'cours',
-  },
-  {
-    id: 'service-008',
-    slug: 'cours-lecture-tarot',
-    name: 'Lecture du Tarot',
-    price: 89.99,
-    duration: '60 minutes',
-    description:
-      "Apprenez les fondements de la lecture du Tarot et la signification des arcanes.",
-    longDescription:
-      "Ce cours vous enseigne les fondements de la lecture du Tarot : la structure du jeu, la signification des arcanes majeurs et mineurs, et les méthodes de tirage. Une porte d'entrée concrète vers la pratique divinatoire.",
-    image: '/images/services/cours-formations.svg',
-    icon: 'ᛈ',
-    features: [
-      'Structure du jeu de Tarot',
-      'Arcanes majeurs et mineurs',
-      'Méthodes de tirage',
-      'Théorie et pratique',
-    ],
-    category: 'ecole',
-    type: 'cours',
-  },
-  {
-    id: 'service-009',
-    slug: 'cours-magie-cristaux',
-    name: 'Magie des Cristaux & Lithothérapie',
-    price: 89.99,
-    duration: '60 minutes',
-    description:
-      "Découvrez les propriétés énergétiques des pierres et cristaux et leur usage en soin.",
-    longDescription:
-      "Ce cours explore la magie des cristaux et la lithothérapie : reconnaître les pierres, comprendre leurs propriétés énergétiques, les purifier, les recharger et les utiliser dans vos rituels et vos soins.",
-    image: '/images/services/cours-formations.svg',
-    icon: 'ᛊ',
-    features: [
-      'Reconnaître les pierres et cristaux',
-      'Propriétés énergétiques',
-      'Purification et recharge',
-      'Usage en rituel et en soin',
-    ],
-    category: 'ecole',
-    type: 'cours',
-  },
-  // ─── ÉCOLE : FORMATION (programme de plusieurs cours) ───
-  {
-    id: 'service-010',
-    slug: 'formation-de-base',
-    name: 'Formation de Base',
-    price: 'À partir de 269.99$',
-    duration: 'Plusieurs séances',
-    description:
-      "Programme complet regroupant plusieurs cours pour bâtir des fondations solides dans l'univers énergétique et spirituel.",
-    longDescription:
-      "La Formation de Base est un programme structuré qui regroupe plusieurs cours en continu. Elle vous accompagne pas à pas pour bâtir des fondations solides : initiation aux runes, lecture du Tarot et magie des cristaux. Un parcours progressif alliant théorie et pratique.",
-    image: '/images/services/cours-formations.svg',
-    icon: 'ᛟ',
-    features: [
-      'Programme structuré de plusieurs cours',
-      'Parcours progressif théorie + pratique',
-      'Initiation aux Runes & Futhark',
-      'Lecture du Tarot',
-      'Magie des Cristaux & Lithothérapie',
-    ],
-    category: 'ecole',
-    type: 'formation',
-    includedCourses: [
-      'cours-initiation-runes',
-      'cours-lecture-tarot',
-      'cours-magie-cristaux',
+      'Cours Prive : 89.99$ / 60 minutes',
+      'Formation de Base : 89.99$ / 60 minutes',
+      'Session individuelle personnalisee',
+      'Disponible sur place ou en virtuel',
+      'Initiation aux runes et au Futhark ancien',
+      'Apprentissage de la lecture du Tarot',
+      'Magie des cristaux et lithotherapie',
+      'Fondations solides dans l\'univers energetique et spirituel',
     ],
   },
   {
@@ -220,7 +121,6 @@ export const services: Service[] = [
       'Capsules au choix : Tarot, Projection d\'energie, Lithomancie, Runes Futhark',
       'Location de salle, tables et chaises incluses',
     ],
-    category: 'animations',
   },
   {
     id: 'service-006',
@@ -244,21 +144,5 @@ export const services: Service[] = [
       'Plans de paiement disponibles pour les mariages',
       'Deplacement inclus ou virtuel si trop eloigne',
     ],
-    category: 'ceremonies',
   },
 ];
-
-export function getServicesByCategory(category: ServiceCategory): Service[] {
-  return services.filter((s) => s.category === category);
-}
-
-export function getServiceBySlug(slug: string): Service | undefined {
-  return services.find((s) => s.slug === slug);
-}
-
-export function getCoursesForFormation(formation: Service): Service[] {
-  if (formation.type !== 'formation' || !formation.includedCourses) return [];
-  return formation.includedCourses
-    .map((slug) => services.find((s) => s.slug === slug))
-    .filter((s): s is Service => Boolean(s));
-}

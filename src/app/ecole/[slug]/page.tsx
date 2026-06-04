@@ -1,16 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import {
-  getServicesByCategory,
-  getServiceBySlug,
-  getCoursesForFormation,
-} from '@/data/services';
-import ServiceDetailView from '@/components/services/ServiceDetailView';
-import FormationDetailView from '@/components/services/FormationDetailView';
+import { getOfferingViewBySlug, ECOLE_TYPES } from '@/lib/offerings';
+import OfferingDetailView from '@/components/services/OfferingDetailView';
 
-export function generateStaticParams() {
-  return getServicesByCategory('ecole').map((s) => ({ slug: s.slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
@@ -18,9 +11,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const service = getServiceBySlug(slug);
-  if (!service) return { title: 'Page introuvable | Runes & Magie' };
-  return { title: `${service.name} | Runes & Magie`, description: service.description };
+  const offering = await getOfferingViewBySlug(slug, ECOLE_TYPES);
+  if (!offering) return { title: 'Page introuvable | Runes & Magie' };
+  return { title: `${offering.name} | Runes & Magie`, description: offering.description };
 }
 
 export default async function EcoleDetailPage({
@@ -29,11 +22,7 @@ export default async function EcoleDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const service = getServiceBySlug(slug);
-  if (!service || service.category !== 'ecole') notFound();
-
-  if (service.type === 'formation') {
-    return <FormationDetailView formation={service} courses={getCoursesForFormation(service)} />;
-  }
-  return <ServiceDetailView service={service} />;
+  const offering = await getOfferingViewBySlug(slug, ECOLE_TYPES);
+  if (!offering) notFound();
+  return <OfferingDetailView offering={offering} />;
 }

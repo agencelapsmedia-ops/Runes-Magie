@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getServicesByCategory, getServiceBySlug } from '@/data/services';
-import ServiceDetailView from '@/components/services/ServiceDetailView';
+import { getOfferingViewBySlug, SEANCES_TYPES } from '@/lib/offerings';
+import OfferingDetailView from '@/components/services/OfferingDetailView';
 
-export function generateStaticParams() {
-  return getServicesByCategory('seances').map((s) => ({ slug: s.slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
@@ -13,9 +11,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const service = getServiceBySlug(slug);
-  if (!service) return { title: 'Séance introuvable | Runes & Magie' };
-  return { title: `${service.name} | Runes & Magie`, description: service.description };
+  const offering = await getOfferingViewBySlug(slug, SEANCES_TYPES);
+  if (!offering) return { title: 'Séance introuvable | Runes & Magie' };
+  return { title: `${offering.name} | Runes & Magie`, description: offering.description };
 }
 
 export default async function SeanceDetailPage({
@@ -24,7 +22,7 @@ export default async function SeanceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const service = getServiceBySlug(slug);
-  if (!service || service.category !== 'seances') notFound();
-  return <ServiceDetailView service={service} />;
+  const offering = await getOfferingViewBySlug(slug, SEANCES_TYPES);
+  if (!offering) notFound();
+  return <OfferingDetailView offering={offering} />;
 }
