@@ -8,8 +8,8 @@ import ProductCard from '@/components/boutique/ProductCard';
 import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
-import OfferingCard from '@/components/services/OfferingCard';
-import { getHomeOfferings } from '@/lib/offerings';
+import OfferingSlider from '@/components/services/OfferingSlider';
+import { getOfferingsBySlugs } from '@/lib/offerings';
 
 // Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
 // reflète immédiatement la base de données — images, prix et liens des
@@ -59,13 +59,31 @@ const aettir = [
   },
 ];
 
+// Regroupement manuel des services en sliders (par slug, indépendant du type).
+// Pour modifier l'accueil : ajuste les slugs / titres ci-dessous.
+const SLIDER_GROUPS: { title: string; slugs: string[] }[] = [
+  {
+    title: 'Séances Rituels',
+    slugs: ['soin-rituel', 'connexion-vegetale', 'rituel-fertilite', 'soin-chantant-sonore'],
+  },
+  {
+    title: 'École de Sorcellerie',
+    slugs: ['cours-formations', 'formation-runes-futhark'],
+  },
+];
+
 export default async function HomePage() {
   const featuredProducts = await prisma.product.findMany({
     where: { featured: true, inStock: true },
     orderBy: { category: 'asc' },
     take: 8,
   });
-  const homeOfferings = await getHomeOfferings(6);
+  const sliderGroups = await Promise.all(
+    SLIDER_GROUPS.map(async (g) => ({
+      title: g.title,
+      offerings: await getOfferingsBySlugs(g.slugs),
+    })),
+  );
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
@@ -83,9 +101,9 @@ export default async function HomePage() {
           subtitle="Guidance, soins et enseignements pour illuminer votre chemin"
         />
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {homeOfferings.map((offering) => (
-            <OfferingCard key={offering.slug} offering={offering} />
+        <div className="mt-12">
+          {sliderGroups.map((group) => (
+            <OfferingSlider key={group.title} title={group.title} offerings={group.offerings} />
           ))}
         </div>
       </section>
