@@ -93,15 +93,15 @@ Helpers de données dans `services.ts` : `getByCategory(category)`,
 ## Menu
 
 **Navbar** (`src/components/layout/Navbar.tsx`) — nouvel ordre :
-`Séances · École · Boutique · Runes Vikings · À Propos · Contact`
-(« Accueil » déjà retiré ; « Services & Soins → /soins » retiré du menu — `/soins` reste
-accessible via les CTA de la page d'accueil et son propre layout.)
+`Séances · École · Boutique · À Propos · Contact`
+(« Accueil » déjà retiré ; « Services & Soins → /soins » **et « Runes Vikings »** retirés
+du menu — leurs pages restent accessibles par URL directe / CTA, mais plus dans le menu
+principal.)
 
 **Footer** (`src/components/layout/Footer.tsx`) — aligné sur le menu du haut :
-`Séances · École · Boutique · Runes Vikings · À Propos · Infolettre · Contact`.
-Pour la cohérence avec le menu du haut, « Accueil » est **retiré du pied de page**
-(le logo mène toujours à l'accueil). *À confirmer — la cliente avait gardé l'Accueil du
-pied de page lors d'un changement précédent.*
+`Séances · École · Boutique · À Propos · Infolettre · Contact`.
+Pour la cohérence, « Runes Vikings » est retiré du pied de page. Le sort de « Accueil »
+dans le pied de page reste **à confirmer** (gardé lors d'un changement précédent).
 
 ## Hors scope
 
@@ -113,8 +113,8 @@ pied de page lors d'un changement précédent.*
 ## Vérification
 
 1. `npm run dev` (un serveur tourne déjà sur le port 3000) — vérifier via HMR.
-2. Menu du haut : affiche Séances · École · Boutique · Runes Vikings · À Propos · Contact,
-   dans cet ordre, plus de « Accueil » ni « Services & Soins ».
+2. Menu du haut : affiche Séances · École · Boutique · À Propos · Contact, dans cet ordre
+   — plus de « Accueil », « Services & Soins » ni « Runes Vikings ».
 3. `/seances` : liste Soin Rituel + les 2 tirages ; une carte mène à `/seances/[slug]`.
 4. `/ecole` : liste les cours uniques **et** la Formation de Base ensemble ; la formation
    affiche un indicateur « N cours ».
