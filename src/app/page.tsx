@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
 import OfferingSlider from '@/components/services/OfferingSlider';
-import { getOfferingsBySlugs } from '@/lib/offerings';
+import { getOfferingsBySlugs, getEcoleOfferings } from '@/lib/offerings';
 
 // Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
 // reflète immédiatement la base de données — images, prix et liens des
@@ -59,18 +59,11 @@ const aettir = [
   },
 ];
 
-// Regroupement manuel des services en sliders (par slug, indépendant du type).
-// Pour modifier l'accueil : ajuste les slugs / titres ci-dessous.
-const SLIDER_GROUPS: { title: string; slugs: string[] }[] = [
-  {
-    title: 'Séances Rituels',
-    slugs: ['soin-rituel', 'rituel-fertilite', 'soin-chantant-sonore'],
-  },
-  {
-    title: 'École de Sorcellerie',
-    slugs: ['cours-formations', 'formation-runes-futhark', 'connexion-vegetale'],
-  },
-];
+// Sliders de services de l'accueil :
+//  - « Séances Rituels »      : une sélection de soins (par slug, ci-dessous).
+//  - « École de Sorcellerie » : TOUS les cours / ateliers / formations de l'École
+//                               (dynamique → un nouveau cours apparaît tout seul).
+const SEANCES_SLIDER_SLUGS = ['soin-rituel', 'rituel-fertilite', 'soin-chantant-sonore'];
 
 export default async function HomePage() {
   const featuredProducts = await prisma.product.findMany({
@@ -78,12 +71,14 @@ export default async function HomePage() {
     orderBy: { category: 'asc' },
     take: 8,
   });
-  const sliderGroups = await Promise.all(
-    SLIDER_GROUPS.map(async (g) => ({
-      title: g.title,
-      offerings: await getOfferingsBySlugs(g.slugs),
-    })),
-  );
+  const [seancesOfferings, ecoleOfferings] = await Promise.all([
+    getOfferingsBySlugs(SEANCES_SLIDER_SLUGS),
+    getEcoleOfferings(),
+  ]);
+  const sliderGroups = [
+    { title: 'Séances Rituels', offerings: seancesOfferings },
+    { title: 'École de Sorcellerie', offerings: ecoleOfferings },
+  ];
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
