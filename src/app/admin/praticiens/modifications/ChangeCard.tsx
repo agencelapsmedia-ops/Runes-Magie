@@ -21,7 +21,7 @@ interface CurrentData {
   yearsExperience: number;
   hourlyRate: number;
   photoUrl: string | null;
-  availabilities: { day: string; startTime: string; endTime: string }[];
+  availabilities: { day: string; date?: string | null; startTime: string; endTime: string }[];
 }
 
 interface Props {
@@ -47,6 +47,58 @@ function formatValue(value: unknown): string {
   if (Array.isArray(value)) return value.join(', ') || '(aucune)';
   if (typeof value === 'number') return value.toString();
   return String(value);
+}
+
+// "YYYY-MM-DD" => "ven. 13 juin". On ancre à midi local pour éviter tout décalage de jour.
+function formatPunctualDate(d: string): string {
+  return new Date(`${d}T12:00:00`).toLocaleDateString('fr-CA', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+type AvailItem = { dayLabel: string; date?: string | null; startTime: string; endTime: string };
+
+// Rend une liste de disponibilités en séparant la semaine type (récurrent) des
+// dates ponctuelles (avec date précise). Utilisé pour les colonnes Avant et Après.
+function renderAvailabilityList(items: AvailItem[], textColor: string) {
+  if (!items.length) return <em>Aucun créneau</em>;
+  const recurring = items.filter((i) => !i.date);
+  const punctual = items.filter((i) => i.date);
+  const subLabel = {
+    fontFamily: 'var(--font-cinzel, serif)',
+    fontSize: '0.62rem',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.06em',
+    margin: '0 0 4px',
+    opacity: 0.85,
+    color: textColor,
+  };
+  return (
+    <div style={{ display: 'grid', gap: punctual.length && recurring.length ? '10px' : 0 }}>
+      {recurring.length > 0 && (
+        <div>
+          {punctual.length > 0 && <p style={subLabel}>Semaine type</p>}
+          <ul style={{ margin: 0, paddingLeft: '18px', color: textColor }}>
+            {recurring.map((a, i) => (
+              <li key={i}>{a.dayLabel} {a.startTime}–{a.endTime}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {punctual.length > 0 && (
+        <div>
+          <p style={subLabel}>📅 Dates ponctuelles</p>
+          <ul style={{ margin: 0, paddingLeft: '18px', color: textColor }}>
+            {punctual.map((a, i) => (
+              <li key={i}>{formatPunctualDate(a.date as string)} · {a.startTime}–{a.endTime}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ChangeCard({
@@ -191,14 +243,14 @@ export default function ChangeCard({
                 Avant
               </p>
               <div style={{ background: '#FEE2E2', padding: '12px', borderRadius: '4px', fontSize: '0.85rem' }}>
-                {!current?.availabilities.length ? (
-                  <em>Aucun créneau</em>
-                ) : (
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#7F1D1D' }}>
-                    {current.availabilities.map((a, i) => (
-                      <li key={i}>{a.day} {a.startTime}–{a.endTime}</li>
-                    ))}
-                  </ul>
+                {renderAvailabilityList(
+                  (current?.availabilities ?? []).map((a) => ({
+                    dayLabel: a.day,
+                    date: a.date ?? null,
+                    startTime: a.startTime,
+                    endTime: a.endTime,
+                  })),
+                  '#7F1D1D',
                 )}
               </div>
             </div>
@@ -208,14 +260,15 @@ export default function ChangeCard({
               </p>
               <div style={{ background: '#D1FAE5', padding: '12px', borderRadius: '4px', fontSize: '0.85rem' }}>
                 {(() => {
-                  const blocks = (change.payload.blocks ?? []) as Array<{ dayOfWeek: number; startTime: string; endTime: string }>;
-                  if (!blocks.length) return <em>Aucun créneau</em>;
-                  return (
-                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#064E3B' }}>
-                      {blocks.map((b, i) => (
-                        <li key={i}>{dayNames[b.dayOfWeek]} {b.startTime}–{b.endTime}</li>
-                      ))}
-                    </ul>
+                  const blocks = (change.payload.blocks ?? []) as Array<{ dayOfWeek: number; date?: string | null; startTime: string; endTime: string }>;
+                  return renderAvailabilityList(
+                    blocks.map((b) => ({
+                      dayLabel: dayNames[b.dayOfWeek],
+                      date: b.date ?? null,
+                      startTime: b.startTime,
+                      endTime: b.endTime,
+                    })),
+                    '#064E3B',
                   );
                 })()}
               </div>
