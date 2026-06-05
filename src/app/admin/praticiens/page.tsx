@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import DeleteButton from './DeleteButton';
+import ResetStripeButton from './ResetStripeButton';
 
 async function getPractitioners(status: string) {
   return prisma.practitioner.findMany({
@@ -275,6 +276,9 @@ export default async function PraticiensAdminPage({
                             Réactiver
                           </button>
                         </form>
+                      )}
+                      {p.stripeAccountId && (
+                        <ResetStripeButton id={p.id} name={`${p.user.firstName} ${p.user.lastName}`.trim()} />
                       )}
                       <DeleteButton id={p.id} name={`${p.user.firstName} ${p.user.lastName}`.trim()} />
                     </div>

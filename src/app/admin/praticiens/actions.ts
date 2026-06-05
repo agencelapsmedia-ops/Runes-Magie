@@ -211,3 +211,25 @@ export async function deletePractitioner(id: string): Promise<void> {
   revalidatePath('/soins/praticiens');
   redirect('/admin/praticiens?tab=APPROVED');
 }
+
+/**
+ * Détache le compte Stripe Connect d'un praticien : remet stripeAccountId à null
+ * et stripeAccountReady à false. Le praticien devra refaire « Configurer les
+ * paiements » depuis son espace pour se reconnecter.
+ *
+ * Cas d'usage principal : passage de Stripe en mode LIVE — les comptes Connect
+ * créés en mode test deviennent invalides et doivent être recréés en live.
+ */
+export async function resetPractitionerStripe(id: string): Promise<void> {
+  const practitioner = await prisma.practitioner.findUnique({ where: { id } });
+  if (!practitioner) throw new Error('Praticien introuvable.');
+
+  await prisma.practitioner.update({
+    where: { id },
+    data: { stripeAccountId: null, stripeAccountReady: false },
+  });
+
+  revalidatePath('/admin/praticiens');
+  revalidatePath('/soins/dashboard/praticien');
+  redirect('/admin/praticiens?tab=APPROVED');
+}
