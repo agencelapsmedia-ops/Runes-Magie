@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getSeancesCatalog } from '@/lib/service-categories';
+import { getSeancesOfferings } from '@/lib/offerings';
 import SectionTitle from '@/components/ui/SectionTitle';
 import RuneDivider from '@/components/ui/RuneDivider';
 import OfferingCard from '@/components/services/OfferingCard';
@@ -19,17 +20,17 @@ export default async function SeancesPage() {
   const catalog = await getSeancesCatalog();
   const sections = catalog?.sections ?? [];
 
+  // Filet de sécurité : si la catégorie « Séances » est introuvable / sans service
+  // rattaché, on retombe sur la liste à plat par type — jamais de page vide à tort.
+  const fallback = sections.length === 0 ? await getSeancesOfferings() : [];
+
   return (
     <section className="py-16 md:py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <SectionTitle title="Séances" subtitle="Soins & consultations" as="h1" />
         <RuneDivider className="my-12" />
 
-        {sections.length === 0 ? (
-          <p className="text-center font-cormorant italic text-parchemin/50">
-            Aucune séance disponible pour l’instant.
-          </p>
-        ) : (
+        {sections.length > 0 ? (
           <div className="space-y-16">
             {sections.map((section) => (
               <div key={section.id}>
@@ -58,6 +59,16 @@ export default async function SeancesPage() {
               </div>
             ))}
           </div>
+        ) : fallback.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {fallback.map((offering) => (
+              <OfferingCard key={offering.slug} offering={offering} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center font-cormorant italic text-parchemin/50">
+            Aucune séance disponible pour l’instant.
+          </p>
         )}
 
         <RuneDivider className="mt-16" symbols="&#5765; &#5765; &#5765;" />

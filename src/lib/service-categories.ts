@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { getOfferingsByCategoryIds, type OfferingView } from '@/lib/offerings';
+import { slugify } from '@/lib/utils';
 
 export interface ServiceCategoryNode {
   id: string;
@@ -151,7 +152,10 @@ export async function getCategoryCatalog(
   detailBase: string,
 ): Promise<ServiceCatalog | null> {
   const tree = await getServiceCategoryTree();
-  const root = tree.find((r) => r.slug === rootSlug);
+  // Tolérant au renommage : on matche le slug OU le nom « slugifié ». (Le slug
+  // d'une catégorie ne change pas quand on la renomme — ex. « Séances » garde le
+  // slug "seances-rituels" — d'où ce filet pour retrouver la bonne racine.)
+  const root = tree.find((r) => r.slug === rootSlug || slugify(r.name) === rootSlug);
   if (!root || !root.isActive) return null;
 
   const sections: CatalogSection[] = [];
