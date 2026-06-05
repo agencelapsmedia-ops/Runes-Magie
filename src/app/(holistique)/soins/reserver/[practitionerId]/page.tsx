@@ -53,6 +53,12 @@ interface SessionUser {
 
 const DAY_NAMES_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 const DAY_NAMES_FULL = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const MONTH_NAMES = [
+  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+];
+// Nombre de mois navigables vers le futur (0 = mois courant). 5 ⇒ 6 mois visibles.
+const MAX_MONTH_OFFSET = 5;
 
 // Durée d'une séance par défaut si aucune Offering n'est sélectionnée
 const DEFAULT_SESSION_DURATION_MINUTES = 90;
@@ -119,7 +125,7 @@ export default function ReservationPage({
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -200,16 +206,27 @@ export default function ReservationPage({
     checkAuth();
   }, []);
 
-  function getWeekDays(): Date[] {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const days: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + weekOffset * 7 + i);
-      days.push(d);
+  // Grille calendaire du mois affiché (mois courant + monthOffset).
+  // Renvoie des cases : null = jour vide (avant le 1er ou après le dernier),
+  // Date = un jour du mois. Semaine commençant le dimanche (comme DAY_NAMES_SHORT).
+  function getMonthGrid(): (Date | null)[] {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    const first = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1);
+    const year = first.getFullYear();
+    const month = first.getMonth();
+    const firstDow = first.getDay(); // 0 = dimanche
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const cells: (Date | null)[] = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null); // cases vides avant le 1er
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dd = new Date(year, month, d);
+      dd.setHours(0, 0, 0, 0);
+      cells.push(dd);
     }
-    return days;
+    while (cells.length % 7 !== 0) cells.push(null); // complète la dernière semaine
+    return cells;
   }
 
   function handleDaySelect(day: Date) {
@@ -333,7 +350,9 @@ export default function ReservationPage({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const weekDays = practitioner ? getWeekDays() : [];
+  const monthCells = practitioner ? getMonthGrid() : [];
+  const viewDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const monthLabel = `${MONTH_NAMES[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
 
   // --- Loading state ---
   if (loadingPractitioner) {
@@ -740,48 +759,100 @@ export default function ReservationPage({
             >
               Choisir une date
             </h2>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {[
-                { onClick: () => { setWeekOffset((w) => Math.max(0, w - 1)); setSelectedDate(null); setSelectedSlot(null); setAvailableSlots([]); }, label: '←', disabled: weekOffset === 0 },
-                { onClick: () => { setWeekOffset((w) => w + 1); setSelectedDate(null); setSelectedSlot(null); setAvailableSlots([]); }, label: '→', disabled: false },
-              ].map((btn) => (
-                <button
-                  key={btn.label}
-                  type="button"
-                  onClick={btn.onClick}
-                  disabled={btn.disabled}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid rgba(201, 168, 76, 0.3)',
-                    borderRadius: '2px',
-                    color: btn.disabled ? 'rgba(201, 168, 76, 0.2)' : 'var(--or-ancien)',
-                    width: '34px',
-                    height: '34px',
-                    cursor: btn.disabled ? 'not-allowed' : 'pointer',
-                    fontFamily: 'var(--font-cinzel)',
-                    fontSize: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {btn.label}
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => { setMonthOffset((m) => Math.max(0, m - 1)); setSelectedDate(null); setSelectedSlot(null); setAvailableSlots([]); setSlotRemaining({}); }}
+                disabled={monthOffset === 0}
+                aria-label="Mois précédent"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(201, 168, 76, 0.3)',
+                  borderRadius: '2px',
+                  color: monthOffset === 0 ? 'rgba(201, 168, 76, 0.2)' : 'var(--or-ancien)',
+                  width: '34px',
+                  height: '34px',
+                  cursor: monthOffset === 0 ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-cinzel)',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                ←
+              </button>
+              <span
+                style={{
+                  fontFamily: 'var(--font-cinzel)',
+                  fontSize: '0.8rem',
+                  letterSpacing: '0.06em',
+                  color: 'var(--or-ancien)',
+                  minWidth: '130px',
+                  textAlign: 'center',
+                }}
+              >
+                {monthLabel}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setMonthOffset((m) => Math.min(MAX_MONTH_OFFSET, m + 1)); setSelectedDate(null); setSelectedSlot(null); setAvailableSlots([]); setSlotRemaining({}); }}
+                disabled={monthOffset >= MAX_MONTH_OFFSET}
+                aria-label="Mois suivant"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(201, 168, 76, 0.3)',
+                  borderRadius: '2px',
+                  color: monthOffset >= MAX_MONTH_OFFSET ? 'rgba(201, 168, 76, 0.2)' : 'var(--or-ancien)',
+                  width: '34px',
+                  height: '34px',
+                  cursor: monthOffset >= MAX_MONTH_OFFSET ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-cinzel)',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                →
+              </button>
             </div>
           </div>
 
+          {/* En-têtes des jours de la semaine (dimanche → samedi) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px', marginBottom: '6px' }}>
+            {DAY_NAMES_SHORT.map((d) => (
+              <div
+                key={d}
+                style={{
+                  textAlign: 'center',
+                  fontFamily: 'var(--font-cinzel)',
+                  fontSize: '0.58rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'rgba(232, 220, 190, 0.45)',
+                }}
+              >
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Grille du mois */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-            {weekDays.map((day) => {
+            {monthCells.map((day, idx) => {
+              if (!day) return <div key={`blank-${idx}`} />;
+
               const dow = day.getDay();
               const isPast = day < today;
               const hasAvail = practitioner.availabilities.some((a) => isAvailableOnDay(a, day));
               const isSelected = selectedDate?.toDateString() === day.toDateString();
 
-              let border = 'rgba(74, 45, 122, 0.3)';
+              let border = 'rgba(74, 45, 122, 0.25)';
               let bg = 'transparent';
-              let textColor: string = 'rgba(232, 220, 190, 0.4)';
+              let textColor: string = 'rgba(232, 220, 190, 0.35)';
               let cursor = 'not-allowed';
 
               if (isSelected) {
@@ -802,17 +873,19 @@ export default function ReservationPage({
                   type="button"
                   disabled={isPast || !hasAvail}
                   onClick={() => handleDaySelect(day)}
-                  title={`${DAY_NAMES_FULL[dow]}${hasAvail && !isPast ? ' — disponible' : ''}`}
+                  title={`${DAY_NAMES_FULL[dow]} ${day.getDate()}${hasAvail && !isPast ? ' — disponible' : ''}`}
                   style={{
                     background: bg,
                     border: `1px solid ${border}`,
                     borderRadius: '4px',
-                    padding: '10px 4px',
+                    padding: '8px 2px',
+                    minHeight: '46px',
                     cursor,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '4px',
+                    justifyContent: 'center',
+                    gap: '3px',
                     transition: 'all 0.2s',
                     opacity: isPast ? 0.3 : 1,
                   }}
@@ -820,18 +893,7 @@ export default function ReservationPage({
                   <span
                     style={{
                       fontFamily: 'var(--font-cinzel)',
-                      fontSize: '0.6rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      color: textColor,
-                    }}
-                  >
-                    {DAY_NAMES_SHORT[dow]}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-cinzel)',
-                      fontSize: '1rem',
+                      fontSize: '0.95rem',
                       fontWeight: 600,
                       color: textColor,
                     }}
