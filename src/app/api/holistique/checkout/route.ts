@@ -49,27 +49,47 @@ export async function POST(req: Request) {
   });
   if (!practitioner) return NextResponse.json({ error: 'Praticien introuvable' }, { status: 404 });
 
-  // Anti double-booking : vérifie qu'aucun autre RDV ne chevauche ce créneau
-  const conflictingAppointment = await prisma.holisticAppointment.findFirst({
-    where: {
-      practitionerId,
-      status: { in: ['CONFIRMED', 'PENDING'] },
-      // Chevauchement : (startsAt < existing.endsAt) AND (endsAt > existing.startsAt)
-      startsAt: { lt: new Date(endsAt) },
-      endsAt: { gt: new Date(startsAt) },
-    },
-  });
-  if (conflictingAppointment) {
-    return NextResponse.json(
-      { error: 'Ce créneau vient d\'être réservé par quelqu\'un d\'autre. Choisis un autre créneau.' },
-      { status: 409 },
-    );
-  }
-
   // Si une Offering est sélectionnée, utiliser son prix au lieu du hourlyRate du praticien
   let offering = null;
   if (offeringId) {
     offering = await prisma.offering.findUnique({ where: { id: offeringId } });
+  }
+  const capacity = offering?.capacity ?? 1;
+
+  if (capacity > 1) {
+    // Service de GROUPE (formation) : on autorise jusqu'à `capacity` inscriptions
+    // au MÊME créneau exact, au lieu de bloquer tout chevauchement.
+    const taken = await prisma.holisticAppointment.count({
+      where: {
+        practitionerId,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        startsAt: new Date(startsAt),
+        endsAt: new Date(endsAt),
+      },
+    });
+    if (taken >= capacity) {
+      return NextResponse.json(
+        { error: 'Cette session est complète — toutes les places sont prises.' },
+        { status: 409 },
+      );
+    }
+  } else {
+    // Service INDIVIDUEL : aucun chevauchement permis.
+    const conflictingAppointment = await prisma.holisticAppointment.findFirst({
+      where: {
+        practitionerId,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        // Chevauchement : (startsAt < existing.endsAt) AND (endsAt > existing.startsAt)
+        startsAt: { lt: new Date(endsAt) },
+        endsAt: { gt: new Date(startsAt) },
+      },
+    });
+    if (conflictingAppointment) {
+      return NextResponse.json(
+        { error: 'Ce créneau vient d\'être réservé par quelqu\'un d\'autre. Choisis un autre créneau.' },
+        { status: 409 },
+      );
+    }
   }
 
   // Construit le bloc de notes enrichi avec le service et le mode pour traçabilité

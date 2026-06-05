@@ -39,6 +39,7 @@ interface Offering {
   description: string;
   type: string;
   durationMinutes: number;
+  capacity: number;
   price: number;
   priceForTwo: number | null;
   modes: string[];
@@ -122,6 +123,8 @@ export default function ReservationPage({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  // Pour les services de groupe : places restantes par créneau (clé = heure "13:00")
+  const [slotRemaining, setSlotRemaining] = useState<Record<string, number>>({});
 
   const [notes, setNotes] = useState('');
   const [booking, setBooking] = useState(false);
@@ -227,21 +230,38 @@ export default function ReservationPage({
       return t >= dayStart.getTime() && t < dayEnd.getTime();
     });
 
-    const freeSlots = allSlots.filter((slot) => {
+    const capacity = offering?.capacity ?? 1;
+    const isGroup = capacity > 1;
+
+    const freeSlots: string[] = [];
+    const remaining: Record<string, number> = {};
+    for (const slot of allSlots) {
       const [h, m] = slot.split(':').map(Number);
       const slotStart = new Date(day);
       slotStart.setHours(h, m, 0, 0);
       const slotEnd = new Date(slotStart.getTime() + sessionDuration * 60 * 1000);
-      // Chevauchement si : slotStart < bookedEnd ET slotEnd > bookedStart
-      return !booked.some((b) => {
-        const bStart = new Date(b.startsAt).getTime();
-        const bEnd = new Date(b.endsAt).getTime();
-        return slotStart.getTime() < bEnd && slotEnd.getTime() > bStart;
-      });
-    });
+
+      if (isGroup) {
+        // Service de groupe (formation) : jusqu'à `capacity` inscriptions au MÊME créneau.
+        const taken = booked.filter((b) => new Date(b.startsAt).getTime() === slotStart.getTime()).length;
+        if (taken < capacity) {
+          freeSlots.push(slot);
+          remaining[slot] = capacity - taken;
+        }
+      } else {
+        // Service individuel : aucun chevauchement permis.
+        const overlap = booked.some((b) => {
+          const bStart = new Date(b.startsAt).getTime();
+          const bEnd = new Date(b.endsAt).getTime();
+          return slotStart.getTime() < bEnd && slotEnd.getTime() > bStart;
+        });
+        if (!overlap) freeSlots.push(slot);
+      }
+    }
 
     freeSlots.sort();
     setAvailableSlots(freeSlots);
+    setSlotRemaining(remaining);
   }
 
   async function handleConfirmAndPay() {
@@ -900,6 +920,11 @@ export default function ReservationPage({
                       }}
                     >
                       {slot}
+                      {slotRemaining[slot] !== undefined && (
+                        <span style={{ display: 'block', fontFamily: 'var(--font-cormorant)', fontSize: '0.7rem', color: 'var(--turquoise-cristal)', opacity: 0.85, marginTop: '2px', letterSpacing: 0 }}>
+                          {slotRemaining[slot]} place{slotRemaining[slot] > 1 ? 's' : ''} restante{slotRemaining[slot] > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
