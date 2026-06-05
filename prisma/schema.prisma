@@ -336,9 +336,13 @@ model HolisticAvailability {
   practitionerId String
   practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
   dayOfWeek      Int // 0=Dimanche, 1=Lundi, ..., 6=Samedi
+  // null = créneau hebdomadaire récurrent ; sinon = disponibilité PONCTUELLE à cette date précise
+  date           DateTime?
   startTime      String // "09:00"
   endTime        String // "17:00"
   isActive       Boolean      @default(true)
+
+  @@index([practitionerId, date])
 }
 
 model HolisticAppointment {

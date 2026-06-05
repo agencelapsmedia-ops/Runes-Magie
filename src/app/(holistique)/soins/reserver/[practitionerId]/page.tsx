@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 interface Availability {
   id: string;
   dayOfWeek: number;
+  date?: string | null; // ISO datetime si dispo PONCTUELLE ; null = hebdo récurrent
   startTime: string;
   endTime: string;
   isActive: boolean;
@@ -67,6 +68,23 @@ function generateTimeSlots(startTime: string, endTime: string, durationMinutes: 
     slots.push(`${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`);
   }
   return slots;
+}
+
+// Un bloc de dispo s'applique-t-il à ce jour calendaire ?
+//  - ponctuel (date) : la date est stockée à midi UTC, donc sa date calendaire UTC
+//    correspond à la date calendaire locale (Amérique du Nord).
+//  - récurrent : par jour de la semaine.
+function isAvailableOnDay(a: Availability, day: Date): boolean {
+  if (!a.isActive) return false;
+  if (a.date) {
+    const d = new Date(a.date);
+    return (
+      d.getUTCFullYear() === day.getFullYear() &&
+      d.getUTCMonth() === day.getMonth() &&
+      d.getUTCDate() === day.getDate()
+    );
+  }
+  return a.dayOfWeek === day.getDay();
 }
 
 function formatDisplayDate(date: Date): string {
@@ -195,9 +213,8 @@ export default function ReservationPage({
     setSelectedDate(day);
     setSelectedSlot(null);
     if (!practitioner) return;
-    const dow = day.getDay();
-    // Plusieurs blocs de dispo par jour possibles (ex. matin + après-midi avec pause dîner)
-    const availBlocks = practitioner.availabilities.filter((a) => a.dayOfWeek === dow && a.isActive);
+    // Blocs de dispo du jour : récurrents (par jour) OU ponctuels (date précise).
+    const availBlocks = practitioner.availabilities.filter((a) => isAvailableOnDay(a, day));
     const allSlots = availBlocks.flatMap((a) => generateTimeSlots(a.startTime, a.endTime, sessionDuration));
 
     // Filtre les créneaux déjà bookés (CONFIRMED ou PENDING récent)
@@ -739,7 +756,7 @@ export default function ReservationPage({
             {weekDays.map((day) => {
               const dow = day.getDay();
               const isPast = day < today;
-              const hasAvail = practitioner.availabilities.some((a) => a.dayOfWeek === dow && a.isActive);
+              const hasAvail = practitioner.availabilities.some((a) => isAvailableOnDay(a, day));
               const isSelected = selectedDate?.toDateString() === day.toDateString();
 
               let border = 'rgba(74, 45, 122, 0.3)';

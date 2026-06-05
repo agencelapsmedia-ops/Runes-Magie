@@ -105,6 +105,7 @@ export default async function PraticienAvailabilitiesPage() {
         <AvailabilityEditor
           initialBlocks={availabilities.map((a) => ({
             dayOfWeek: a.dayOfWeek,
+            date: a.date ? a.date.toISOString().slice(0, 10) : null,
             startTime: a.startTime,
             endTime: a.endTime,
             isActive: a.isActive,

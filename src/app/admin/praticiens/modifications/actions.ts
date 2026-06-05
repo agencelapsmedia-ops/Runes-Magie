@@ -18,6 +18,7 @@ interface ProfilePayload {
 
 interface AvailabilityBlock {
   dayOfWeek: number;
+  date?: string | null; // "YYYY-MM-DD" => dispo PONCTUELLE à cette date ; null/absent => hebdo récurrent
   startTime: string;
   endTime: string;
   isActive: boolean;
@@ -156,6 +157,7 @@ export async function approveChange(changeId: string, adminNote?: string): Promi
           data: p.blocks.map((b) => ({
             practitionerId: change.practitionerId,
             dayOfWeek: b.dayOfWeek,
+            date: b.date ? new Date(`${b.date}T12:00:00.000Z`) : null,
             startTime: b.startTime,
             endTime: b.endTime,
             isActive: b.isActive,
