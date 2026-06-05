@@ -11,6 +11,7 @@ export interface ServiceCategoryNode {
   sortOrder: number;
   showOnHome: boolean;
   isActive: boolean;
+  displayMode: string; // 'GRID' | 'SLIDER' — présentation publique des services
   offeringCount: number; // services assignés directement à cette catégorie
   children: ServiceCategoryNode[];
 }
@@ -40,6 +41,7 @@ export async function getServiceCategoryTree(): Promise<ServiceCategoryNode[]> {
     sortOrder: c.sortOrder,
     showOnHome: c.showOnHome,
     isActive: c.isActive,
+    displayMode: c.displayMode,
     offeringCount: countMap.get(c.id) ?? 0,
     children: [],
   }));
@@ -113,6 +115,84 @@ export async function getHomeSliders(): Promise<HomeSlider[]> {
     result.push({ id: s.id, title: s.title, offerings });
   }
   return result;
+}
+
+// ─── Catalogue public par catégorie (pages /seances, /ecole…) ───
+export interface CatalogSection {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  displayMode: string; // 'GRID' | 'SLIDER'
+  offerings: OfferingView[];
+}
+
+export interface ServiceCatalog {
+  root: { id: string; name: string; emoji: string; description: string };
+  sections: CatalogSection[];
+}
+
+// Services actifs d'une catégorie, detailHref réécrit vers la page courante
+// (ex. /seances/[slug]) pour que tout service listé reste cliquable.
+async function loadCatalogSection(categoryId: string, detailBase: string): Promise<OfferingView[]> {
+  const offerings = await getOfferingsByCategoryIds([categoryId]);
+  return offerings.map((o) => ({ ...o, detailHref: `${detailBase}/${o.slug}` }));
+}
+
+/**
+ * Catalogue d'une branche : la catégorie racine (par slug) + ses sous-catégories
+ * ACTIVES, chacune avec ses services actifs. Réutilise getServiceCategoryTree
+ * (ordre via sortOrder) et getOfferingsByCategoryIds (mêmes données que les sliders).
+ * Les (sous-)catégories sans service actif sont masquées. Renvoie null si la racine
+ * est introuvable ou inactive.
+ */
+export async function getCategoryCatalog(
+  rootSlug: string,
+  detailBase: string,
+): Promise<ServiceCatalog | null> {
+  const tree = await getServiceCategoryTree();
+  const root = tree.find((r) => r.slug === rootSlug);
+  if (!root || !root.isActive) return null;
+
+  const sections: CatalogSection[] = [];
+
+  // Services rattachés directement à la racine (souvent aucun)
+  const rootOfferings = await loadCatalogSection(root.id, detailBase);
+  if (rootOfferings.length) {
+    sections.push({
+      id: root.id,
+      name: root.name,
+      emoji: root.emoji,
+      description: root.description,
+      displayMode: root.displayMode,
+      offerings: rootOfferings,
+    });
+  }
+
+  // Sous-catégories actives (children déjà triés par sortOrder) ; vides masquées
+  for (const child of root.children) {
+    if (!child.isActive) continue;
+    const offerings = await loadCatalogSection(child.id, detailBase);
+    if (!offerings.length) continue;
+    sections.push({
+      id: child.id,
+      name: child.name,
+      emoji: child.emoji,
+      description: child.description,
+      displayMode: child.displayMode,
+      offerings,
+    });
+  }
+
+  return {
+    root: { id: root.id, name: root.name, emoji: root.emoji, description: root.description },
+    sections,
+  };
+}
+
+/** Catalogue de la page publique « Séances » (branche de slug "seances"). */
+export function getSeancesCatalog(): Promise<ServiceCatalog | null> {
+  return getCategoryCatalog('seances', '/seances');
 }
 
 /**

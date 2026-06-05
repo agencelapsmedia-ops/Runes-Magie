@@ -516,6 +516,9 @@ model ServiceCategory {
   sortOrder   Int               @default(0)
   showOnHome  Boolean           @default(false)
   isActive    Boolean           @default(true)
+  // Présentation publique des services de cette catégorie : "GRID" (grille) ou
+  // "SLIDER" (carrousel). Choisi dans l'admin (outil Catégories).
+  displayMode String            @default("GRID")
   offerings   Offering[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt

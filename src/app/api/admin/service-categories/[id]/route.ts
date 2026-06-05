@@ -23,6 +23,7 @@ export async function PUT(
     if (typeof body.emoji === 'string') data.emoji = body.emoji.trim();
     if (typeof body.showOnHome === 'boolean') data.showOnHome = body.showOnHome;
     if (typeof body.isActive === 'boolean') data.isActive = body.isActive;
+    if (body.displayMode === 'GRID' || body.displayMode === 'SLIDER') data.displayMode = body.displayMode;
 
     // Re-parentage optionnel, avec garde-fou 2 niveaux
     if (body.parentId !== undefined) {

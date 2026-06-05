@@ -15,7 +15,7 @@ export default function OfferingSlider({
   title,
   offerings,
 }: {
-  title: string;
+  title?: string;
   offerings: OfferingView[];
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -69,7 +69,11 @@ export default function OfferingSlider({
     <div className="mb-14">
       {/* Titre + flèches */}
       <div className="flex items-end justify-between gap-4 mb-6">
-        <h3 className="font-cinzel-decorative text-2xl md:text-3xl text-gradient-gold">{title}</h3>
+        {title ? (
+          <h3 className="font-cinzel-decorative text-2xl md:text-3xl text-gradient-gold">{title}</h3>
+        ) : (
+          <span />
+        )}
         <div className="flex gap-2 shrink-0">
           <SliderArrow direction="prev" onClick={() => emblaApi?.scrollPrev()} disabled={!canPrev} />
           <SliderArrow direction="next" onClick={() => emblaApi?.scrollNext()} disabled={!canNext} />

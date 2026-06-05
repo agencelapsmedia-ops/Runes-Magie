@@ -112,6 +112,19 @@ export async function getOfferingViewBySlug(
 }
 
 /**
+ * Résout un service ACTIF par slug, SANS filtre de type. Le slug étant unique,
+ * c'est sûr. Sert aux pages catalogue pilotées par catégorie (/seances), où un
+ * service listé peut avoir n'importe quel type — il doit rester cliquable.
+ */
+export async function getActiveOfferingViewBySlug(slug: string): Promise<OfferingView | null> {
+  const o = await prisma.offering.findFirst({
+    where: { slug, isActive: true },
+    include: offeringInclude,
+  });
+  return o ? toView(o) : null;
+}
+
+/**
  * Récupère des offerings actives par slug, dans l'ordre EXACT des slugs fournis.
  * Sert aux sliders de la page d'accueil (regroupement manuel, indépendant du type).
  * Les slugs introuvables sont simplement ignorés.

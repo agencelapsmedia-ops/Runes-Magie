@@ -13,6 +13,7 @@ interface CatNode {
   sortOrder: number;
   showOnHome: boolean;
   isActive: boolean;
+  displayMode: string; // 'GRID' | 'SLIDER'
   offeringCount: number;
   children: CatNode[];
 }
@@ -128,6 +129,28 @@ export default function ServiceCategoriesPage() {
     }
   }
 
+  async function setDisplay(node: CatNode, mode: 'GRID' | 'SLIDER') {
+    if (node.displayMode === mode) return;
+    setSavingId(node.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/service-categories/${node.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayMode: mode }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erreur');
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   async function removeCategory(node: CatNode) {
     if (!confirm(`Supprimer la catégorie « ${node.name} » ?`)) return;
     setSavingId(node.id);
@@ -229,6 +252,33 @@ export default function ServiceCategoriesPage() {
             <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '0.68rem', fontWeight: 600, background: '#EDE9FE', color: '#6B3FA0' }}>
               {node.offeringCount} service{node.offeringCount > 1 ? 's' : ''}
             </span>
+
+            <div
+              style={{ display: 'inline-flex', border: '1px solid #D1D5DB', borderRadius: '6px', overflow: 'hidden' }}
+              title="Affichage public des services de cette catégorie"
+            >
+              {(['GRID', 'SLIDER'] as const).map((mode) => {
+                const active = node.displayMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => setDisplay(node, mode)}
+                    disabled={isSaving}
+                    style={{
+                      background: active ? '#2D1B4E' : '#FFF',
+                      color: active ? '#FFF' : '#6B7280',
+                      border: 'none',
+                      padding: '5px 10px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: isSaving ? 'default' : 'pointer',
+                    }}
+                  >
+                    {mode === 'GRID' ? 'Grille' : 'Slider'}
+                  </button>
+                );
+              })}
+            </div>
 
             <button onClick={() => startEdit(node)} disabled={isSaving} style={btnStyle('#2D1B4E')} title="Modifier">✎</button>
             <button onClick={() => removeCategory(node)} disabled={isSaving} style={btnStyle('#991B1B')} title="Supprimer">🗑</button>
