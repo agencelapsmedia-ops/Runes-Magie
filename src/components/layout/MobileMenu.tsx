@@ -171,13 +171,6 @@ export default function MobileMenu({
           {sessionLoaded && !sessionUser && (
             <>
               <Link
-                href="/soins/auth/register"
-                onClick={onClose}
-                className="flex items-center justify-center w-full px-4 py-3 rounded-md bg-gradient-to-r from-or-ancien to-or-clair text-charbon-mystere font-cinzel text-sm font-semibold uppercase tracking-[0.12em] border border-or-clair/60 transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_18px_rgba(201,168,76,0.45)]"
-              >
-                Rejoindre le Clan
-              </Link>
-              <Link
                 href="/soins/auth/login"
                 onClick={onClose}
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70"
@@ -186,6 +179,13 @@ export default function MobileMenu({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
                 Se Connecter
+              </Link>
+              <Link
+                href="/soins/auth/register"
+                onClick={onClose}
+                className="flex items-center justify-center w-full px-4 py-3 rounded-md bg-gradient-to-r from-or-ancien to-or-clair text-charbon-mystere font-cinzel text-sm font-semibold uppercase tracking-[0.12em] border border-or-clair/60 transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_18px_rgba(201,168,76,0.45)]"
+              >
+                Rejoindre le Clan
               </Link>
             </>
           )}
