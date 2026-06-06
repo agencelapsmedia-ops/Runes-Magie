@@ -8,7 +8,7 @@ import ProductCard from '@/components/boutique/ProductCard';
 import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
-import OfferingSlider from '@/components/services/OfferingSlider';
+import OfferingGrid from '@/components/services/OfferingGrid';
 import { getHomeSliders } from '@/lib/service-categories';
 
 // Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
@@ -80,7 +80,9 @@ export default async function HomePage() {
       {/* ═══════════════════ SERVICES ═══════════════════ */}
       <RuneDivider symbols="ᚨ ᛊ ᚹ" />
 
-      <section className="px-4 py-16 md:py-24 max-w-7xl mx-auto">
+      {/* Conteneur élargi spécifiquement pour cette section : permet 4 cartes
+          larges par rangée sans rétrécir les cartes. */}
+      <section className="px-4 py-16 md:py-24 max-w-[1600px] mx-auto">
         <SectionTitle
           title="Nos Services Mystiques"
           subtitle="Guidance, soins et enseignements pour illuminer votre chemin"
@@ -88,7 +90,7 @@ export default async function HomePage() {
 
         <div className="mt-12">
           {sliderGroups.map((group) => (
-            <OfferingSlider key={group.id} title={group.title} offerings={group.offerings} />
+            <OfferingGrid key={group.id} title={group.title} offerings={group.offerings} />
           ))}
         </div>
       </section>
