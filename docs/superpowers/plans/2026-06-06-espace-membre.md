@@ -298,6 +298,48 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 
 ---
 
+## 🚀 Runbook — appliquer la migration & tester en local
+
+> La migration **n'est pas** appliquée automatiquement par le déploiement Vercel (le build ne fait que `prisma generate`). Elle est **additive et non destructive** (nouvelles tables + colonnes nullable) → aucun risque de perte de données.
+
+### 1. Récupérer la branche
+```bash
+git fetch origin claude/button-navigation-seances-EzhLE
+git checkout claude/button-navigation-seances-EzhLE
+npm install            # régénère aussi le client Prisma (postinstall)
+```
+
+### 2. Appliquer la migration à la base
+Avec `DATABASE_URL` / `DIRECT_URL` pointant vers la base voulue (⚠️ choisir consciemment : base de dev/staging d'abord, prod ensuite) :
+```bash
+npx prisma migrate deploy     # applique 20260606120000_add_member_space
+```
+Vérifier ensuite que les tables `MemberEntitlement`, `Course`, `Lesson`, `CourseProgress` existent et que `Order` a `userId`/`invoiceUrl`/`invoiceNumber`.
+
+### 3. Lancer le site
+```bash
+npm run dev                    # http://localhost:3000
+```
+
+### 4. Tester l'espace membre
+1. Créer/utiliser un compte client : `/soins/auth/register` puis `/soins/auth/login`.
+2. Aller sur **`/compte`** → tableau de bord + sidebar (desktop) / drawer (mobile, réduire la fenêtre).
+3. Parcourir les onglets : Mes formations, Le Merestegere, Les Veillées, Achats & factures, Bibliothèque, Mon profil.
+4. **Achats & factures** : passer une commande de test (Stripe en mode test) connecté → la commande apparaît, payée, avec lien de facture.
+
+### 5. Tester les factures + l'octroi d'accès (webhook Stripe)
+En local, relayer les webhooks Stripe :
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+- Une commande payée → `Order.invoiceUrl` rempli (lien facture) + `MemberEntitlement` créé pour les produits `COURSE`/`EBOOK`.
+- Commande passée en **invité** puis connexion avec le même email → la commande est rattachée automatiquement à l'entrée dans `/compte` (`reconcileGuestOrders`).
+
+### Variables d'env nécessaires en local
+`DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`/`NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (fourni par `stripe listen`).
+
+---
+
 ## 🔎 État des lieux du code (référence)
 
 - **Auth :** `src/lib/auth.ts` (NextAuth, gère `AdminUser` + `HolisticUser`), `src/lib/holistic-auth.ts`. Session JWT.
