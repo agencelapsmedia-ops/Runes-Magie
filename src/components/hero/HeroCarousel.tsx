@@ -1,5 +1,5 @@
-'use client';
-
+// Composant serveur : aucun état ni événement côté client → pas d'hydratation
+// inutile, donc moins de JavaScript envoyé au navigateur (meilleur TBT).
 import Image from 'next/image';
 import Button from '../ui/Button';
 
