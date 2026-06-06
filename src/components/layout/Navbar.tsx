@@ -47,10 +47,12 @@ export default function Navbar() {
   useEffect(() => {
     async function loadSession() {
       try {
-        const res = await fetch('/api/holistique/auth/me');
+        const res = await fetch('/api/holistique/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setSessionUser(data.user ?? null);
+        } else {
+          setSessionUser(null);
         }
       } catch {
         // ignore — pas connecté
@@ -94,7 +96,11 @@ export default function Navbar() {
   );
 
   const handleLogout = useCallback(async () => {
-    await signOut({ callbackUrl: '/' });
+    // Déconnexion déterministe : on vide l'UI tout de suite, on attend que le
+    // cookie de session soit réellement effacé, puis on recharge la page (état frais).
+    setSessionUser(null);
+    await signOut({ redirect: false });
+    window.location.href = '/';
   }, []);
 
   const handleScroll = useCallback(() => {
