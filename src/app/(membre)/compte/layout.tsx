@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { reconcileGuestOrders } from '@/lib/entitlements';
 import MembreShell from '@/components/membre/MembreShell';
 
 export const metadata: Metadata = {
@@ -24,6 +25,13 @@ export default async function CompteLayout({ children }: { children: React.React
 
   if (!member) {
     redirect('/soins/auth/login?next=/compte');
+  }
+
+  // Rattache d'éventuelles commandes passées en invité (même email) au compte.
+  try {
+    await reconcileGuestOrders(sessionUserId!, member.email);
+  } catch (err) {
+    console.error('Réconciliation des commandes invité échouée:', err);
   }
 
   return <MembreShell user={member}>{children}</MembreShell>;

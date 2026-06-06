@@ -47,6 +47,8 @@ export async function grantEntitlementsForOrder(orderId: string): Promise<number
   });
 
   if (!order || !order.userId) return 0;
+  // On n'octroie l'accès que pour une commande réellement payée.
+  if (order.status !== "paid" && !order.paidAt) return 0;
 
   const productIds = order.items
     .map((i) => i.productId)
@@ -72,6 +74,34 @@ export async function grantEntitlementsForOrder(orderId: string): Promise<number
   }
 
   return granted;
+}
+
+/**
+ * Réconcilie les commandes passées en INVITÉ (sans compte) avec le compte du
+ * membre, par correspondance d'email : on rattache ces commandes à `userId`,
+ * puis on octroie l'accès aux cours/ebooks des commandes payées.
+ *
+ * Idempotent et borné : après le premier passage, `updateMany` renvoie 0 et on
+ * ne fait plus rien. Sûr à appeler à chaque entrée dans l'espace membre.
+ */
+export async function reconcileGuestOrders(userId: string, email: string): Promise<number> {
+  const linked = await prisma.order.updateMany({
+    where: { customerEmail: email, userId: null },
+    data: { userId },
+  });
+
+  if (linked.count === 0) return 0;
+
+  const orders = await prisma.order.findMany({
+    where: { userId, status: "paid" },
+    select: { id: true },
+  });
+
+  for (const order of orders) {
+    await grantEntitlementsForOrder(order.id);
+  }
+
+  return linked.count;
 }
 
 /** Vrai si l'utilisateur a un accès (non expiré) au produit donné. */

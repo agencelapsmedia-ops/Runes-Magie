@@ -252,10 +252,11 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 > ⚠️ **À appliquer en prod (Supabase) :** la migration n'est **pas** lancée ici (pas de `DATABASE_URL` dans l'environnement). Avant/au déploiement : `prisma migrate deploy` sur la base Supabase.
 > **Note UI :** comme `/admin`, l'espace membre vit sous le layout racine (Navbar/Footer publics encore rendus). Masquer ces éléments sur `/compte` est un polish rapide à valider (Phase 6).
 
-### Phase 1 — Achats & factures (valeur immédiate, peu de contenu à produire)
-- [ ] Activer `invoice_creation` dans `src/app/api/checkout/route.ts` + passer `userId` en metadata.
-- [ ] Webhook Stripe : stocker `Order.invoiceUrl`.
-- [ ] Page « Achats & factures » : historique via `Order.userId` + fallback email + lien facture PDF.
+### Phase 1 — Achats & factures ✅ (faite)
+- [x] Activer `invoice_creation` dans `src/app/api/checkout/route.ts` + passer `userId` en metadata. *(fait en Phase 0)*
+- [x] Webhook Stripe : stocker `Order.invoiceUrl` / `invoiceNumber`. *(fait en Phase 0)*
+- [x] Page « Achats & factures » : historique via `Order.userId` + fallback email + lien facture PDF + statut + total.
+- [x] Réconciliation des commandes invité (`reconcileGuestOrders`, appelée à l'entrée de l'espace membre) : rattache les commandes passées sans compte (même email) et octroie rétroactivement les accès aux cours/ebooks payés.
 
 ### Phase 2 — Mes formations
 - [ ] Admin : CRUD `Course`/`Lesson` (rattacher un cours à un produit COURSE).
