@@ -276,9 +276,15 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 - [ ] Modèle + admin CRUD + URL de téléchargement signées.
 - [ ] Page bibliothèque (filtres par type/catégorie).
 
+### Fusion du dashboard de soins ✅ (faite)
+- [x] Le tableau de bord `/compte` intègre désormais les **rendez-vous/consultations** (stats + à venir avec « Rejoindre la séance » + passés) en plus des accès aux sections membre.
+- [x] L'ancien `/soins/dashboard/client` **redirige vers `/compte`** (garde la logique de rôle : praticien → dashboard praticien, admin → /admin). Un seul espace client unifié.
+
 ### Phase 6 — Polish
-- [ ] Tableau de bord (raccourcis, reprise de cours, dernière Veillée).
+- [x] Tableau de bord enrichi (rendez-vous + raccourcis sections).
+- [ ] Reprise de cours / dernière Veillée sur le tableau de bord.
 - [ ] Page profil (édition infos, mot de passe).
+- [ ] Masquer la navbar/footer publics sur `/compte`.
 - [ ] Responsive mobile final + accessibilité.
 
 ---
