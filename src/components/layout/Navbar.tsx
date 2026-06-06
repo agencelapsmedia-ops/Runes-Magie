@@ -67,7 +67,7 @@ export default function Navbar() {
       ? '/soins/dashboard/praticien'
       : sessionUser.role === 'ADMIN'
       ? '/admin'
-      : '/soins/dashboard/client'
+      : '/compte'
     : '/soins/auth/login';
 
   const dashboardLabel = sessionUser

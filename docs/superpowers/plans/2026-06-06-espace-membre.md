@@ -258,10 +258,11 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 - [x] Page « Achats & factures » : historique via `Order.userId` + fallback email + lien facture PDF + statut + total.
 - [x] Réconciliation des commandes invité (`reconcileGuestOrders`, appelée à l'entrée de l'espace membre) : rattache les commandes passées sans compte (même email) et octroie rétroactivement les accès aux cours/ebooks payés.
 
-### Phase 2 — Mes formations
-- [ ] Admin : CRUD `Course`/`Lesson` (rattacher un cours à un produit COURSE).
-- [ ] Page liste des cours du membre (depuis `MemberEntitlement` kind=COURSE).
-- [ ] Lecteur de cours + chapitres + barre de progression (`CourseProgress`).
+### Phase 2 — Mes formations ✅ (faite)
+- [x] Admin : CRUD `Course`/`Lesson` (`/admin/formations` + API `/api/admin/courses*`, `/api/admin/lessons/[id]`) — rattache un cours à un produit COURSE, gère titre/desc/cover/publication + leçons (titre, vidéo, contenu, durée).
+- [x] Page liste des cours du membre (`/compte/formations`) depuis `MemberEntitlement` kind=COURSE + barre de progression par cours.
+- [x] Lecteur de cours (`/compte/formations/[slug]`) : sommaire des leçons, vidéo (iframe/`<video>`), contenu, « marquer comme terminé », progression sauvegardée (`/api/membre/progress` → `CourseProgress`), contrôle d'accès par entitlement.
+- [x] Navbar publique : bouton « Mon compte » (client connecté) pointe désormais vers `/compte`.
 
 ### Phase 3 — Le Merestegere
 - [ ] Modèle + admin CRUD chapitres + upload PDF (Supabase Storage).

@@ -15,6 +15,7 @@ const navItems = [
   { label: 'Clover', href: '/admin/clover', icon: 'ᚷ' },
   { label: 'Praticiens', href: '/admin/praticiens', icon: 'ᚻ' },
   { label: 'Services & Soins', href: '/admin/offerings', icon: 'ᚹ' },
+  { label: 'Formations', href: '/admin/formations', icon: 'ᛪ' },
   { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚷ' },
   { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
   { label: 'Revenus Holistique', href: '/admin/revenus-holistique', icon: 'ᚴ' },
