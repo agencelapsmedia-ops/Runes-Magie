@@ -247,7 +247,7 @@ function RegisterPageInner() {
             Créer mon compte
           </h1>
           <p className="font-cormorant italic text-parchemin/50 text-lg">
-            Commencez votre chemin de guérison holistique
+            Ce qui a été oublié n&apos;est jamais perdu&nbsp;; il suffit de s&apos;en souvenir ensemble.
           </p>
         </div>
 
