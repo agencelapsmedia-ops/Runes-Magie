@@ -13,20 +13,33 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!p) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Charge les RDV qui occupent un créneau dans les 120 prochains jours
-  // (CONFIRMED = paiement reçu, ou PENDING < 1h = en cours de paiement)
-  // 120 j couvre la navigation par mois du calendrier de réservation.
+  // Charge les RDV CONFIRMÉS (paiement reçu) qui occupent un créneau dans les
+  // 120 prochains jours. On ne masque PAS un créneau pour un simple « en attente »
+  // (paiement non complété) : un créneau ne disparaît du calendrier que lorsqu'il
+  // est réellement payé. La protection anti-double-réservation pendant le paiement
+  // est gérée côté checkout. 120 j couvre la navigation par mois du calendrier.
   const now = new Date();
   const future = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+  // Ménage paresseux : supprime les réservations « en attente » abandonnées (> 30 min,
+  // après expiration du lien Stripe). Paiement d'abord (FK) puis RDV — même ordre que
+  // l'endpoint cancel-pending.
+  const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000);
+  const stale = await prisma.holisticAppointment.findMany({
+    where: { status: 'PENDING', createdAt: { lt: thirtyMinAgo } },
+    select: { id: true },
+  });
+  if (stale.length) {
+    const staleIds = stale.map((s) => s.id);
+    await prisma.holisticPayment.deleteMany({ where: { appointmentId: { in: staleIds } } });
+    await prisma.holisticAppointment.deleteMany({ where: { id: { in: staleIds } } });
+  }
+
   const bookedAppointments = await prisma.holisticAppointment.findMany({
     where: {
       practitionerId: id,
       startsAt: { gte: now, lt: future },
-      OR: [
-        { status: 'CONFIRMED' },
-        { status: 'PENDING', createdAt: { gte: oneHourAgo } }, // ignore les vieux PENDING fantômes
-      ],
+      status: 'CONFIRMED',
     },
     select: { startsAt: true, endsAt: true, status: true },
   });

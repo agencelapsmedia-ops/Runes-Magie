@@ -56,15 +56,24 @@ export async function POST(req: Request) {
   }
   const capacity = offering?.capacity ?? 1;
 
+  // Un créneau n'est « tenu » que 5 min après le début d'un paiement par un AUTRE
+  // client ; au-delà il redevient réservable. Le RDV non payé est nettoyé plus tard
+  // (route by-id) et le lien Stripe expire à 30 min.
+  const HOLD_AGO = new Date(Date.now() - 5 * 60 * 1000);
+
   if (capacity > 1) {
     // Service de GROUPE (formation) : on autorise jusqu'à `capacity` inscriptions
     // au MÊME créneau exact, au lieu de bloquer tout chevauchement.
     const taken = await prisma.holisticAppointment.count({
       where: {
         practitionerId,
-        status: { in: ['CONFIRMED', 'PENDING'] },
         startsAt: new Date(startsAt),
         endsAt: new Date(endsAt),
+        OR: [
+          { status: 'CONFIRMED' }, // place payée = prise
+          // place en cours de paiement par un AUTRE client depuis moins de 5 min
+          { status: 'PENDING', createdAt: { gte: HOLD_AGO }, clientId: { not: clientId } },
+        ],
       },
     });
     if (taken >= capacity) {
@@ -78,10 +87,14 @@ export async function POST(req: Request) {
     const conflictingAppointment = await prisma.holisticAppointment.findFirst({
       where: {
         practitionerId,
-        status: { in: ['CONFIRMED', 'PENDING'] },
         // Chevauchement : (startsAt < existing.endsAt) AND (endsAt > existing.startsAt)
         startsAt: { lt: new Date(endsAt) },
         endsAt: { gt: new Date(startsAt) },
+        OR: [
+          { status: 'CONFIRMED' }, // créneau payé = pris
+          // créneau en cours de paiement par un AUTRE client depuis moins de 5 min
+          { status: 'PENDING', createdAt: { gte: HOLD_AGO }, clientId: { not: clientId } },
+        ],
       },
     });
     if (conflictingAppointment) {
@@ -206,6 +219,9 @@ export async function POST(req: Request) {
     // cancel_url avec appointmentId pour pouvoir supprimer le RDV PENDING fantôme
     cancel_url: `${getAppUrl()}/soins/reserver/${practitionerId}?cancelled=true&apptId=${appointment.id}`,
     mode: 'payment',
+    // Le lien de paiement expire après 30 min (minimum imposé par Stripe) : évite
+    // qu'un paiement tardif arrive après le nettoyage de la réservation « en attente ».
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
   };
 
   // Si acompte : sauvegarder la carte pour facturer le solde plus tard (off-session)
