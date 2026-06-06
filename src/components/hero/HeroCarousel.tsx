@@ -10,7 +10,7 @@ export default function HeroCarousel() {
       <div
         className="absolute inset-0 bg-cover"
         style={{
-          backgroundImage: "url('/images/hero/hero-8.png')",
+          backgroundImage: "url('/images/hero/hero-8.webp')",
           backgroundPosition: 'center center',
         }}
       />
@@ -32,7 +32,7 @@ export default function HeroCarousel() {
           style={{ left: '3%', top: '30%', transform: 'translateY(-50%)' }}
         >
           <Image
-            src="/images/logo/logo-3d-gold.png"
+            src="/images/logo/logo-3d-gold.webp"
             alt="Logo Runes & Magie"
             width={560}
             height={560}
@@ -69,7 +69,7 @@ export default function HeroCarousel() {
       <div className="lg:hidden relative z-20 flex h-full flex-col items-center justify-center px-4 text-center gap-3">
         <div className="animate-float-logo drop-shadow-[0_0_30px_rgba(201,168,76,0.5)]">
           <Image
-            src="/images/logo/logo-3d-gold.png"
+            src="/images/logo/logo-3d-gold.webp"
             alt="Logo Runes & Magie"
             width={160}
             height={160}

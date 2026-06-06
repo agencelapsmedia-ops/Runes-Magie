@@ -50,7 +50,7 @@ export default function GhostCaracal({ trigger }: { trigger: number }) {
 
         {/* Image dorée fantôme */}
         <Image
-          src="/images/logo/logo-3d-gold.png"
+          src="/images/logo/logo-3d-gold.webp"
           alt=""
           width={420}
           height={420}

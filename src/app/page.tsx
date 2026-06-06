@@ -196,7 +196,7 @@ export default async function HomePage() {
           <div className="flex flex-col gap-6">
             <div className="flex justify-start lg:justify-start mb-2">
               <Image
-                src="/images/logo/logo-3d-gold.png"
+                src="/images/logo/logo-3d-gold.webp"
                 alt="Logo Runes & Magie"
                 width={300}
                 height={300}

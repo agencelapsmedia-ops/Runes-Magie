@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    // Sert automatiquement AVIF (puis WebP en repli) pour toutes les images
+    // passant par next/image — meilleure compression, qualité préservée.
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',

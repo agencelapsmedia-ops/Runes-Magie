@@ -41,7 +41,7 @@ export default function Footer() {
             <Link href="/" className="flex items-center gap-3 group mb-4">
               <div className="relative h-16 w-16 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_14px_rgba(201,168,76,0.6)]">
                 <Image
-                  src="/images/logo/logo-3d-gold.png"
+                  src="/images/logo/logo-3d-gold.webp"
                   alt="Logo Runes & Magie"
                   width={160}
                   height={160}

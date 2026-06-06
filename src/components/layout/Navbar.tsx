@@ -147,7 +147,7 @@ export default function Navbar() {
             >
               <div className="relative h-12 w-10 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(201,168,76,0.5)]">
                 <Image
-                  src="/images/logo/logo-cat-gold.png"
+                  src="/images/logo/logo-cat-gold.webp"
                   alt="Logo Runes & Magie"
                   width={120}
                   height={160}
