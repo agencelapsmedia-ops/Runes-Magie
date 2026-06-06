@@ -4,7 +4,6 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface FormData {
   firstName: string;
@@ -215,24 +214,11 @@ function RegisterPageInner() {
 
   return (
     <div
-      // -mt-16 annule le pt-16 du <main> du layout holistique (redondant ici car
-      // sa navbar est masquée par la navbar principale) → logo collé sous le menu.
-      className="-mt-16 min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col"
       style={{
         background: 'linear-gradient(160deg, var(--charbon-mystere) 0%, var(--noir-nuit) 100%)',
       }}
     >
-      {/* Logo « La Voie des Arcanes » — pleine largeur, collé sous le menu */}
-      <Image
-        src="/images/logo/voie-des-arcanes.png"
-        alt="La Voie des Arcanes"
-        width={1536}
-        height={1024}
-        priority
-        sizes="100vw"
-        className="block w-full h-auto select-none"
-      />
-
       <div className="flex-1 flex items-start justify-center px-4 pb-16 pt-10">
       <div className="w-full max-w-md">
         {/* En-tête */}
