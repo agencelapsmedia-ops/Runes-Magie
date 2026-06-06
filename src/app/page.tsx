@@ -11,10 +11,11 @@ import { prisma } from '@/lib/db';
 import OfferingGrid from '@/components/services/OfferingGrid';
 import { getHomeSliders } from '@/lib/service-categories';
 
-// Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
-// reflète immédiatement la base de données — images, prix et liens des
-// services restent à jour sans attendre un redéploiement.
-export const dynamic = 'force-dynamic';
+// ISR : la page d'accueil est mise en cache et régénérée en arrière-plan au plus
+// toutes les 5 minutes. On garde donc la fraîcheur (images/prix/services à jour
+// sans redéploiement) MAIS on sert une page déjà rendue → FCP/LCP bien plus rapides
+// qu'avec `force-dynamic` (qui refaisait 2 requêtes DB à chaque visite).
+export const revalidate = 300;
 
 // NOTE : la section « Les Runes Vikings » (aperçu du Futhark) a été retirée de
 // l'accueil et conservée en réserve dans
@@ -132,8 +133,8 @@ export default async function HomePage() {
               alt="Noctura Anna, votre sorcière"
               width={2312}
               height={1042}
+              sizes="(max-width: 1024px) 100vw, 600px"
               className="w-full h-auto brightness-110 contrast-110 saturate-110"
-              priority
             />
             {/* Vignette mystique — assombrit les bords */}
             <div
