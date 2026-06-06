@@ -29,7 +29,6 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
                 fill
                 sizes="224px"
                 className="object-cover"
-                unoptimized={offering.imageUrl.includes('supabase.co')}
               />
               {offering.emoji && offering.emoji !== '*' && (
                 <span

@@ -70,7 +70,6 @@ export default function ProductCard({
           className={`transition-transform duration-500 group-hover:scale-110 ${
             category === 'tarot' || category === 'oracle' ? 'object-contain p-2' : 'object-cover'
           }`}
-          unoptimized={image.includes('supabase.co')}
         />
 
         {/* Category badge */}
