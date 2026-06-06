@@ -224,10 +224,10 @@ function RegisterPageInner() {
     >
       {/* Logo « La Voie des Arcanes » — pleine largeur, collé sous le menu */}
       <Image
-        src="/images/logo/voie-des-arcanes.webp"
+        src="/images/logo/voie-des-arcanes.png"
         alt="La Voie des Arcanes"
-        width={1448}
-        height={1086}
+        width={1536}
+        height={1024}
         priority
         sizes="100vw"
         className="block w-full h-auto select-none"
