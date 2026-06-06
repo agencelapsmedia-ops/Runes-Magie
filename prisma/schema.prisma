@@ -543,6 +543,33 @@ model HomeSlider {
   @@index([sortOrder])
 }
 
+// ════════════════════════════════════════════════════════════════
+// PAGES DU SITE — gérées dans /admin/site/pages
+//  Pages éditables créées à partir d'un « modèle » (template). Chaque modèle
+//  définit la liste des champs texte modifiables (voir src/lib/page-templates.ts).
+//  - template = identifiant du modèle ("accueil", "standard"…)
+//  - content  = JSON { cléDuChamp: valeur } (les clés absentes retombent sur les
+//               valeurs par défaut du modèle)
+//  - isSystem = page protégée (ex: l'accueil) : slug verrouillé, non supprimable.
+// ════════════════════════════════════════════════════════════════
+model SitePage {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  template        String   @default("standard")
+  content         Json     @default("{}")
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean  @default(true)
+  isSystem        Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([sortOrder])
+}
+
 // Table de liaison many-to-many entre Offering et Practitioner.
 // Permet à plusieurs praticien·ne·s d'offrir le même service.
 // Le `practitionerId` sur Offering reste le "propriétaire/primaire".

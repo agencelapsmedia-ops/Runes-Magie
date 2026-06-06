@@ -9,6 +9,12 @@ export const dynamic = 'force-dynamic';
  */
 const cards = [
   {
+    rune: 'ᛟ',
+    label: 'Pages du site',
+    href: '/admin/site/pages',
+    desc: 'Créer des pages à partir d’un modèle et modifier les textes (héros de l’accueil, à-propos…).',
+  },
+  {
     rune: 'ᛗ',
     label: 'Gestion du menu',
     href: '/admin/site/menu',

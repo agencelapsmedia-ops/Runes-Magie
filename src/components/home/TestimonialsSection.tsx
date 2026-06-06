@@ -33,7 +33,15 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export default function TestimonialsSection() {
+interface TestimonialsSectionProps {
+  title?: string;
+  subtitle?: string;
+}
+
+export default function TestimonialsSection({
+  title = 'Paroles Enchantées',
+  subtitle = 'Ce que nos visiteurs murmurent à propos de leur expérience',
+}: TestimonialsSectionProps = {}) {
   const [expanded, setExpanded] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [animatingCards, setAnimatingCards] = useState(false);
@@ -130,10 +138,10 @@ export default function TestimonialsSection() {
         {/* Section title */}
         <div className="text-center mb-4">
           <h2 className="font-cinzel-decorative text-3xl md:text-4xl lg:text-5xl font-bold tracking-wide text-gradient-gold">
-            Paroles Enchant&eacute;es
+            {title}
           </h2>
           <p className="mt-4 text-parchemin-vieilli text-lg md:text-xl italic font-philosopher">
-            Ce que nos visiteurs murmurent &agrave; propos de leur exp&eacute;rience
+            {subtitle}
           </p>
         </div>
 

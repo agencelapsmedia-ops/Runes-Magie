@@ -10,6 +10,7 @@ import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
 import OfferingGrid from '@/components/services/OfferingGrid';
 import { getHomeSliders } from '@/lib/service-categories';
+import { getPageContent } from '@/lib/page-content';
 
 // Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
 // reflète immédiatement la base de données — images, prix et liens des
@@ -30,11 +31,22 @@ export default async function HomePage() {
     take: 8,
   });
   const sliderGroups = await getHomeSliders();
+  // Textes éditables de l'accueil (gérés dans Gestion site web → Pages → Page d'accueil).
+  // Retombe sur les valeurs par défaut du modèle si la page n'existe pas encore.
+  const c = await getPageContent('accueil', 'accueil');
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
       <section className="relative -mt-18 lg:-mt-20">
-        <HeroCarousel />
+        <HeroCarousel
+          heroTitle={c.heroTitle}
+          heroSubtitle={c.heroSubtitle}
+          heroDescription={c.heroDescription}
+          heroButton1Label={c.heroButton1Label}
+          heroButton1Href={c.heroButton1Href}
+          heroButton2Label={c.heroButton2Label}
+          heroButton2Href={c.heroButton2Href}
+        />
         <MistEffect />
       </section>
 
@@ -45,8 +57,8 @@ export default async function HomePage() {
           larges par rangée sans rétrécir les cartes. */}
       <section className="px-4 py-16 md:py-24 max-w-[1600px] mx-auto">
         <SectionTitle
-          title="Nos Services Mystiques"
-          subtitle="Guidance, soins et enseignements pour illuminer votre chemin"
+          title={c.servicesTitle}
+          subtitle={c.servicesSubtitle}
         />
 
         <div className="mt-12">
@@ -61,8 +73,8 @@ export default async function HomePage() {
 
       <section className="px-4 py-16 md:py-24 max-w-7xl mx-auto">
         <SectionTitle
-          title="Produits Enchant&eacute;s"
-          subtitle="Une s&eacute;lection d'objets magiques choisis pour vous"
+          title={c.productsTitle}
+          subtitle={c.productsSubtitle}
         />
 
         <div className="mt-12 grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -82,7 +94,7 @@ export default async function HomePage() {
 
         <div className="mt-10 text-center">
           <Button variant="secondary" size="lg" href="/boutique">
-            Voir toute la Boutique
+            {c.productsButtonLabel}
           </Button>
         </div>
       </section>
@@ -92,20 +104,20 @@ export default async function HomePage() {
       <section style={{ background: 'linear-gradient(135deg, var(--violet-profond) 0%, var(--charbon-mystere) 50%, var(--noir-nuit) 100%)', padding: '80px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', letterSpacing: '0.3em', fontSize: '0.8rem', marginBottom: '16px', opacity: 0.8 }}>
-            ᚷ SOINS ÉNERGÉTIQUES EN LIGNE ᚷ
+            {c.soinsEyebrow}
           </p>
           <h2 style={{ fontFamily: 'var(--font-cinzel-decorative)', fontSize: 'clamp(1.8rem, 4vw, 3rem)', background: 'linear-gradient(135deg, var(--or-ancien), var(--or-clair))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '24px' }}>
-            Consultations Holistiques
+            {c.soinsTitle}
           </h2>
           <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin-vieilli)', fontSize: '1.2rem', lineHeight: 1.8, marginBottom: '48px', maxWidth: '650px', margin: '0 auto 48px' }}>
-            Connectez-vous avec des praticiens certifiés pour des soins énergétiques, du Reiki, de la naturopathie et bien plus — en ligne, depuis chez vous.
+            {c.soinsDescription}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', flexWrap: 'wrap', marginBottom: '48px' }}>
             {[
-              { rune: 'ᚱ', label: 'Reiki', desc: 'Soin énergétique' },
-              { rune: 'ᛏ', label: 'Naturopathie', desc: 'Santé naturelle' },
-              { rune: 'ᛟ', label: 'Coaching Spirituel', desc: 'Éveil & transformation' },
-              { rune: 'ᚨ', label: 'Cristallothérapie', desc: 'Soin par les pierres' },
+              { rune: 'ᚱ', label: c.soinsCard1Label, desc: c.soinsCard1Desc },
+              { rune: 'ᛏ', label: c.soinsCard2Label, desc: c.soinsCard2Desc },
+              { rune: 'ᛟ', label: c.soinsCard3Label, desc: c.soinsCard3Desc },
+              { rune: 'ᚨ', label: c.soinsCard4Label, desc: c.soinsCard4Desc },
             ].map((item) => (
               <div key={item.label} style={{ textAlign: 'center', padding: '24px', background: 'rgba(46,196,182,0.05)', border: '1px solid rgba(46,196,182,0.2)', borderRadius: '12px', minWidth: '160px' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '12px', color: 'var(--or-ancien)' }}>{item.rune}</div>
@@ -114,8 +126,8 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-          <Link href="/soins" style={{ display: 'inline-block', padding: '14px 36px', background: 'linear-gradient(135deg, var(--violet-royal), var(--violet-profond))', color: 'var(--or-clair)', fontFamily: 'var(--font-cinzel)', fontSize: '0.9rem', letterSpacing: '0.15em', border: '1px solid var(--or-ancien)', borderRadius: '4px', textDecoration: 'none', boxShadow: '0 0 20px rgba(201,168,76,0.2)' }}>
-            Découvrir les Soins Holistiques →
+          <Link href={c.soinsButtonHref} style={{ display: 'inline-block', padding: '14px 36px', background: 'linear-gradient(135deg, var(--violet-royal), var(--violet-profond))', color: 'var(--or-clair)', fontFamily: 'var(--font-cinzel)', fontSize: '0.9rem', letterSpacing: '0.15em', border: '1px solid var(--or-ancien)', borderRadius: '4px', textDecoration: 'none', boxShadow: '0 0 20px rgba(201,168,76,0.2)' }}>
+            {c.soinsButtonLabel}
           </Link>
         </div>
       </section>
@@ -165,27 +177,19 @@ export default async function HomePage() {
               />
             </div>
             <SectionTitle
-              title="Votre Sorci&egrave;re &mdash; Noctura Anna"
+              title={c.aboutTitle}
               className="text-left lg:text-left"
               as="h2"
             />
-            <p className="text-parchemin-vieilli leading-relaxed text-lg font-philosopher">
-              Praticienne des arts ancestraux, Noctura Anna canalise la sagesse
-              des runes vikings, la magie des cristaux et les traditions de
-              sorcellerie depuis plus de vingt ans. Son chemin spirituel l&rsquo;a
-              men&eacute;e &agrave; cr&eacute;er Runes &amp; Magie, un espace
-              sacr&eacute; d&eacute;di&eacute; &agrave; l&rsquo;&eacute;veil
-              mystique et &agrave; la gu&eacute;rison de l&rsquo;&acirc;me.
+            <p className="text-parchemin-vieilli leading-relaxed text-lg font-philosopher whitespace-pre-line">
+              {c.aboutParagraph1}
             </p>
-            <p className="text-parchemin-vieilli/80 leading-relaxed font-philosopher">
-              &Agrave; travers ses lectures intuitives, ses soins
-              &eacute;nerg&eacute;tiques et ses enseignements, elle guide
-              chaque &acirc;me vers sa v&eacute;rit&eacute;
-              int&eacute;rieure avec bienveillance et puissance.
+            <p className="text-parchemin-vieilli/80 leading-relaxed font-philosopher whitespace-pre-line">
+              {c.aboutParagraph2}
             </p>
             <div className="mt-2">
-              <Button variant="primary" size="lg" href="/a-propos">
-                En savoir plus
+              <Button variant="primary" size="lg" href={c.aboutButtonHref}>
+                {c.aboutButtonLabel}
               </Button>
             </div>
           </div>
@@ -195,7 +199,7 @@ export default async function HomePage() {
       {/* ═══════════════════ TESTIMONIALS ═══════════════════ */}
       <RuneDivider symbols="ᚷ ᛗ ᛊ" />
 
-      <TestimonialsSection />
+      <TestimonialsSection title={c.testimonialsTitle} subtitle={c.testimonialsSubtitle} />
 
       <RuneDivider />
     </>
