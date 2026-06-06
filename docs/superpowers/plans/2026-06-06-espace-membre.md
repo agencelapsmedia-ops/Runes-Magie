@@ -242,11 +242,15 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 
 ## ✅ Tâches (par phases)
 
-### Phase 0 — Fondations
-- [ ] Schéma Prisma : `Order.userId` + `Order.invoiceUrl`, `MemberEntitlement`, `Course`, `Lesson`, `CourseProgress` + migration.
-- [ ] Helpers `src/lib/entitlements.ts` (octroi + vérification d'accès aux cours/ebooks).
-- [ ] Brancher l'octroi d'accès au webhook Stripe boutique (`MemberEntitlement` au paiement confirmé).
-- [ ] Route group `(membre)` + auth guard (sur `HolisticUser`) + layout sidebar/drawer (coquille vide).
+### Phase 0 — Fondations ✅ (faite — commit sur `claude/button-navigation-seances-EzhLE`)
+- [x] Schéma Prisma : `Order.userId` + `Order.invoiceUrl`/`invoiceNumber`, `MemberEntitlement`, `Course`, `Lesson`, `CourseProgress` + migration SQL versionnée (`20260606120000_add_member_space`).
+- [x] Helpers `src/lib/entitlements.ts` (octroi idempotent + vérification d'accès aux cours/ebooks).
+- [x] Octroi d'accès branché au webhook Stripe boutique (`grantEntitlementsForOrder` au paiement confirmé) + récupération de la facture PDF.
+- [x] Checkout : `invoice_creation` activé + rattachement `Order.userId` (validé contre `HolisticUser`).
+- [x] Route group `(membre)/compte` + garde d'auth serveur (sur `HolisticUser`) + shell sidebar desktop / drawer mobile + tableau de bord + 6 pages de sections (placeholders).
+
+> ⚠️ **À appliquer en prod (Supabase) :** la migration n'est **pas** lancée ici (pas de `DATABASE_URL` dans l'environnement). Avant/au déploiement : `prisma migrate deploy` sur la base Supabase.
+> **Note UI :** comme `/admin`, l'espace membre vit sous le layout racine (Navbar/Footer publics encore rendus). Masquer ces éléments sur `/compte` est un polish rapide à valider (Phase 6).
 
 ### Phase 1 — Achats & factures (valeur immédiate, peu de contenu à produire)
 - [ ] Activer `invoice_creation` dans `src/app/api/checkout/route.ts` + passer `userId` en metadata.

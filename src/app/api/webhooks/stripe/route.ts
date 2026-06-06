@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sendOrderConfirmationEmail, sendOrderAdminNotification } from "@/lib/order-email";
+import { grantEntitlementsForOrder } from "@/lib/entitlements";
 
 export const dynamic = "force-dynamic";
 
@@ -37,15 +38,42 @@ export async function POST(request: NextRequest) {
       const orderId = session.metadata?.orderId;
 
       if (orderId) {
+        // Récupère la facture PDF générée par Stripe (invoice_creation activé au checkout).
+        let invoiceUrl: string | null = null;
+        let invoiceNumber: string | null = null;
+        if (session.invoice) {
+          try {
+            const invoiceId =
+              typeof session.invoice === "string" ? session.invoice : session.invoice.id;
+            const invoice = await stripe.invoices.retrieve(invoiceId);
+            invoiceUrl = invoice.invoice_pdf ?? invoice.hosted_invoice_url ?? null;
+            invoiceNumber = invoice.number ?? null;
+          } catch (err) {
+            console.error("Impossible de récupérer la facture Stripe:", err);
+          }
+        }
+
         const order = await prisma.order.update({
           where: { id: orderId },
           data: {
             status: "paid",
             stripePaymentId: session.payment_intent as string,
             paidAt: new Date(),
+            ...(invoiceUrl ? { invoiceUrl } : {}),
+            ...(invoiceNumber ? { invoiceNumber } : {}),
           },
           include: { items: true },
         });
+
+        // Octroie l'accès aux cours/ebooks achetés (no-op si commande sans compte).
+        try {
+          const granted = await grantEntitlementsForOrder(order.id);
+          if (granted > 0) {
+            console.log(`Order ${order.orderNumber}: ${granted} accès membre octroyé(s)`);
+          }
+        } catch (err) {
+          console.error("Octroi d'accès membre échoué:", err);
+        }
 
         // Send confirmation emails
         const emailData = {

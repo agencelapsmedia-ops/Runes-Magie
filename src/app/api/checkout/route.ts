@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { generateOrderNumber } from "@/lib/order-utils";
 import { sendOrderConfirmationEmail, sendOrderAdminNotification } from "@/lib/order-email";
+import { auth } from "@/lib/auth";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
 
@@ -55,6 +56,20 @@ export async function POST(request: NextRequest) {
     const orderNumber = await generateOrderNumber();
     const hasEmailItems = verifiedItems.some((i) => i.checkoutType === "email");
 
+    // Rattacher la commande au compte membre si le client est connecté.
+    // On valide que l'id correspond bien à un HolisticUser (la session peut aussi
+    // appartenir à un AdminUser, dont l'id n'existe pas dans HolisticUser → FK invalide).
+    let userId: string | null = null;
+    const session = await auth();
+    const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
+    if (sessionUserId) {
+      const member = await prisma.holisticUser.findUnique({
+        where: { id: sessionUserId },
+        select: { id: true },
+      });
+      userId = member?.id ?? null;
+    }
+
     if (hasEmailItems) {
       // ── EMAIL ORDER FLOW ──
       if (!customerInfo?.name || !customerInfo?.email) {
@@ -72,6 +87,7 @@ export async function POST(request: NextRequest) {
           customerPhone: customerInfo.phone || null,
           customerMessage: customerInfo.message || null,
           shippingAddress: customerInfo.shippingAddress || null,
+          userId,
           subtotal,
           total: subtotal,
           items: {
@@ -115,6 +131,7 @@ export async function POST(request: NextRequest) {
           customerEmail,
           customerPhone: customerInfo?.phone || null,
           shippingAddress: customerInfo?.shippingAddress || null,
+          userId,
           subtotal,
           total: subtotal,
           items: {
@@ -145,9 +162,12 @@ export async function POST(request: NextRequest) {
         mode: "payment",
         success_url: successUrl,
         cancel_url: cancelUrl,
+        // Génère une vraie facture PDF hébergée par Stripe (récupérée via webhook).
+        invoice_creation: { enabled: true },
         metadata: {
           orderId: order.id,
           orderNumber: order.orderNumber,
+          userId: userId ?? "",
         },
       };
 

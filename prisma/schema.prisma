@@ -153,6 +153,8 @@ model Product {
   // Livraison digitale (productType = EBOOK ou COURSE)
   downloadUrl      String? // Pour EBOOK : URL du fichier dans Supabase Storage (signé après paiement)
   courseAccessSlug String? // Pour COURSE : slug du cours pour accès au lecteur vidéo
+  // Espace membre : contenu du cours (chapitres/vidéos) si productType = COURSE
+  course           Course?
 
   @@index([cloverId])
   @@index([sku])
@@ -228,9 +230,17 @@ model Order {
   stripePaymentId String?
   paidAt          DateTime?
   notes           String?     @default("")
+  // ── Espace membre : rattachement au compte + facture Stripe ──
+  userId          String?
+  user            HolisticUser? @relation("UserOrders", fields: [userId], references: [id], onDelete: SetNull)
+  invoiceUrl      String?       // URL de la facture PDF hébergée par Stripe
+  invoiceNumber   String?       // Numéro de facture Stripe
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   items           OrderItem[]
+
+  @@index([userId])
+  @@index([customerEmail])
 }
 
 model OrderItem {
@@ -267,6 +277,10 @@ model HolisticUser {
   clientBookings    HolisticAppointment[]  @relation("ClientAppointments")
   reviews           HolisticReview[]
   notifications     HolisticNotification[]
+  // ── Espace membre (boutique-école) ──
+  orders            Order[]                @relation("UserOrders")
+  entitlements      MemberEntitlement[]
+  courseProgress    CourseProgress[]
 }
 
 model Practitioner {
@@ -676,4 +690,73 @@ model NewsletterSubscriber {
 
   @@index([unsubscribedAt])
   @@index([createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════
+// ESPACE MEMBRE (boutique-école)
+//  Compte unifié = HolisticUser. Voir docs/superpowers/plans/2026-06-06-espace-membre.md
+// ════════════════════════════════════════════════════════════════
+
+// Accès accordé à un membre — UNIQUEMENT pour contenus ACHETÉS (cours, ebooks).
+// Le Merestegere / les Veillées / la Bibliothèque sont gratuits pour tout membre
+// connecté : ils ne nécessitent PAS d'entitlement.
+model MemberEntitlement {
+  id        String       @id @default(cuid())
+  userId    String
+  user      HolisticUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String? // FK logique vers Product (cours/ebook acheté)
+  kind      String // COURSE | EBOOK
+  source    String       @default("PURCHASE") // PURCHASE | MANUAL | GIFT
+  orderId   String? // commande à l'origine de l'accès
+  grantedAt DateTime     @default(now())
+  expiresAt DateTime? // null = accès à vie
+
+  @@unique([userId, productId])
+  @@index([userId, kind])
+}
+
+// Cours (contenu hébergé en DB) — lié 1:1 à un Product de type COURSE.
+model Course {
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  slug        String   @unique
+  title       String
+  description String   @default("")
+  coverUrl    String?
+  isPublished Boolean  @default(false)
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Leçon / chapitre d'un cours.
+model Lesson {
+  id          String  @id @default(cuid())
+  courseId    String
+  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug        String
+  title       String
+  videoUrl    String? // vidéo (embed/hébergée Supabase)
+  content     String  @default("") // texte/markdown du chapitre
+  durationMin Int?
+  sortOrder   Int     @default(0)
+  isPreview   Boolean @default(false) // visible sans achat (extrait gratuit)
+
+  @@unique([courseId, slug])
+  @@index([courseId, sortOrder])
+}
+
+// Progression d'un membre dans un cours (1 ligne par leçon vue).
+model CourseProgress {
+  id           String       @id @default(cuid())
+  userId       String
+  user         HolisticUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  lessonId     String
+  status       String       @default("IN_PROGRESS") // IN_PROGRESS | COMPLETED
+  lastViewedAt DateTime     @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([userId, courseId])
 }
