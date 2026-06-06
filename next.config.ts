@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     // Sert automatiquement AVIF (puis WebP en repli) pour toutes les images
     // passant par next/image — meilleure compression, qualité préservée.
     formats: ['image/avif', 'image/webp'],
+    // Next 16 n'autorise que [75] par défaut : on ajoute 85 (qualité élevée,
+    // perte invisible) utilisé sur les images produits/services/praticiens.
+    qualities: [75, 85],
     remotePatterns: [
       {
         protocol: 'https',

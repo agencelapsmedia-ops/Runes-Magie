@@ -63,7 +63,7 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
           {/* Photo */}
           <div style={{ flexShrink: 0 }}>
             {practitioner.photoUrl ? (
-              <Image src={practitioner.photoUrl} alt={`${practitioner.user.firstName} ${practitioner.user.lastName}`} width={420} height={420}
+              <Image src={practitioner.photoUrl} alt={`${practitioner.user.firstName} ${practitioner.user.lastName}`} width={420} height={420} quality={85}
                 style={{ borderRadius: '12px', border: '3px solid var(--or-ancien)', boxShadow: '0 0 30px rgba(201,168,76,0.3)', objectFit: 'cover', width: '420px', height: '420px', maxWidth: '100%' }} />
             ) : (
               <div style={{ width: '420px', height: '420px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--violet-royal), var(--violet-mystique))', border: '3px solid var(--or-ancien)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6rem', color: 'var(--or-clair)', fontFamily: 'var(--font-cinzel)' }}>

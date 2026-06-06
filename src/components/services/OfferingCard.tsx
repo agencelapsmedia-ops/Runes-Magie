@@ -16,6 +16,7 @@ export default function OfferingCard({ offering }: { offering: OfferingView }) {
                 alt={offering.name}
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
+                quality={85}
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             </div>
