@@ -8,8 +8,13 @@ import ProductCard from '@/components/boutique/ProductCard';
 import Button from '@/components/ui/Button';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import { prisma } from '@/lib/db';
-import OfferingCard from '@/components/services/OfferingCard';
-import { getHomeOfferings } from '@/lib/offerings';
+import OfferingSlider from '@/components/services/OfferingSlider';
+import { getHomeSliders } from '@/lib/service-categories';
+
+// Rendu toujours « live » (comme /seances et /ecole) : la page d'accueil
+// reflète immédiatement la base de données — images, prix et liens des
+// services restent à jour sans attendre un redéploiement.
+export const dynamic = 'force-dynamic';
 
 /* ── Elder Futhark — the three Aettir ──────────────────────── */
 const aettir = [
@@ -54,13 +59,16 @@ const aettir = [
   },
 ];
 
+// Les sliders de l'accueil sont pilotés par les catégories de services cochées
+// « afficher sur l'accueil » (gérées dans Gestion site web → Catégories de services).
+
 export default async function HomePage() {
   const featuredProducts = await prisma.product.findMany({
     where: { featured: true, inStock: true },
     orderBy: { category: 'asc' },
     take: 8,
   });
-  const homeOfferings = await getHomeOfferings(6);
+  const sliderGroups = await getHomeSliders();
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
@@ -78,9 +86,9 @@ export default async function HomePage() {
           subtitle="Guidance, soins et enseignements pour illuminer votre chemin"
         />
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {homeOfferings.map((offering) => (
-            <OfferingCard key={offering.slug} offering={offering} />
+        <div className="mt-12">
+          {sliderGroups.map((group) => (
+            <OfferingSlider key={group.id} title={group.title} offerings={group.offerings} />
           ))}
         </div>
       </section>

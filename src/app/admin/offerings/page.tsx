@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/db';
 import SortOrderInput from './SortOrderInput';
+import OfferingRowActions from './OfferingRowActions';
 
 export default async function OfferingsAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ category?: string }>;
 }) {
   const params = await searchParams;
 
@@ -14,6 +15,7 @@ export default async function OfferingsAdminPage({
       providers: {
         include: { practitioner: { include: { user: { select: { firstName: true } } } } },
       },
+      category: { select: { id: true, name: true } },
     },
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   });
@@ -22,14 +24,25 @@ export default async function OfferingsAdminPage({
   const activeCount = offerings.filter((o) => o.isActive).length;
   const inactiveCount = offerings.length - activeCount;
 
-  // Filtre par catégorie (type)
-  const allTypes: string[] = Array.from(new Set(offerings.map((o) => o.type))).sort();
-  const selectedType =
-    params.type && allTypes.includes(params.type) ? params.type : undefined;
-  const filtered = selectedType
-    ? offerings.filter((o) => o.type === selectedType)
+  // Filtre par catégorie
+  const catMap = new Map<string, { id: string; name: string; count: number }>();
+  let noneCount = 0;
+  for (const o of offerings) {
+    if (o.category) {
+      const e = catMap.get(o.category.id) ?? { id: o.category.id, name: o.category.name, count: 0 };
+      e.count += 1;
+      catMap.set(o.category.id, e);
+    } else {
+      noneCount += 1;
+    }
+  }
+  const cats = [...catMap.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const selectedCategory = params.category;
+  const filtered = selectedCategory
+    ? selectedCategory === 'none'
+      ? offerings.filter((o) => !o.categoryId)
+      : offerings.filter((o) => o.categoryId === selectedCategory)
     : offerings;
-  const formatType = (t: string) => t.charAt(0) + t.slice(1).toLowerCase();
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
@@ -78,31 +91,48 @@ export default async function OfferingsAdminPage({
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 textDecoration: 'none',
-                borderBottom: !selectedType ? '2px solid #6B3FA0' : '2px solid transparent',
-                color: !selectedType ? '#6B3FA0' : '#6B7280',
+                borderBottom: !selectedCategory ? '2px solid #6B3FA0' : '2px solid transparent',
+                color: !selectedCategory ? '#6B3FA0' : '#6B7280',
                 marginBottom: '-2px',
               }}
             >
               Tous ({offerings.length})
             </a>
-            {allTypes.map((t) => (
+            {cats.map((c) => (
               <a
-                key={t}
-                href={`/admin/offerings?type=${t}`}
+                key={c.id}
+                href={`/admin/offerings?category=${c.id}`}
                 style={{
                   padding: '10px 20px',
                   fontFamily: 'var(--font-cinzel, serif)',
                   fontSize: '0.85rem',
                   fontWeight: 600,
                   textDecoration: 'none',
-                  borderBottom: selectedType === t ? '2px solid #6B3FA0' : '2px solid transparent',
-                  color: selectedType === t ? '#6B3FA0' : '#6B7280',
+                  borderBottom: selectedCategory === c.id ? '2px solid #6B3FA0' : '2px solid transparent',
+                  color: selectedCategory === c.id ? '#6B3FA0' : '#6B7280',
                   marginBottom: '-2px',
                 }}
               >
-                {formatType(t)} ({offerings.filter((o) => o.type === t).length})
+                {c.name} ({c.count})
               </a>
             ))}
+            {noneCount > 0 && (
+              <a
+                href="/admin/offerings?category=none"
+                style={{
+                  padding: '10px 20px',
+                  fontFamily: 'var(--font-cinzel, serif)',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  borderBottom: selectedCategory === 'none' ? '2px solid #6B3FA0' : '2px solid transparent',
+                  color: selectedCategory === 'none' ? '#6B3FA0' : '#9CA3AF',
+                  marginBottom: '-2px',
+                }}
+              >
+                Sans catégorie ({noneCount})
+              </a>
+            )}
           </div>
 
           {filtered.length === 0 ? (
@@ -114,7 +144,7 @@ export default async function OfferingsAdminPage({
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                    {['Ordre', 'Service', 'Type', 'Praticien·ne·s', 'Prix', 'Durée', 'Modes', 'Statut', 'Actions'].map((h) => (
+                    {['Ordre', 'Service', 'Catégorie', 'Praticien·ne·s', 'Prix', 'Durée', 'Modes', 'Statut', 'Actions'].map((h) => (
                       <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.72rem', fontWeight: 600, color: '#6B3FA0', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                         {h}
                       </th>
@@ -144,9 +174,13 @@ export default async function OfferingsAdminPage({
                           </div>
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          <span style={{ padding: '2px 10px', background: '#EDE9FE', color: '#6B3FA0', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 500, fontFamily: 'var(--font-cinzel, serif)' }}>
-                            {o.type}
-                          </span>
+                          {o.category ? (
+                            <span style={{ padding: '2px 10px', background: '#EDE9FE', color: '#6B3FA0', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 500, fontFamily: 'var(--font-cinzel, serif)' }}>
+                              {o.category.name}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>—</span>
+                          )}
                         </td>
                         <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#4B5563' }}>
                           {allProviders.join(', ')}
@@ -176,12 +210,7 @@ export default async function OfferingsAdminPage({
                           )}
                         </td>
                         <td style={{ padding: '14px 16px' }}>
-                          <a
-                            href={`/admin/offerings/${o.id}/edit`}
-                            style={{ padding: '6px 14px', background: '#EDE9FE', color: '#6B3FA0', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)' }}
-                          >
-                            Modifier
-                          </a>
+                          <OfferingRowActions offeringId={o.id} isActive={o.isActive} />
                         </td>
                       </tr>
                     );

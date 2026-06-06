@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "cta" | "mystique";
+type ButtonVariant = "primary" | "secondary" | "cta" | "mystique" | "or";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonBaseProps {
@@ -62,6 +62,15 @@ const variantStyles: Record<ButtonVariant, string> = {
     "border border-turquoise-cristal/30",
     "hover:shadow-[0_0_20px_rgba(46,196,182,0.4),0_0_40px_rgba(46,196,182,0.15)]",
     "hover:border-turquoise-cristal/60",
+    "active:scale-[0.98]",
+  ].join(" "),
+
+  or: [
+    "bg-gradient-to-r from-or-ancien to-or-clair",
+    "text-charbon-mystere font-semibold",
+    "border border-or-clair/60",
+    "hover:shadow-[0_0_25px_rgba(201,168,76,0.55)]",
+    "hover:brightness-110",
     "active:scale-[0.98]",
   ].join(" "),
 };

@@ -13,10 +13,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!p) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Charge les RDV qui occupent un créneau dans les 60 prochains jours
+  // Charge les RDV qui occupent un créneau dans les 120 prochains jours
   // (CONFIRMED = paiement reçu, ou PENDING < 1h = en cours de paiement)
+  // 120 j couvre la navigation par mois du calendrier de réservation.
   const now = new Date();
-  const future = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+  const future = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const bookedAppointments = await prisma.holisticAppointment.findMany({
     where: {

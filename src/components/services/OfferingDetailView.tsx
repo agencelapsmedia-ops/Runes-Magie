@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import RuneDivider from '@/components/ui/RuneDivider';
 import Button from '@/components/ui/Button';
 import type { OfferingView } from '@/lib/offerings';
@@ -20,9 +21,30 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
               Formation{offering.sessionsLabel ? ` · ${offering.sessionsLabel}` : ''}
             </span>
           )}
-          <div className="text-7xl md:text-8xl text-or-ancien mt-8 mb-6 animate-glow-pulse select-none">
-            {offering.emoji}
-          </div>
+          {offering.imageUrl ? (
+            <div className="relative mx-auto mt-8 mb-6 h-44 w-44 md:h-56 md:w-56 overflow-hidden rounded-2xl border-2 border-or-ancien/40 shadow-[0_0_40px_rgba(201,168,76,0.25)]">
+              <Image
+                src={offering.imageUrl}
+                alt={offering.name}
+                fill
+                sizes="224px"
+                className="object-cover"
+                unoptimized={offering.imageUrl.includes('supabase.co')}
+              />
+              {offering.emoji && offering.emoji !== '*' && (
+                <span
+                  aria-hidden
+                  className="absolute top-2 left-3 text-4xl text-or-ancien select-none drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
+                >
+                  {offering.emoji}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="text-7xl md:text-8xl text-or-ancien mt-8 mb-6 animate-glow-pulse select-none">
+              {offering.emoji}
+            </div>
+          )}
           <h1 className="font-cinzel-decorative text-3xl md:text-5xl font-bold text-gradient-gold mb-4">
             {offering.name}
           </h1>
@@ -73,7 +95,7 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
             <p className="text-parchemin-vieilli/70 mb-8 font-philosopher text-lg">
               Choisissez votre moment et réservez en ligne.
             </p>
-            <Button href={offering.bookingHref} variant="cta" size="lg">
+            <Button href={offering.bookingHref} variant="or" size="lg">
               Réserver
             </Button>
           </div>

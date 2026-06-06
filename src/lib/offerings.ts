@@ -110,3 +110,47 @@ export async function getOfferingViewBySlug(
   });
   return o ? toView(o) : null;
 }
+
+/**
+ * Résout un service ACTIF par slug, SANS filtre de type. Le slug étant unique,
+ * c'est sûr. Sert aux pages catalogue pilotées par catégorie (/seances), où un
+ * service listé peut avoir n'importe quel type — il doit rester cliquable.
+ */
+export async function getActiveOfferingViewBySlug(slug: string): Promise<OfferingView | null> {
+  const o = await prisma.offering.findFirst({
+    where: { slug, isActive: true },
+    include: offeringInclude,
+  });
+  return o ? toView(o) : null;
+}
+
+/**
+ * Récupère des offerings actives par slug, dans l'ordre EXACT des slugs fournis.
+ * Sert aux sliders de la page d'accueil (regroupement manuel, indépendant du type).
+ * Les slugs introuvables sont simplement ignorés.
+ */
+export async function getOfferingsBySlugs(slugs: string[]): Promise<OfferingView[]> {
+  if (slugs.length === 0) return [];
+  const rows = await prisma.offering.findMany({
+    where: { slug: { in: slugs }, isActive: true },
+    include: offeringInclude,
+  });
+  const order = new Map(slugs.map((s, i) => [s, i]));
+  return rows
+    .map(toView)
+    .sort((a, b) => (order.get(a.slug) ?? 0) - (order.get(b.slug) ?? 0));
+}
+
+/**
+ * Services actifs appartenant à l'une des catégories données (par id),
+ * triés. Sert aux sliders de l'accueil pilotés par les catégories.
+ */
+export async function getOfferingsByCategoryIds(ids: string[]): Promise<OfferingView[]> {
+  if (ids.length === 0) return [];
+  const rows = await prisma.offering.findMany({
+    where: { categoryId: { in: ids }, isActive: true },
+    include: offeringInclude,
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+  });
+  return rows.map(toView);
+}

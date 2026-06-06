@@ -1,4 +1,7 @@
 import DeleteOfferingButton from './DeleteOfferingButton';
+import SubmitButton from './SubmitButton';
+import OfferingImageField from './OfferingImageField';
+import RunePicker from './RunePicker';
 
 interface Practitioner {
   id: string;
@@ -10,7 +13,7 @@ interface Practitioner {
 interface OfferingFormProps {
   action: (formData: FormData) => void | Promise<void>;
   practitioners: Practitioner[];
-  existingTypes: string[];
+  categories?: { id: string; name: string; depth: number }[];
   cancelHref: string;
   submitLabel: string;
   offeringId?: string;
@@ -27,6 +30,8 @@ interface OfferingFormProps {
     pricePackageMsrp?: number | null;
     numSessions?: number | null;
     emoji?: string;
+    imageUrl?: string | null;
+    categoryId?: string | null;
     sortOrder?: number;
     isFeatured?: boolean;
     isActive?: boolean;
@@ -61,7 +66,7 @@ const labelStyle: React.CSSProperties = {
 export default function OfferingForm({
   action,
   practitioners,
-  existingTypes,
+  categories = [],
   cancelHref,
   submitLabel,
   offeringId,
@@ -86,31 +91,10 @@ export default function OfferingForm({
         maxWidth: '780px',
       }}
     >
-      {/* Nom + type */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-        <div>
-          <label style={labelStyle} htmlFor="name">Nom du service *</label>
-          <input id="name" name="name" type="text" required defaultValue={defaults.name ?? ''} style={inputStyle} placeholder="Ex: Le Soin Rituel" />
-        </div>
-        <div>
-          <label style={labelStyle} htmlFor="type">Type *</label>
-          <input
-            id="type"
-            name="type"
-            type="text"
-            required
-            defaultValue={defaults.type ?? ''}
-            style={inputStyle}
-            placeholder="Ex: SOIN"
-            list="existingTypes"
-          />
-          <datalist id="existingTypes">
-            {existingTypes.map((t) => <option key={t} value={t} />)}
-          </datalist>
-          <p style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>
-            Tape ou choisis : {existingTypes.join(', ')}
-          </p>
-        </div>
+      {/* Nom */}
+      <div>
+        <label style={labelStyle} htmlFor="name">Nom du service *</label>
+        <input id="name" name="name" type="text" required defaultValue={defaults.name ?? ''} style={inputStyle} placeholder="Ex: Le Soin Rituel" />
       </div>
 
       {/* Description */}
@@ -123,6 +107,23 @@ export default function OfferingForm({
         <label style={labelStyle} htmlFor="longDescription">Description longue (page détail)</label>
         <textarea id="longDescription" name="longDescription" rows={5} defaultValue={defaults.longDescription ?? ''} style={{ ...inputStyle, resize: 'vertical' }} />
       </div>
+
+      {/* Catégorie (pilote les sliders de l'accueil) */}
+      <div>
+        <label style={labelStyle} htmlFor="categoryId">Catégorie</label>
+        <select id="categoryId" name="categoryId" defaultValue={defaults.categoryId ?? ''} style={inputStyle}>
+          <option value="">— Aucune catégorie —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.depth > 0 ? '  ↳ ' : ''}{c.name}</option>
+          ))}
+        </select>
+        <p style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>
+          Gérées dans Services → Catégories de services. Détermine dans quel slider de l&apos;accueil le service apparaît.
+        </p>
+      </div>
+
+      {/* Image du service (carte + page détail) */}
+      <OfferingImageField defaultValue={defaults.imageUrl ?? ''} />
 
       {/* Praticien·ne·s — multi-select */}
       <div>
@@ -205,20 +206,22 @@ export default function OfferingForm({
         </div>
       </div>
 
+      {/* Emoji / Rune — sélecteur visuel des 24 runes */}
+      <div>
+        <label style={labelStyle}>Emoji / Rune (icône du service)</label>
+        <RunePicker defaultValue={defaults.emoji ?? '*'} />
+      </div>
+
       {/* Options */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: '20px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '24px' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
           <input type="checkbox" name="isFeatured" defaultChecked={defaults.isFeatured ?? false} style={{ width: '18px', height: '18px' }} />
           <span style={{ color: '#1F2937' }}>À la une (vedette sur la homepage)</span>
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', justifySelf: 'start', color: '#1F2937', fontWeight: 500 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#1F2937', fontWeight: 500 }}>
           <input type="checkbox" name="isActive" defaultChecked={defaults.isActive ?? true} style={{ width: '18px', height: '18px' }} />
           <span style={{ color: '#1F2937' }}>Service actif (visible publiquement)</span>
         </label>
-        <div>
-          <label style={{ ...labelStyle, fontSize: '0.7rem', margin: 0 }} htmlFor="emoji">Emoji / Rune</label>
-          <input id="emoji" name="emoji" type="text" maxLength={4} defaultValue={defaults.emoji ?? '*'} style={{ ...inputStyle, width: '70px', textAlign: 'center', fontSize: '1.2rem' }} />
-        </div>
       </div>
 
       {/* Boutons */}
@@ -230,9 +233,7 @@ export default function OfferingForm({
           <a href={cancelHref} style={{ padding: '10px 20px', background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)' }}>
             Annuler
           </a>
-          <button type="submit" style={{ padding: '10px 24px', background: '#6B3FA0', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-cinzel, serif)' }}>
-            {submitLabel}
-          </button>
+          <SubmitButton label={submitLabel} />
         </div>
       </div>
     </form>

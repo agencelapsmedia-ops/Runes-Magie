@@ -100,6 +100,27 @@ model Category {
   @@index([displayOrder])
 }
 
+// ════════════════════════════════════════════════════════════════
+// MENU DE NAVIGATION — géré dynamiquement depuis /admin/site/menu
+//  location : HEADER (barre du haut) | FOOTER (colonne « Navigation » du pied)
+//  type     : PAGE (page interne du site) | CUSTOM (lien libre)
+//  isVisible : false = en réserve (masqué du site, conservé en admin)
+// ════════════════════════════════════════════════════════════════
+model MenuItem {
+  id           String   @id @default(cuid())
+  label        String
+  href         String
+  type         String   @default("PAGE")
+  location     String   @default("HEADER")
+  isVisible    Boolean  @default(true)
+  openInNewTab Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([location, sortOrder])
+}
+
 model Product {
   id               String    @id @default(cuid())
   slug             String    @unique
@@ -315,9 +336,13 @@ model HolisticAvailability {
   practitionerId String
   practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
   dayOfWeek      Int // 0=Dimanche, 1=Lundi, ..., 6=Samedi
+  // null = créneau hebdomadaire récurrent ; sinon = disponibilité PONCTUELLE à cette date précise
+  date           DateTime?
   startTime      String // "09:00"
   endTime        String // "17:00"
   isActive       Boolean      @default(true)
+
+  @@index([practitionerId, date])
 }
 
 model HolisticAppointment {
@@ -461,9 +486,61 @@ model Offering {
   bookings         Booking[]
   // Praticien·ne·s additionnel·le·s pouvant offrir ce service (en plus du primaire)
   providers        OfferingProvider[]
+  // Catégorie (gérée dans /admin/site/categories) — une seule par service
+  categoryId       String?
+  category         ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([type, isActive, isFeatured])
   @@index([practitionerId, isActive])
+  @@index([categoryId])
+}
+
+// ════════════════════════════════════════════════════════════════
+// CATÉGORIES DE SERVICES — gérées dans /admin/site/categories
+//  Hiérarchie 2 niveaux : parentId == null => catégorie principale, sinon
+//  sous-catégorie. showOnHome => affichée comme slider sur l'accueil.
+//  Chaque Offering appartient à UNE seule catégorie (Offering.categoryId).
+// ════════════════════════════════════════════════════════════════
+model ServiceCategory {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  description String            @default("")
+  emoji       String            @default("")
+  // Pont vers le champ technique Offering.type (SOIN, COURS, ATELIER, …) afin
+  // de garder /seances et /ecole fonctionnels sans champ « type » dans le form.
+  typeCode    String?
+  parentId    String?
+  parent      ServiceCategory?  @relation("ServiceCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    ServiceCategory[] @relation("ServiceCategoryTree")
+  sortOrder   Int               @default(0)
+  showOnHome  Boolean           @default(false)
+  isActive    Boolean           @default(true)
+  // Présentation publique des services de cette catégorie : "GRID" (grille) ou
+  // "SLIDER" (carrousel). Choisi dans l'admin (outil Catégories).
+  displayMode String            @default("GRID")
+  offerings   Offering[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([parentId, sortOrder])
+}
+
+// ════════════════════════════════════════════════════════════════
+// SLIDERS DE L'ACCUEIL — gérés dans /admin/site/sliders
+//  Titre libre + liste de catégories/sous-catégories (categoryIds). Le slider
+//  affiche les services rattachés à ces catégories (et à leurs sous-catégories).
+// ════════════════════════════════════════════════════════════════
+model HomeSlider {
+  id          String   @id @default(cuid())
+  title       String
+  categoryIds String[] @default([])
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
 }
 
 // Table de liaison many-to-many entre Offering et Practitioner.

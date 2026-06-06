@@ -170,6 +170,7 @@ export default async function ModificationsAdminPage({
                           .filter((a) => a.isActive)
                           .map((a) => ({
                             day: DAY_NAMES[a.dayOfWeek],
+                            date: a.date ? a.date.toISOString().slice(0, 10) : null,
                             startTime: a.startTime,
                             endTime: a.endTime,
                           })),
