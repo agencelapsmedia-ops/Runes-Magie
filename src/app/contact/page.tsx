@@ -21,6 +21,8 @@ export default function ContactPage() {
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleChange(
     e: React.ChangeEvent<
@@ -30,10 +32,27 @@ export default function ContactPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // Placeholder: no actual submission
-    setSubmitted(true);
+    setError(null);
+    setSending(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Une erreur est survenue. Réessayez plus tard.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("Impossible d'envoyer le message. Vérifiez votre connexion.");
+    } finally {
+      setSending(false);
+    }
   }
 
   const inputClasses = [
@@ -160,9 +179,19 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {/* Erreur */}
+                {error && (
+                  <p
+                    className="rounded-lg border border-magenta-rituel/40 bg-magenta-rituel/10 px-4 py-3 font-cormorant text-lg text-red-300"
+                    role="alert"
+                  >
+                    {error}
+                  </p>
+                )}
+
                 {/* Submit */}
-                <Button type="submit" variant="cta" size="lg" className="w-full">
-                  Envoyer le Message
+                <Button type="submit" variant="cta" size="lg" className="w-full" disabled={sending}>
+                  {sending ? "Envoi en cours..." : "Envoyer le Message"}
                 </Button>
               </form>
             )}
