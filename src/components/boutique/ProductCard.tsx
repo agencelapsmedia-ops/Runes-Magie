@@ -67,10 +67,10 @@ export default function ProductCard({
           alt={name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          quality={85}
           className={`transition-transform duration-500 group-hover:scale-110 ${
             category === 'tarot' || category === 'oracle' ? 'object-contain p-2' : 'object-cover'
           }`}
-          unoptimized={image.includes('supabase.co')}
         />
 
         {/* Category badge */}

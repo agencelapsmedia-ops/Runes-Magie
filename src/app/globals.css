@@ -1,11 +1,10 @@
 /* ============================================
    Google Fonts
-   Doit précéder @import "tailwindcss" : en CSS, toutes les règles @import
-   doivent venir avant les autres règles. Tailwind v4 s'étend en milliers de
-   lignes, donc placer ce @import après le casserait (erreur de build/dev).
+   Le chargement des polices est désormais fait via <link rel="preconnect"> +
+   <link rel="stylesheet"> dans le <head> (src/app/layout.tsx). C'est bien plus
+   rapide qu'un @import ici : un @import CSS n'est découvert qu'APRÈS le
+   téléchargement et le parsing de ce fichier → rendu bloqué, mauvais LCP.
    ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=MedievalSharp&display=swap');
-
 @import "tailwindcss";
 
 /* ============================================

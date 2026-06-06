@@ -135,9 +135,9 @@ export default function ProductDetailPage({
               alt={product.name}
               fill
               sizes="(max-width: 1024px) 90vw, 45vw"
+              quality={85}
               className={cat === 'tarot' || cat === 'oracle' ? 'object-contain p-2' : 'object-cover'}
               priority
-              unoptimized={(product.images[activeImage] || product.image).includes('supabase.co')}
             />
           </div>
 
@@ -161,8 +161,8 @@ export default function ProductDetailPage({
                     alt={`${product.name} - vue ${i + 1}`}
                     fill
                     sizes="80px"
+                    quality={85}
                     className="object-cover"
-                    unoptimized={img.includes('supabase.co')}
                   />
                 </button>
               ))}

@@ -1,17 +1,22 @@
-'use client';
-
+// Composant serveur : aucun état ni événement côté client → pas d'hydratation
+// inutile, donc moins de JavaScript envoyé au navigateur (meilleur TBT).
+import Image from 'next/image';
 import Button from '../ui/Button';
 
 export default function HeroCarousel() {
   return (
     <section className="relative w-full h-screen overflow-hidden select-none">
-      {/* ---- Background image (déesse cosmique sur la droite) ---- */}
-      <div
-        className="absolute inset-0 bg-cover"
-        style={{
-          backgroundImage: "url('/images/hero/hero-8.webp')",
-          backgroundPosition: 'right center',
-        }}
+      {/* ---- Background image (déesse cosmique sur la droite) ----
+              next/image avec priority : préchargée + haute priorité + AVIF,
+              au lieu d'un background-image CSS découvert tard (mauvais LCP). */}
+      <Image
+        src="/images/hero/hero-8.webp"
+        alt="Déesse cosmique — Runes & Magie"
+        fill
+        priority
+        quality={85}
+        sizes="100vw"
+        className="object-cover object-right"
       />
 
       {/* ---- Voile dégradé : sombre à gauche (lisibilité du texte),

@@ -28,8 +28,8 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
                 alt={offering.name}
                 fill
                 sizes="224px"
+                quality={85}
                 className="object-cover"
-                unoptimized={offering.imageUrl.includes('supabase.co')}
               />
               {offering.emoji && offering.emoji !== '*' && (
                 <span

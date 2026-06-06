@@ -215,17 +215,19 @@ function RegisterPageInner() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      // -mt-16 annule le pt-16 du <main> du layout holistique (redondant ici car
+      // sa navbar est masquée par la navbar principale) → logo collé sous le menu.
+      className="-mt-16 min-h-screen flex flex-col"
       style={{
         background: 'linear-gradient(160deg, var(--charbon-mystere) 0%, var(--noir-nuit) 100%)',
       }}
     >
       {/* Logo « La Voie des Arcanes » — pleine largeur, collé sous le menu */}
       <Image
-        src="/images/logo/voie-des-arcanes.webp"
+        src="/images/logo/voie-des-arcanes.png"
         alt="La Voie des Arcanes"
-        width={1448}
-        height={1086}
+        width={1536}
+        height={1024}
         priority
         sizes="100vw"
         className="block w-full h-auto select-none"
@@ -247,7 +249,7 @@ function RegisterPageInner() {
             Créer mon compte
           </h1>
           <p className="font-cormorant italic text-parchemin/50 text-lg">
-            Commencez votre chemin de guérison holistique
+            Ce qui a été oublié n&apos;est jamais perdu&nbsp;; il suffit de s&apos;en souvenir ensemble.
           </p>
         </div>
 

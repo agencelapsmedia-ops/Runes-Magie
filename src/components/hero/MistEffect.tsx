@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
  * Architecture
  * ------------
  * Five semi-transparent fog layers at different speeds and directions give a
- * realistic depth effect. On mount the entire overlay fades out over ~3.5 s
+ * realistic depth effect. On mount the entire overlay fades out over ~1.2 s
  * with horizontal drift, after which it becomes invisible and non-interactive.
  *
  * A set of faint residual wisps (opacity 0.05) keeps floating permanently so
@@ -19,7 +19,7 @@ export default function MistEffect() {
 
   useEffect(() => {
     /* Start dissipation immediately; flag completion to enable pointer-events-none */
-    const id = setTimeout(() => setDissipated(true), 4000);
+    const id = setTimeout(() => setDissipated(true), 1400);
     return () => clearTimeout(id);
   }, []);
 
@@ -33,7 +33,7 @@ export default function MistEffect() {
           dissipated ? 'pointer-events-none' : '',
         ].join(' ')}
         style={{
-          animation: 'mistDissipate 3.5s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+          animation: 'mistDissipate 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
         }}
       >
         {/* Layer 1 — dense violet core */}
@@ -42,7 +42,7 @@ export default function MistEffect() {
           style={{
             background:
               'radial-gradient(ellipse 120% 100% at 50% 60%, rgba(45,27,78,0.85) 0%, rgba(45,27,78,0.50) 40%, transparent 80%)',
-            animation: 'mistLayerDrift1 3.5s ease-out forwards',
+            animation: 'mistLayerDrift1 1.2s ease-out forwards',
           }}
         />
 
@@ -52,7 +52,7 @@ export default function MistEffect() {
           style={{
             background:
               'radial-gradient(ellipse 100% 80% at 30% 55%, rgba(26,138,125,0.35) 0%, transparent 70%)',
-            animation: 'mistLayerDrift2 3.8s ease-out forwards',
+            animation: 'mistLayerDrift2 1.3s ease-out forwards',
           }}
         />
 
@@ -62,7 +62,7 @@ export default function MistEffect() {
           style={{
             background:
               'radial-gradient(ellipse 150% 120% at 60% 40%, rgba(45,27,78,0.60) 0%, transparent 65%)',
-            animation: 'mistLayerDrift3 3.2s ease-out forwards',
+            animation: 'mistLayerDrift3 1.1s ease-out forwards',
           }}
         />
 
@@ -72,7 +72,7 @@ export default function MistEffect() {
           style={{
             background:
               'radial-gradient(ellipse 80% 90% at 75% 70%, rgba(26,138,125,0.25) 0%, transparent 60%)',
-            animation: 'mistLayerDrift4 4s ease-out forwards',
+            animation: 'mistLayerDrift4 1.4s ease-out forwards',
           }}
         />
 
@@ -82,7 +82,7 @@ export default function MistEffect() {
           style={{
             background:
               'radial-gradient(ellipse 100% 100% at 50% 50%, rgba(45,27,78,0.90) 0%, rgba(10,10,18,0.70) 50%, transparent 85%)',
-            animation: 'mistLayerDrift5 3.5s ease-out forwards',
+            animation: 'mistLayerDrift5 1.2s ease-out forwards',
           }}
         />
       </div>
