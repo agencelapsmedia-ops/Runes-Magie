@@ -4,7 +4,7 @@
 
 **Date :** 2026-06-06
 **Branche :** `claude/button-navigation-seances-EzhLE`
-**Statut :** 🟡 Plan en attente de validation
+**Statut :** 🟢 Décisions verrouillées — prêt à implémenter (Phase 0)
 
 ---
 
@@ -24,22 +24,44 @@ Créer un **espace membre** (compte client) qui devient une **valeur ajoutée** 
 
 ---
 
-## 🧭 Décisions d'architecture (validées)
+## 🧭 Décisions d'architecture (toutes validées ✅)
 
-### 1. Compte unifié
-Un **seul compte** pour boutique + formations + soins. On **réutilise le modèle `User`** (le modèle unifié déjà présent dans `prisma/schema.prisma`, l.434) plutôt que de créer une nouvelle table.
+### 1. Compte unifié → on bâtit sur `HolisticUser`
+Un **seul compte** pour boutique + formations + soins.
 
-⚠️ **Point de vigilance — dette technique existante :** il y a aujourd'hui **deux tables parallèles**, `HolisticUser` (utilisée en pratique par l'auth, `src/lib/auth.ts` + `src/lib/holistic-auth.ts`) et `User` (modèle « v2 » qui semble destiné à les unifier mais n'est pas branché à l'auth). **Avant de coder, il faut trancher laquelle devient la table de référence.** Voir « Questions ouvertes » §A. Le reste du plan suppose qu'on s'appuie sur la table réellement câblée à l'auth (`HolisticUser` aujourd'hui), quitte à la renommer/migrer ensuite.
+**Décision (validée) :** on construit l'espace membre sur **`HolisticUser`** — la table **déjà branchée à la connexion** (`src/lib/auth.ts`), qui gère déjà les rôles `CLIENT | PRACTITIONER | ADMIN`. C'est donc déjà le compte unifié qui fonctionne.
 
-### 2. Lien commandes ↔ compte
-Aujourd'hui `Order` (l.213) ne stocke que `customerEmail`/`customerName` en texte — **aucune FK vers un utilisateur**. Deux options pour rattacher l'historique d'achat :
-- **(Recommandé)** Ajouter `Order.userId String?` (FK nullable vers l'utilisateur) renseigné au checkout quand le client est connecté **+** fallback par `customerEmail` pour les commandes passées en invité. Permet de réconcilier les anciennes commandes le jour où l'invité crée un compte avec le même email.
-- Lien par email seul (aucune migration de schéma, mais fragile si le client change d'email).
+> **Pourquoi pas `User` ?** Il existe une 2ᵉ table `User` (« v2 ») créée pour unifier, alimentée par `prisma/scripts/backfill-unified.ts`, **mais jamais branchée à l'auth** (coquille inutilisée). Basculer la connexion dessus risquerait de **casser les logins existants** pour un bénéfice nul à court terme. La consolidation/retrait de `User` est un **ménage séparé**, hors périmètre de cette feature.
+
+### 2. Lien commandes ↔ compte (validé)
+Aujourd'hui `Order` (l.213) ne stocke que `customerEmail`/`customerName` en texte — **aucune FK vers un utilisateur**. On ajoute **`Order.userId String?`** (FK nullable vers `HolisticUser`), renseigné au checkout quand le client est connecté, **+ fallback par `customerEmail`** pour réconcilier les commandes passées en invité le jour où l'email correspond à un compte.
 
 ### 3. Octroi d'accès aux formations (« entitlements »)
-Les produits supportent déjà `productType = COURSE | EBOOK`, avec `Product.courseAccessSlug` et `Product.downloadUrl` (schema l.151-155). Mais **rien ne relie un user à un cours acheté**. On introduit une table d'**accès** (`MemberEntitlement` ou `CourseEnrollment`) créée au moment du paiement confirmé (webhook Stripe / Clover) :
+Les produits supportent déjà `productType = COURSE | EBOOK`, avec `Product.courseAccessSlug` et `Product.downloadUrl` (schema l.151-155). Mais **rien ne relie un user à un cours acheté**. On introduit une table d'**accès** (`MemberEntitlement`) créée au moment du paiement confirmé (webhook Stripe) :
 - 1 ligne = « cet utilisateur a accès à ce produit/cours », avec date d'octroi et source (commande).
-- C'est la **clé de voûte** : la page « Mes formations » lit cette table, pas l'historique de commandes brut.
+- C'est la **clé de voûte des achats** : « Mes formations » lit cette table, pas l'historique de commandes brut.
+
+> ⚠️ **Distinction importante (suite à la décision §B ci-dessous) :** `MemberEntitlement` ne sert qu'aux contenus **achetés** (cours, ebooks). Le **Merestegere, les Veillées et la Bibliothèque sont GRATUITS pour tout membre connecté** → leur accès est conditionné uniquement à « être connecté », pas à un entitlement.
+
+### 4. Qui voit quoi — niveaux d'accès (validé : gratuit pour tout membre)
+| Contenu | Condition d'accès |
+|---|---|
+| Mes formations / cours / ebooks | Avoir **acheté** (`MemberEntitlement`) |
+| Achats & factures | Ses propres commandes (`Order.userId` / email) |
+| **Le Merestegere** | **Tout membre connecté** (gratuit) |
+| **Les Veillées de Noctura** | **Tout membre connecté** (gratuit) |
+| **Bibliothèque** | **Tout membre connecté** (gratuit) |
+
+→ On garde quand même un champ `accessLevel` (`FREE | MEMBER | PREMIUM`) sur les contenus pour pouvoir, **plus tard**, verrouiller certaines ressources sans refonte. Par défaut tout est `MEMBER`.
+
+### 5. Contenu des cours en base de données (validé)
+Les chapitres/vidéos d'une formation vivent **en DB** (modèles `Course` + `Lesson`), gérés depuis l'admin. La progression du membre (`CourseProgress`) pointe sur `Lesson.id`.
+
+### 6. Factures via Stripe (validé)
+Le checkout (`src/app/api/checkout/route.ts`) utilise Stripe Checkout `mode: "payment"` → **pas de facture PDF aujourd'hui** (reçu email seulement). On active **`invoice_creation: { enabled: true }`** dans la session : Stripe génère une **facture PDF hébergée** dont on stocke l'URL (`Order.invoiceUrl`) via le webhook → affichée dans « Achats & factures ». Pas de génération PDF maison.
+
+### 7. Veillées en live (validé)
+Diffusion **en direct via Daily.co** (déjà dans la stack) + **replays** enregistrés/embarqués pour ceux qui ratent le direct.
 
 ---
 
@@ -48,19 +70,21 @@ Les produits supportent déjà `productType = COURSE | EBOOK`, avec `Product.cou
 > Tous les nouveaux modules sont **additifs** et **nullable-safe** pour ne pas casser l'existant. Migration via `prisma migrate` sur Supabase (DIRECT_URL).
 
 ### Modifs
-- `Order` → ajouter `userId String?` + relation + `@@index([userId])`. Optionnel : `invoiceNumber`, `invoiceUrl`.
-- `User` (ou `HolisticUser` selon §A) → ajouter les relations inverses (`orders`, `entitlements`, `courseProgress`, `veilleeViews`).
+- `Order` → ajouter `userId String?` (FK vers `HolisticUser`) + relation + `@@index([userId])`, **+ `invoiceUrl String?`** (URL facture PDF Stripe) + optionnel `invoiceNumber`.
+- `HolisticUser` → ajouter les relations inverses (`orders`, `entitlements`, `courseProgress`).
+- `Product` (cours) → relation optionnelle vers `Course` (1 produit COURSE ↔ 1 `Course`).
 
 ### Nouveaux modèles (esquisse, à affiner en implémentation)
 
 ```prisma
-// Accès accordé à un membre (formation, ebook, contenu premium)
+// Accès accordé à un membre — UNIQUEMENT pour contenus ACHETÉS (cours, ebooks).
+// (Merestegere / Veillées / Bibliothèque = gratuits, pas d'entitlement requis.)
 model MemberEntitlement {
   id          String   @id @default(cuid())
   userId      String
   productId   String?  // FK logique vers Product (cours/ebook acheté)
-  kind        String   // COURSE | EBOOK | MERESTEGERE | VEILLEES | LIBRARY
-  source      String   @default("PURCHASE") // PURCHASE | MANUAL | GIFT | SUBSCRIPTION
+  kind        String   // COURSE | EBOOK
+  source      String   @default("PURCHASE") // PURCHASE | MANUAL | GIFT
   orderId     String?  // commande à l'origine de l'accès
   grantedAt   DateTime @default(now())
   expiresAt   DateTime? // null = à vie
@@ -68,16 +92,46 @@ model MemberEntitlement {
   @@index([userId, kind])
 }
 
+// Cours (contenu en DB) — lié à un Product de type COURSE
+model Course {
+  id          String   @id @default(cuid())
+  productId   String   @unique // le produit vendu correspondant
+  slug        String   @unique
+  title       String
+  description String   @default("")
+  coverUrl    String?
+  isPublished Boolean  @default(false)
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Leçon / chapitre d'un cours
+model Lesson {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug        String
+  title       String
+  videoUrl    String?  // vidéo (embed/hébergée Supabase)
+  content     String   @default("") // texte/markdown du chapitre
+  durationMin Int?
+  sortOrder   Int      @default(0)
+  isPreview   Boolean  @default(false) // visible sans achat (extrait gratuit)
+  @@unique([courseId, slug])
+  @@index([courseId, sortOrder])
+}
+
 // Progression d'un membre dans un cours
 model CourseProgress {
   id           String   @id @default(cuid())
   userId       String
-  productId    String   // le cours
-  lessonId     String   // chapitre/leçon (slug ou id du contenu)
+  courseId     String
+  lessonId     String   // -> Lesson.id
   status       String   @default("IN_PROGRESS") // IN_PROGRESS | COMPLETED
   lastViewedAt DateTime @default(now())
-  @@unique([userId, productId, lessonId])
-  @@index([userId, productId])
+  @@unique([userId, lessonId])
+  @@index([userId, courseId])
 }
 
 // Le Merestegere — chapitres lisibles en ligne (CMS léger, géré en /admin)
@@ -124,7 +178,7 @@ model LibraryResource {
 }
 ```
 
-> **Décision à prendre en impl :** un seul abonnement « membre » donne-t-il accès à Merestegere/Veillées/Bibliothèque, ou faut-il les acheter séparément ? (voir Questions ouvertes §B). Le champ `accessLevel` + `MemberEntitlement.kind` permettent les deux.
+> **Décision validée :** Merestegere / Veillées / Bibliothèque sont **gratuits pour tout membre connecté**. Le champ `accessLevel` reste à `MEMBER` par défaut (permet de verrouiller certains contenus plus tard sans refonte).
 
 ---
 
@@ -178,31 +232,31 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 - **Admin :** `src/app/admin/merestegere/`, `src/app/admin/veillees/`, `src/app/admin/bibliotheque/` — CRUD du contenu.
 
 **Modifiés :**
-- `prisma/schema.prisma` — nouveaux modèles + `Order.userId`.
+- `prisma/schema.prisma` — nouveaux modèles + `Order.userId` + `Order.invoiceUrl`.
+- `src/app/api/checkout/route.ts` — activer `invoice_creation: { enabled: true }` + passer `userId` (si connecté) en metadata.
+- `src/app/api/webhooks/stripe/route.ts` — au paiement confirmé : **octroyer l'accès** (`MemberEntitlement` pour les cours/ebooks) + récupérer/stocker `invoiceUrl`.
 - `src/lib/auth.ts` — exposer `firstName`/profil dans la session si besoin.
-- Webhooks paiement (`src/app/api/holistique/checkout/route.ts` et webhook Stripe boutique) — **octroyer l'accès** (`MemberEntitlement`) au paiement confirmé.
 - Navbar du site — lien « Mon compte » / « Se connecter ».
-- Génération de facture PDF (nouveau ou existant à vérifier).
 
 ---
 
 ## ✅ Tâches (par phases)
 
 ### Phase 0 — Fondations
-- [ ] Trancher la table user de référence (§A) et la stratégie de migration.
-- [ ] Schéma Prisma : `Order.userId`, `MemberEntitlement`, `CourseProgress`, + migration.
-- [ ] Helpers `src/lib/entitlements.ts` (octroi + vérification d'accès).
-- [ ] Brancher l'octroi d'accès dans les webhooks de paiement (Stripe boutique + Clover si applicable).
-- [ ] Route group `(membre)` + auth guard + layout sidebar/drawer (coquille vide).
+- [ ] Schéma Prisma : `Order.userId` + `Order.invoiceUrl`, `MemberEntitlement`, `Course`, `Lesson`, `CourseProgress` + migration.
+- [ ] Helpers `src/lib/entitlements.ts` (octroi + vérification d'accès aux cours/ebooks).
+- [ ] Brancher l'octroi d'accès au webhook Stripe boutique (`MemberEntitlement` au paiement confirmé).
+- [ ] Route group `(membre)` + auth guard (sur `HolisticUser`) + layout sidebar/drawer (coquille vide).
 
 ### Phase 1 — Achats & factures (valeur immédiate, peu de contenu à produire)
-- [ ] Page « Achats & factures » : historique via `Order.userId` + fallback email.
-- [ ] Génération/affichage des factures PDF.
+- [ ] Activer `invoice_creation` dans `src/app/api/checkout/route.ts` + passer `userId` en metadata.
+- [ ] Webhook Stripe : stocker `Order.invoiceUrl`.
+- [ ] Page « Achats & factures » : historique via `Order.userId` + fallback email + lien facture PDF.
 
 ### Phase 2 — Mes formations
+- [ ] Admin : CRUD `Course`/`Lesson` (rattacher un cours à un produit COURSE).
 - [ ] Page liste des cours du membre (depuis `MemberEntitlement` kind=COURSE).
 - [ ] Lecteur de cours + chapitres + barre de progression (`CourseProgress`).
-- [ ] Définir où vit le contenu d'un cours (chapitres/vidéos) — voir §C.
 
 ### Phase 3 — Le Merestegere
 - [ ] Modèle + admin CRUD chapitres + upload PDF (Supabase Storage).
@@ -223,20 +277,19 @@ Calquer le style du dashboard soins (`src/app/(holistique)/soins/dashboard/clien
 
 ---
 
-## ❓ Questions ouvertes (à clarifier avant/pendant l'impl)
+## ✔️ Décisions verrouillées (récap)
 
-**§A — Table user.** On garde `HolisticUser` comme table de référence (déjà câblée à l'auth) et on abandonne/migre `User`, ou l'inverse ? Impact sur toutes les FK ci-dessus. *(Décision technique — je peux trancher et documenter si tu préfères.)*
+| # | Question | Décision |
+|---|---|---|
+| §A | Table compte | **`HolisticUser`** (déjà câblée à l'auth). `User` = ménage séparé, hors périmètre. |
+| §B | Accès Merestegere/Veillées/Bibliothèque | **Gratuit pour tout membre connecté.** |
+| §C | Contenu des cours | **En DB** (`Course` + `Lesson`), géré en admin. |
+| §D | Factures | **Stripe `invoice_creation`** (facture PDF hébergée, URL stockée). |
+| §E | Veillées | **Live Daily.co + replays.** |
 
-**§B — Accès aux contenus premium.** Merestegere / Veillées / Bibliothèque sont-ils :
-- inclus pour **tout membre** (= dès qu'on a un compte) ?
-- réservés aux clients ayant **acheté au moins une formation** ?
-- vendus via un **abonnement** dédié (mensuel) ?
-
-**§C — Contenu des cours.** Les vidéos/chapitres d'une formation sont stockés où aujourd'hui ? (rien trouvé en DB hormis `Product.courseAccessSlug`). Faut-il un modèle `Course`/`Lesson`, ou les cours sont-ils hébergés ailleurs (ex : plateforme vidéo externe) et on ne gère que l'accès ?
-
-**§D — Factures.** Existe-t-il déjà une génération de facture PDF, ou faut-il la créer (lib PDF + stockage) ?
-
-**§E — Veillées : technique vidéo.** Live via Daily.co (déjà dans la stack) ou simples vidéos hébergées/embed (YouTube non répertorié, Vimeo, Supabase) ? Les membres regardent-ils en direct ou seulement en replay ?
+### Points mineurs à confirmer en cours d'implémentation
+- Numérotation/format légal des factures Stripe (TPS/TVQ) — à vérifier dans la config Stripe du compte.
+- Hébergement des **vidéos de cours** et **replays de Veillées** : Supabase Storage vs embed externe (Vimeo). Impacte le poids/coût — décision au moment de la Phase 2/4.
 
 ---
 
