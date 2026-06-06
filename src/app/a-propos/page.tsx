@@ -202,7 +202,7 @@ export default function AProposPage() {
             <p className="text-parchemin-vieilli/70 font-philosopher text-lg mb-8">
               Prenez rendez-vous pour une consultation ou venez decouvrir la boutique.
             </p>
-            <Button href="/contact" variant="cta" size="lg">
+            <Button href="/seances" variant="cta" size="lg">
               Prendre Rendez-vous
             </Button>
           </div>
