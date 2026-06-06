@@ -10,7 +10,7 @@ export default function HeroCarousel() {
       <div
         className="absolute inset-0 bg-cover"
         style={{
-          backgroundImage: "url('/images/hero/hero-7.png')",
+          backgroundImage: "url('/images/hero/hero-8.png')",
           backgroundPosition: 'center center',
         }}
       />
