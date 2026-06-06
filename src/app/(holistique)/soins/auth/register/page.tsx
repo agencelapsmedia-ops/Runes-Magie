@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface FormData {
   firstName: string;
@@ -214,21 +215,26 @@ function RegisterPageInner() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-16"
+      className="min-h-screen flex flex-col"
       style={{
         background: 'linear-gradient(160deg, var(--charbon-mystere) 0%, var(--noir-nuit) 100%)',
       }}
     >
+      {/* Logo « La Voie des Arcanes » — pleine largeur, collé sous le menu */}
+      <Image
+        src="/images/logo/voie-des-arcanes.webp"
+        alt="La Voie des Arcanes"
+        width={1448}
+        height={1086}
+        priority
+        sizes="100vw"
+        className="block w-full h-auto select-none"
+      />
+
+      <div className="flex-1 flex items-start justify-center px-4 pb-16 pt-10">
       <div className="w-full max-w-md">
         {/* En-tête */}
         <div className="text-center mb-10">
-          <div
-            className="font-cinzel-decorative text-5xl mb-4 select-none"
-            style={{ color: 'rgba(201, 168, 76, 0.5)' }}
-            aria-hidden="true"
-          >
-            ᚠ
-          </div>
           <h1
             className="font-cinzel-decorative text-2xl sm:text-3xl font-bold mb-2"
             style={{
@@ -464,6 +470,7 @@ function RegisterPageInner() {
             ← Retour à la plateforme
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
