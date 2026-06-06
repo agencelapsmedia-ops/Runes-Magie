@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface FormData {
   firstName: string;
@@ -222,13 +223,15 @@ function RegisterPageInner() {
       <div className="w-full max-w-md">
         {/* En-tête */}
         <div className="text-center mb-10">
-          <div
-            className="font-cinzel-decorative text-5xl mb-4 select-none"
-            style={{ color: 'rgba(201, 168, 76, 0.5)' }}
-            aria-hidden="true"
-          >
-            ᚠ
-          </div>
+          {/* Logo « La Voie des Arcanes » — décoratif, contour de runes */}
+          <Image
+            src="/images/logo/voie-des-arcanes.webp"
+            alt="La Voie des Arcanes"
+            width={600}
+            height={450}
+            priority
+            className="mx-auto mb-4 w-full max-w-[260px] h-auto select-none drop-shadow-[0_0_25px_rgba(201,168,76,0.25)]"
+          />
           <h1
             className="font-cinzel-decorative text-2xl sm:text-3xl font-bold mb-2"
             style={{
