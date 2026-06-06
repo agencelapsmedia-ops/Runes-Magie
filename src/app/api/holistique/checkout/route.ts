@@ -14,6 +14,17 @@ function getAppUrl(): string {
   return withProtocol.replace(/\/$/, '');
 }
 
+// Domaine de retour après Stripe : on réutilise l'origine de la requête (le domaine
+// d'où le client a réservé) pour PRÉSERVER sa session (cookie). Évite la déconnexion
+// quand on réserve depuis un aperçu (…vercel.app) ou le domaine apex. Repli sur getAppUrl().
+function getReturnBase(req: Request): string {
+  const origin = (req.headers.get('origin') ?? '').trim();
+  if (/^https:\/\/([a-z0-9-]+\.)*(runesetmagie\.ca|vercel\.app)$/i.test(origin)) {
+    return origin;
+  }
+  return getAppUrl();
+}
+
 export async function POST(req: Request) {
   try {
   const session = await holisticSession();
@@ -186,6 +197,8 @@ export async function POST(req: Request) {
     ? `Acompte de ${DEPOSIT_AMOUNT} $ — solde de ${amountRemaining.toFixed(2)} $ facturé à la fin de la séance`
     : `${new Date(startsAt).toLocaleDateString('fr-CA')} — ${durationHours}h${mode ? ` (${mode === 'IN_PERSON' ? 'présentiel' : 'vidéo'})` : ''}`;
 
+  const returnBase = getReturnBase(req);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const checkoutParams: any = {
     payment_method_types: ['card'],
@@ -215,9 +228,9 @@ export async function POST(req: Request) {
       payoutMode: usesStripeConnect ? 'auto-split' : 'manual',
       ...(v2BookingId ? { v2BookingId } : {}),
     },
-    success_url: `${getAppUrl()}/soins/dashboard/client?booking=success`,
+    success_url: `${returnBase}/soins/reservation-confirmee?appointment=${appointment.id}`,
     // cancel_url avec appointmentId pour pouvoir supprimer le RDV PENDING fantôme
-    cancel_url: `${getAppUrl()}/soins/reserver/${practitionerId}?cancelled=true&apptId=${appointment.id}`,
+    cancel_url: `${returnBase}/soins/reserver/${practitionerId}?cancelled=true&apptId=${appointment.id}`,
     mode: 'payment',
     // Le lien de paiement expire après 30 min (minimum imposé par Stripe) : évite
     // qu'un paiement tardif arrive après le nettoyage de la réservation « en attente ».
