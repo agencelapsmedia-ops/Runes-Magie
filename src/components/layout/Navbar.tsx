@@ -76,7 +76,7 @@ export default function Navbar() {
       : sessionUser.role === 'ADMIN'
       ? 'Admin'
       : 'Mon compte'
-    : 'Connexion';
+    : 'Se Connecter';
 
   const handleConnexion = useCallback(
     (e: React.MouseEvent) => {
@@ -160,7 +160,7 @@ export default function Navbar() {
             </Link>
 
             {/* Navigation desktop */}
-            <div className="hidden lg:flex lg:items-center lg:gap-1">
+            <div className="hidden lg:flex lg:items-center lg:gap-0.5">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -169,40 +169,48 @@ export default function Navbar() {
                     href={link.href}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className={`font-cinzel relative px-4 py-2 text-sm font-medium uppercase tracking-wide transition-all duration-300 rounded-md ${
+                    className={`group font-cinzel relative px-3.5 py-2 text-[0.8rem] font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
                       isActive
                         ? 'text-or-clair'
-                        : 'text-or-ancien hover:text-or-clair'
+                        : 'text-parchemin/85 hover:text-or-clair'
                     }`}
                   >
                     {link.label}
-                    {isActive && (
-                      <span
-                        className="absolute bottom-0 left-1/2 h-[2px] w-3/4 -translate-x-1/2 rounded-full bg-turquoise-cristal"
-                        style={{
-                          boxShadow: '0 0 8px rgba(46, 196, 182, 0.6)',
-                        }}
-                      />
-                    )}
+                    <span
+                      className={`pointer-events-none absolute bottom-1 left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-gradient-to-r from-transparent via-turquoise-cristal to-transparent transition-all duration-300 ${
+                        isActive ? 'w-3/4 opacity-100' : 'w-0 opacity-0 group-hover:w-3/4 group-hover:opacity-100'
+                      }`}
+                      style={{ boxShadow: '0 0 8px rgba(46, 196, 182, 0.6)' }}
+                    />
                   </Link>
                 );
               })}
             </div>
 
             {/* Actions droites */}
-            <div className="flex items-center gap-3">
-              {/* Bouton Connexion / Dashboard — adaptatif selon état de session */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Bouton Se Connecter / Dashboard — adaptatif selon état de session */}
               {sessionLoaded && (
                 <button
                   onClick={handleConnexion}
                   title={sessionUser ? `Connecté en tant que ${sessionUser.name ?? sessionUser.email}` : 'Se connecter'}
-                  className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-xs tracking-wider transition-all duration-300 hover:bg-or-ancien/15 hover:border-or-ancien/70 hover:shadow-[0_0_10px_rgba(201,168,76,0.2)]"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-parchemin/80 font-cinzel text-[0.7rem] uppercase tracking-[0.12em] transition-colors duration-300 hover:text-or-clair"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                   </svg>
                   {dashboardLabel}
                 </button>
+              )}
+
+              {/* Bouton « Rejoindre le Clan » — CTA principal (masqué si déjà connecté) */}
+              {sessionLoaded && !sessionUser && (
+                <Link
+                  href="/soins/auth/register"
+                  className="hidden sm:inline-flex items-center rounded-md bg-gradient-to-r from-or-ancien to-or-clair px-4 py-2 font-cinzel text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-charbon-mystere border border-or-clair/60 transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_18px_rgba(201,168,76,0.5)] active:scale-[0.98]"
+                >
+                  Rejoindre le Clan
+                </Link>
               )}
 
               {/* Bouton Déconnexion (visible uniquement si connecté) */}
@@ -215,6 +223,9 @@ export default function Navbar() {
                   Déconnexion
                 </button>
               )}
+
+              {/* Séparateur vertical discret */}
+              <span aria-hidden className="hidden sm:block h-5 w-px bg-or-ancien/25" />
 
               {/* Icone panier */}
               <Link

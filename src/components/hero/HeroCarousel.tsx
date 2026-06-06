@@ -1,116 +1,98 @@
 'use client';
 
-import Image from 'next/image';
 import Button from '../ui/Button';
 
 export default function HeroCarousel() {
   return (
     <section className="relative w-full h-screen overflow-hidden select-none">
-      {/* ---- Background image ---- */}
+      {/* ---- Background image (déesse cosmique sur la droite) ---- */}
       <div
         className="absolute inset-0 bg-cover"
         style={{
           backgroundImage: "url('/images/hero/hero-8.webp')",
-          backgroundPosition: 'center center',
+          backgroundPosition: 'right center',
         }}
       />
 
-      {/* ---- Dark gradient overlay ---- */}
+      {/* ---- Voile dégradé : sombre à gauche (lisibilité du texte),
+              transparent au centre, fondu vers le bas pour la section suivante ---- */}
       <div
         className="absolute inset-0 z-10"
         style={{
           background:
-            'linear-gradient(to bottom, rgba(10,10,18,0.35) 0%, rgba(10,10,18,0.10) 35%, rgba(10,10,18,0.50) 70%, rgba(10,10,18,0.92) 100%)',
+            'linear-gradient(90deg, rgba(10,10,18,0.85) 0%, rgba(10,10,18,0.55) 35%, rgba(10,10,18,0.05) 65%, rgba(10,10,18,0) 100%)',
+        }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 h-1/3 z-10"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(10,10,18,0) 0%, rgba(10,10,18,0.85) 100%)',
         }}
       />
 
       {/* ══════ DESKTOP ══════ */}
-      <div className="hidden lg:block">
-        {/* Logo — côté gauche */}
-        <div
-          className="absolute z-20 animate-float-logo drop-shadow-[0_0_60px_rgba(201,168,76,0.55)]"
-          style={{ left: '3%', top: '30%', transform: 'translateY(-50%)' }}
-        >
-          <Image
-            src="/images/logo/logo-3d-gold.webp"
-            alt="Logo Runes & Magie"
-            width={560}
-            height={560}
-            className="w-[480px] xl:w-[560px] h-auto object-contain"
-            priority
-          />
-        </div>
-
-        {/* Contenu — centré */}
-        <div className="absolute z-20 inset-0 flex flex-col items-center justify-center text-center">
-          <p className="mb-4 text-or-ancien tracking-[12px] animate-glow-runes" style={{ fontSize: 42, lineHeight: 1 }}>
-            &#5765;&#5794;&#5799;&#5800;&#5809;&#5810;
-          </p>
-          <h1 className="font-cinzel-decorative font-bold text-gradient-gold leading-none" style={{ fontSize: 'clamp(3rem, 5.5vw, 5rem)' }}>
-            Runes &amp; Magie
+      <div className="hidden lg:flex absolute inset-0 z-20 items-center">
+        <div className="flex flex-col items-start text-left pl-[7%] pr-8 max-w-[760px]">
+          <h1
+            className="font-cinzel font-bold text-gradient-gold leading-[0.95] drop-shadow-[0_0_40px_rgba(201,168,76,0.35)]"
+            style={{ fontSize: 'clamp(4rem, 8vw, 7.5rem)' }}
+          >
+            Runes&nbsp;&amp;
+            <br />
+            Magie
           </h1>
-          <p className="mt-4 font-cinzel uppercase text-turquoise-cristal tracking-[8px]" style={{ fontSize: '1.1rem' }}>
-            Boutique-&Eacute;cole
+
+          <p
+            className="mt-6 font-cinzel uppercase text-turquoise-cristal tracking-[0.35em]"
+            style={{ fontSize: '1.05rem' }}
+          >
+            Savoir Ancestral&nbsp;&middot;&nbsp;Pouvoir Int&eacute;rieur
           </p>
-          <span aria-hidden="true" className="mt-6 mb-5 block h-px w-40"
-            style={{ background: 'linear-gradient(90deg, transparent, var(--or-ancien), transparent)' }}
-          />
-          <p className="font-cormorant italic text-parchemin/80 max-w-lg" style={{ fontSize: '1.2rem' }}>
-            Cristaux, Runes, Tarot &amp; Magie Naturelle&nbsp;&mdash; Votre Sorci&egrave;re, Noctura Anna
+
+          <p className="mt-5 font-philosopher text-parchemin/90 text-xl max-w-lg">
+            Cours, outils et guidance pour &eacute;veiller ta magie.
           </p>
-          <div className="mt-8 flex gap-4">
-            <Button variant="primary" size="lg" href="/boutique">D&eacute;couvrir la Boutique</Button>
-            <Button variant="secondary" size="lg" href="/soins">R&eacute;server un Soin</Button>
+
+          <div className="mt-9 flex flex-wrap gap-4">
+            <Button variant="or" size="lg" href="/ecole">
+              D&eacute;couvrir l&apos;&Eacute;cole &amp; les Cours
+            </Button>
+            <Button variant="secondary" size="lg" href="/boutique">
+              Explorer la Boutique&nbsp;&rarr;
+            </Button>
           </div>
         </div>
       </div>
 
       {/* ══════ MOBILE ══════ */}
-      <div className="lg:hidden relative z-20 flex h-full flex-col items-center justify-center px-4 text-center gap-3">
-        <div className="animate-float-logo drop-shadow-[0_0_30px_rgba(201,168,76,0.5)]">
-          <Image
-            src="/images/logo/logo-3d-gold.webp"
-            alt="Logo Runes & Magie"
-            width={160}
-            height={160}
-            className="w-[140px] sm:w-[180px] h-auto object-contain"
-            priority
-          />
-        </div>
-        <p className="text-or-ancien tracking-[10px] animate-glow-runes" style={{ fontSize: 28, lineHeight: 1 }}>
-          &#5765;&#5794;&#5799;&#5800;&#5809;&#5810;
-        </p>
-        <h1 className="font-cinzel-decorative font-bold text-gradient-gold leading-none" style={{ fontSize: 'clamp(2rem, 8vw, 3rem)' }}>
-          Runes &amp; Magie
+      <div className="lg:hidden relative z-20 flex h-full flex-col items-center justify-center px-6 text-center gap-4">
+        <h1
+          className="font-cinzel font-bold text-gradient-gold leading-[0.95] drop-shadow-[0_0_30px_rgba(201,168,76,0.4)]"
+          style={{ fontSize: 'clamp(3rem, 14vw, 5rem)' }}
+        >
+          Runes&nbsp;&amp;
+          <br />
+          Magie
         </h1>
-        <p className="font-cinzel uppercase text-turquoise-cristal tracking-[6px] text-sm">
-          Boutique-&Eacute;cole
+
+        <p className="font-cinzel uppercase text-turquoise-cristal tracking-[0.3em] text-sm">
+          Savoir Ancestral&nbsp;&middot;&nbsp;Pouvoir Int&eacute;rieur
         </p>
-        <span aria-hidden="true" className="block h-px w-32 my-2"
-          style={{ background: 'linear-gradient(90deg, transparent, var(--or-ancien), transparent)' }}
-        />
-        <p className="font-cormorant italic text-parchemin/80 text-base max-w-xs">
-          Cristaux, Runes, Tarot &amp; Magie Naturelle&nbsp;&mdash; Noctura Anna
+
+        <p className="font-philosopher text-parchemin/90 text-lg max-w-xs">
+          Cours, outils et guidance pour &eacute;veiller ta magie.
         </p>
-        <div className="mt-4 flex flex-col gap-3 w-full max-w-xs">
-          <Button variant="primary" size="lg" href="/boutique">D&eacute;couvrir la Boutique</Button>
-          <Button variant="secondary" size="lg" href="/soins">R&eacute;server un Soin</Button>
+
+        <div className="mt-3 flex flex-col gap-3 w-full max-w-xs">
+          <Button variant="or" size="lg" href="/ecole">
+            D&eacute;couvrir l&apos;&Eacute;cole &amp; les Cours
+          </Button>
+          <Button variant="secondary" size="lg" href="/boutique">
+            Explorer la Boutique&nbsp;&rarr;
+          </Button>
         </div>
       </div>
-
-      {/* ---- Keyframes ---- */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes glowRunes {
-          0%, 100% { text-shadow: 0 0 8px rgba(201,168,76,0.5), 0 0 20px rgba(201,168,76,0.25); }
-          50% { text-shadow: 0 0 16px rgba(201,168,76,0.8), 0 0 40px rgba(201,168,76,0.4); }
-        }
-        .animate-glow-runes { animation: glowRunes 3s ease-in-out infinite; }
-        @keyframes floatLogo {
-          0%, 100% { transform: translateY(0px); }
-          50%       { transform: translateY(-12px); }
-        }
-        .animate-float-logo { animation: floatLogo 5s ease-in-out infinite; }
-      ` }} />
     </section>
   );
 }
