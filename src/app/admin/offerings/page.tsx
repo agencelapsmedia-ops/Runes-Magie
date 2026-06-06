@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import SortOrderInput from './SortOrderInput';
 
 export default async function OfferingsAdminPage({
   searchParams,
@@ -113,7 +114,7 @@ export default async function OfferingsAdminPage({
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                    {['Service', 'Type', 'Praticien·ne·s', 'Prix', 'Durée', 'Modes', 'Statut', 'Actions'].map((h) => (
+                    {['Ordre', 'Service', 'Type', 'Praticien·ne·s', 'Prix', 'Durée', 'Modes', 'Statut', 'Actions'].map((h) => (
                       <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.72rem', fontWeight: 600, color: '#6B3FA0', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                         {h}
                       </th>
@@ -130,6 +131,9 @@ export default async function OfferingsAdminPage({
                     const packageStr = o.pricePackage ? ` · forfait ${o.pricePackage} $` : '';
                     return (
                       <tr key={o.id} style={{ borderBottom: '1px solid #F3F4F6', background: idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA' }}>
+                        <td style={{ padding: '14px 16px' }}>
+                          <SortOrderInput offeringId={o.id} value={o.sortOrder} />
+                        </td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.4rem' }}>{o.emoji}</span>

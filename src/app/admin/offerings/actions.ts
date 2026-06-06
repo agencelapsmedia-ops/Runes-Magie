@@ -180,6 +180,16 @@ export async function deleteOffering(id: string): Promise<void> {
   redirect('/admin/offerings');
 }
 
+export async function updateOfferingSortOrder(id: string, sortOrder: number): Promise<void> {
+  if (!Number.isFinite(sortOrder)) throw new Error('Ordre invalide.');
+  await prisma.offering.update({
+    where: { id },
+    data: { sortOrder: Math.trunc(sortOrder) },
+  });
+  revalidatePath('/admin/offerings');
+  revalidatePath('/soins');
+}
+
 export async function toggleOfferingActive(id: string): Promise<void> {
   const o = await prisma.offering.findUnique({ where: { id } });
   if (!o) throw new Error('Service introuvable.');
