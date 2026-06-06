@@ -145,7 +145,9 @@ export default async function ClientDashboardPage() {
     ?? 'Cher client';
 
   const appointments = await prisma.holisticAppointment.findMany({
-    where: { clientId: userId },
+    // On masque les réservations « en attente » (paiement non complété) : seules les
+    // vraies réservations (payées / passées) apparaissent dans l'espace membre.
+    where: { clientId: userId, NOT: { status: 'PENDING' } },
     include: {
       practitioner: {
         include: {

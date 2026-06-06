@@ -238,7 +238,9 @@ export default async function PraticienDashboardPage() {
     prisma.holisticAppointment.findMany({
       where: {
         practitionerId,
-        status: { in: ['PENDING', 'CONFIRMED'] },
+        // Seulement les RDV payés (CONFIRMED) : on n'affiche pas les « en attente »
+        // (paiement non complété) dans l'espace praticien.
+        status: 'CONFIRMED',
         // Inclut les RDV dont le début est dans les 6 dernières heures (en cours / juste fini)
         // pour que la praticienne puisse cliquer « Terminer la séance » dessus
         startsAt: { gte: new Date(now.getTime() - 6 * 60 * 60 * 1000) },
