@@ -10,6 +10,7 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import RuneDivider from '@/components/ui/RuneDivider';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/boutique/ProductCard';
+import PhoneButton from '@/components/ui/PhoneButton';
 
 const categoryLabels: Record<Category, string> = {
   cristaux: 'Cristaux',
@@ -287,6 +288,9 @@ export default function ProductDetailPage({
               Ajouter au panier
             </button>
           </div>
+
+          {/* Bouton telephone cliquable */}
+          <PhoneButton size="md" className="w-full sm:w-auto" />
         </div>
       </div>
 

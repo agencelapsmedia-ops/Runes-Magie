@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import RuneDivider from '@/components/ui/RuneDivider';
 import Button from '@/components/ui/Button';
+import PhoneButton from '@/components/ui/PhoneButton';
 import type { OfferingView } from '@/lib/offerings';
 
 export default function OfferingDetailView({ offering }: { offering: OfferingView }) {
@@ -53,6 +54,12 @@ export default function OfferingDetailView({ offering }: { offering: OfferingVie
             <span className="font-cinzel text-2xl text-or-ancien font-semibold">{offering.priceLabel}</span>
             <span className="text-parchemin-vieilli/40">&#9670;</span>
             <span className="text-parchemin-vieilli/80 font-philosopher">{offering.durationLabel}</span>
+          </div>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button href={offering.bookingHref} variant="or" size="lg">
+              Réserver
+            </Button>
+            <PhoneButton size="lg" />
           </div>
         </div>
       </section>
