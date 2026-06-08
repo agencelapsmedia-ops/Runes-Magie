@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
 import { markBookingPaidV2 } from '@/lib/holistic-v2-sync';
 import { createDailyRoomForAppointment } from '@/lib/daily-co';
+import { createCalendarEventForAppointment } from '@/lib/google-calendar';
 import {
   sendBookingConfirmationToClient,
   sendBookingNotificationToPractitioner,
@@ -133,6 +134,14 @@ export async function POST(req: Request) {
       }
     } catch (err) {
       console.error('[webhook] booking emails failed (non-blocking)', err);
+    }
+
+    // Sync sortante Google Agenda (best-effort) — crée l'événement dans l'agenda
+    // de la praticienne SI elle a connecté son Google Agenda. Aucun impact sinon.
+    try {
+      await createCalendarEventForAppointment(appointmentId);
+    } catch (err) {
+      console.error('[webhook] google calendar event creation failed (non-blocking)', err);
     }
 
     // Dual-write V2 (best-effort) — marque Booking V2 + Payment V2 comme payés

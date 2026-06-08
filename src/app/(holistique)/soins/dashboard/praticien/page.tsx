@@ -4,6 +4,7 @@ import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import Button from '@/components/ui/Button';
 import StripeConnectBanner from './StripeConnectBanner';
+import GoogleCalendarBanner from './GoogleCalendarBanner';
 import CompleteAppointmentButton from './CompleteAppointmentButton';
 
 function StatusBadge({ status }: { status: string }) {
@@ -369,6 +370,12 @@ export default async function PraticienDashboardPage() {
         <StripeConnectBanner
           stripeAccountReady={practitioner.stripeAccountReady}
           hasStripeAccount={!!practitioner.stripeAccountId}
+        />
+
+        {/* Bandeau Google Agenda (connexion OAuth par praticienne) */}
+        <GoogleCalendarBanner
+          connected={!!practitioner.googleCalendarConnectedAt}
+          googleEmail={practitioner.googleCalendarEmail}
         />
 
         {/* Bandeau modifications en attente */}

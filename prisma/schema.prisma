@@ -296,6 +296,10 @@ model Practitioner {
   photoUrl           String?
   stripeAccountId    String?
   stripeAccountReady Boolean                @default(false)
+  // Google Agenda — OAuth dédié par praticienne (Phase 1, additif/nullable)
+  googleRefreshToken        String?
+  googleCalendarEmail       String?
+  googleCalendarConnectedAt DateTime?
   certificationUrls  String[]               @default([])
   insuranceUrl       String?
   insuranceNumber    String?
@@ -370,6 +374,7 @@ model HolisticAppointment {
   status         String                 @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
   dailyRoomUrl   String?
   dailyRoomName  String?
+  googleEventId  String? // id de l'événement Google Agenda (sync sortante)
   cancelledAt    DateTime?
   cancelledBy    String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
   notes          String?
