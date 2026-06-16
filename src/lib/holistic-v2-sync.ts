@@ -223,6 +223,41 @@ export async function syncAppointmentStatusToV2(params: {
 }
 
 /**
+ * Met à jour les horaires d'un Booking V2 après déplacement d'un HolisticAppointment.
+ * Le Booking V2 se retrouve par (practitionerId, ANCIEN startsAt, clientId V2), d'où
+ * la nécessité de passer `oldStartsAt`. Best-effort : retourne le Booking ou null.
+ */
+export async function updateBookingTimesV2(params: {
+  appointmentId: string;
+  oldStartsAt: Date;
+  newStartsAt: Date;
+  newEndsAt: Date;
+}) {
+  const a = await prisma.holisticAppointment.findUnique({
+    where: { id: params.appointmentId },
+    include: { client: { select: { email: true } } },
+  });
+  if (!a) return null;
+
+  const v2Client = await prisma.user.findUnique({ where: { email: a.client.email } });
+  if (!v2Client) return null;
+
+  const booking = await prisma.booking.findFirst({
+    where: {
+      practitionerId: a.practitionerId,
+      startsAt: params.oldStartsAt,
+      clientId: v2Client.id,
+    },
+  });
+  if (!booking) return null;
+
+  return prisma.booking.update({
+    where: { id: booking.id },
+    data: { startsAt: params.newStartsAt, endsAt: params.newEndsAt },
+  });
+}
+
+/**
  * Crée un Payment V2 miroir d'un HolisticPayment.
  * Idempotent par bookingId (unique).
  */
