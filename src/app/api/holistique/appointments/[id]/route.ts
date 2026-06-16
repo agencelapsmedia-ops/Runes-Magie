@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
 import { syncAppointmentStatusToV2 } from '@/lib/holistic-v2-sync';
 import { deleteCalendarEventForAppointment } from '@/lib/google-calendar';
+import {
+  buildBookingEmailData,
+  sendCancellationToClient,
+  sendCancellationToPractitioner,
+} from '@/lib/holistic-booking-email';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await holisticSession();
@@ -30,9 +35,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     console.error('[v2-sync] syncAppointmentStatusToV2 failed', { appointmentId: id, err });
   }
 
-  // Annulation → retire l'événement de l'agenda Google de la praticienne
-  // (best-effort, no-op si non connectée ou si aucun événement n'avait été créé).
+  // Annulation → courriels aux deux parties + retrait de l'événement agenda Google
+  // (best-effort, no-op si non connectée / Resend non configuré).
   if (status === 'CANCELLED') {
+    try {
+      const emailData = await buildBookingEmailData(id);
+      if (emailData) {
+        await Promise.allSettled([
+          sendCancellationToClient(emailData),
+          sendCancellationToPractitioner(emailData),
+        ]);
+      }
+    } catch (err) {
+      console.error('[annulation] envoi courriels échoué (non-bloquant)', { appointmentId: id, err });
+    }
     try {
       await deleteCalendarEventForAppointment(id);
     } catch (err) {
