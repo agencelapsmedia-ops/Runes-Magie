@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import RescheduleButton from '@/app/(holistique)/soins/dashboard/praticien/RescheduleButton';
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; color: string; border: string; label: string }> = {
@@ -61,7 +62,7 @@ export default async function ConsultationsAdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                {['Date', 'Client', 'Praticien', 'Statut', 'Paiement', 'Durée'].map((h) => (
+                {['Date', 'Client', 'Praticien', 'Statut', 'Paiement', 'Durée', 'Actions'].map((h) => (
                   <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.75rem', fontWeight: 600, color: '#6B3FA0', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {h}
                   </th>
@@ -122,6 +123,18 @@ export default async function ConsultationsAdminPage() {
                   {/* Duration */}
                   <td style={{ padding: '14px 16px', color: '#4B5563', fontSize: '0.85rem' }}>
                     {durationMin(appt)} min
+                  </td>
+                  {/* Actions */}
+                  <td style={{ padding: '14px 16px' }}>
+                    {appt.status === 'CONFIRMED' ? (
+                      <RescheduleButton
+                        appointmentId={appt.id}
+                        currentStartsAt={new Date(appt.startsAt).toISOString()}
+                        variant="light"
+                      />
+                    ) : (
+                      <span style={{ color: '#9CA3AF', fontSize: '0.8rem' }}>—</span>
+                    )}
                   </td>
                 </tr>
               ))}
