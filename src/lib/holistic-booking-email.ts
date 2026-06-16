@@ -7,11 +7,11 @@
  */
 
 import { Resend } from 'resend';
+import { BOUTIQUE_LOCATION } from '@/lib/constants';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.FROM_EMAIL || 'Runes & Magie <onboarding@resend.dev>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
-const BOUTIQUE_ADDRESS = 'Boutique Runes & Magie (adresse à confirmer)';
 
 function formatMontrealDateTime(date: Date): string {
   return new Intl.DateTimeFormat('fr-CA', {
@@ -63,7 +63,7 @@ export async function sendBookingConfirmationToClient(data: BookingEmailData): P
         </p>`
       : `
         <p style="margin: 4px 0; color: #E8DCC8;"><strong>Mode :</strong> ${modeLabel}</p>
-        <p style="margin: 4px 0; color: #E8DCC8;"><strong>Adresse :</strong> ${BOUTIQUE_ADDRESS}</p>`;
+        <p style="margin: 4px 0; color: #E8DCC8;"><strong>Adresse :</strong> ${BOUTIQUE_LOCATION}</p>`;
 
   const remainderBlock =
     data.remainingAmount > 0

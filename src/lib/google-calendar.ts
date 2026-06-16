@@ -13,9 +13,11 @@
 
 import { google } from 'googleapis';
 import { prisma } from '@/lib/db';
+import { BOUTIQUE_LOCATION } from '@/lib/constants';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const TIMEZONE = 'America/Toronto';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
 
 function getOAuthClient() {
   return new google.auth.OAuth2(
@@ -122,11 +124,21 @@ export async function createCalendarEventForAppointment(
     const serviceName = serviceMatch ? serviceMatch[1].trim() : 'Soin';
     const clientName = `${appt.client.firstName} ${appt.client.lastName}`.trim();
 
+    // Présentiel → adresse boutique ; virtuel → lien vers la salle de consultation
+    // (page de l'app qui ouvre/embarque la salle Daily.co — lien stable et canonique).
+    const isVirtual = (appt.notes ?? '').toLowerCase().includes('virtuel');
+    const consultationUrl = `${APP_URL}/soins/consultation/${appt.id}`;
+    const location = isVirtual ? consultationUrl : BOUTIQUE_LOCATION;
+    const locationLine = isVirtual
+      ? `Vidéoconférence : ${consultationUrl}`
+      : `Adresse : ${BOUTIQUE_LOCATION}`;
+
     const description = [
       `Client : ${clientName}`,
       appt.client.email ? `Courriel : ${appt.client.email}` : null,
       appt.client.phone ? `Téléphone : ${appt.client.phone}` : null,
       appt.totalAmount != null ? `Prix : ${appt.totalAmount} $` : null,
+      `\n${locationLine}`,
       appt.notes ? `\nNotes :\n${appt.notes}` : null,
       `\n— Réservation Runes & Magie`,
     ]
@@ -138,6 +150,7 @@ export async function createCalendarEventForAppointment(
       requestBody: {
         summary: `${serviceName} — ${clientName}`,
         description,
+        location,
         start: { dateTime: appt.startsAt.toISOString(), timeZone: TIMEZONE },
         end: { dateTime: appt.endsAt.toISOString(), timeZone: TIMEZONE },
       },

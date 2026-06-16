@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
 import { syncAppointmentStatusToV2 } from '@/lib/holistic-v2-sync';
+import { deleteCalendarEventForAppointment } from '@/lib/google-calendar';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await holisticSession();
@@ -27,6 +28,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     await syncAppointmentStatusToV2({ appointmentId: id, status, cancelledBy: role });
   } catch (err) {
     console.error('[v2-sync] syncAppointmentStatusToV2 failed', { appointmentId: id, err });
+  }
+
+  // Annulation → retire l'événement de l'agenda Google de la praticienne
+  // (best-effort, no-op si non connectée ou si aucun événement n'avait été créé).
+  if (status === 'CANCELLED') {
+    try {
+      await deleteCalendarEventForAppointment(id);
+    } catch (err) {
+      console.error('[google calendar] suppression événement à l\'annulation échouée (non-bloquant)', {
+        appointmentId: id,
+        err,
+      });
+    }
   }
 
   return NextResponse.json(updated);
