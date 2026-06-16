@@ -375,6 +375,8 @@ model HolisticAppointment {
   dailyRoomUrl   String?
   dailyRoomName  String?
   googleEventId  String? // id de l'événement Google Agenda (sync sortante)
+  reminder3dSentAt  DateTime? // rappel client 3 jours avant (anti-doublon)
+  reminder24hSentAt DateTime? // rappel client 24h avant (anti-doublon)
   cancelledAt    DateTime?
   cancelledBy    String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
   notes          String?
