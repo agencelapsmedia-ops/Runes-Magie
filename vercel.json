@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/clover-pull",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/holistic-reminders",
+      "schedule": "0 * * * *"
     }
   ]
 }
