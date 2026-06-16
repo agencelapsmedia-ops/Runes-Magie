@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import StripeConnectBanner from './StripeConnectBanner';
 import GoogleCalendarBanner from './GoogleCalendarBanner';
 import CompleteAppointmentButton from './CompleteAppointmentButton';
+import RescheduleButton from './RescheduleButton';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
@@ -577,6 +578,13 @@ export default async function PraticienDashboardPage() {
                         >
                           ᛜ Rejoindre la vidéo
                         </Link>
+                      )}
+                      {/* Bouton « Déplacer » : reprogrammer le RDV (praticienne propriétaire) */}
+                      {appt.status === 'CONFIRMED' && (
+                        <RescheduleButton
+                          appointmentId={appt.id}
+                          currentStartsAt={new Date(appt.startsAt).toISOString()}
+                        />
                       )}
                       {/* Bouton « Terminer la séance » : disponible pour tous les RDV CONFIRMÉS
                           (la praticienne décide quand l'utiliser — typiquement à la fin de la séance) */}
