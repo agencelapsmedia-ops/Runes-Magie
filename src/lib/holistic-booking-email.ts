@@ -8,6 +8,7 @@
 
 import { Resend } from 'resend';
 import { BOUTIQUE_LOCATION } from '@/lib/constants';
+import { prisma } from '@/lib/db';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.FROM_EMAIL || 'Runes & Magie <onboarding@resend.dev>';
@@ -213,4 +214,74 @@ export async function sendBookingNotificationToPractitioner(data: BookingEmailDa
   } catch (err) {
     console.error('[Email holistique] Échec envoi notification praticienne', err);
   }
+}
+
+/** Enveloppe HTML commune (en-tête + pied) des courriels holistiques. */
+function emailShell(innerHtml: string, footer = 'Runes &amp; Magie · Annabelle Dionne'): string {
+  return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0A0A12;color:#F5F0E8;font-family:Georgia,'Times New Roman',serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="color:#C9A84C;font-size:28px;margin:0;letter-spacing:0.05em;">Runes &amp; Magie</h1>
+      <p style="color:rgba(201,168,76,0.6);font-size:13px;margin:8px 0 0;letter-spacing:0.1em;text-transform:uppercase;">Soins holistiques</p>
+    </div>
+    <div style="background:#1A1A2E;border:1px solid rgba(74,45,122,0.4);border-radius:8px;padding:32px;">
+      ${innerHtml}
+    </div>
+    <div style="text-align:center;margin-top:32px;color:rgba(245,240,232,0.4);font-size:12px;"><p>${footer}</p></div>
+  </div>
+</body></html>`;
+}
+
+/** Bloc HTML « mode + lieu/lien » selon présentiel ou virtuel. */
+function locationHtml(data: BookingEmailData): string {
+  const consultationUrl = `${APP_URL}/soins/consultation/${data.appointmentId}`;
+  return data.mode === 'VIRTUAL'
+    ? `<p style="margin:4px 0;color:#E8DCC8;"><strong>Mode :</strong> En ligne (vidéoconférence)</p>
+       <p style="margin:4px 0;color:#E8DCC8;"><strong>Lien :</strong> <a href="${consultationUrl}" style="color:#2EC4B6;word-break:break-all;">${consultationUrl}</a></p>`
+    : `<p style="margin:4px 0;color:#E8DCC8;"><strong>Mode :</strong> En présentiel</p>
+       <p style="margin:4px 0;color:#E8DCC8;"><strong>Adresse :</strong> ${BOUTIQUE_LOCATION}</p>`;
+}
+
+/**
+ * Construit le BookingEmailData à partir d'un appointmentId (charge RDV + client +
+ * praticienne, parse le service/mode depuis les notes). null si RDV introuvable.
+ * Source unique réutilisée par les courriels de déplacement / annulation / rappel.
+ */
+export async function buildBookingEmailData(appointmentId: string): Promise<BookingEmailData | null> {
+  const appt = await prisma.holisticAppointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      client: { select: { firstName: true, email: true } },
+      practitioner: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
+    },
+  });
+  if (!appt) return null;
+
+  const isVirtual = (appt.notes ?? '').toLowerCase().includes('virtuel');
+  const serviceMatch = (appt.notes ?? '').match(/Service\s*:\s*([^\n]+)/);
+  const serviceName = serviceMatch ? serviceMatch[1].trim() : 'Consultation';
+  const cleanNotes = (appt.notes ?? '')
+    .replace(/Service\s*:[^\n]*\n?/g, '')
+    .replace(/Mode\s*:[^\n]*\n?/g, '')
+    .trim();
+
+  return {
+    appointmentId: appt.id,
+    clientFirstName: appt.client.firstName,
+    clientEmail: appt.client.email,
+    practitionerFirstName: appt.practitioner.user.firstName,
+    practitionerLastName: appt.practitioner.user.lastName,
+    practitionerEmail: appt.practitioner.user.email,
+    serviceName,
+    startsAt: appt.startsAt,
+    endsAt: appt.endsAt,
+    mode: (isVirtual ? 'VIRTUAL' : 'IN_PERSON') as 'VIRTUAL' | 'IN_PERSON',
+    notes: cleanNotes || null,
+    depositAmount: appt.depositAmount ?? 0,
+    remainingAmount: appt.remainingAmount ?? 0,
+    totalAmount: appt.totalAmount ?? 0,
+    dailyRoomUrl: appt.dailyRoomUrl ?? null,
+  };
 }
