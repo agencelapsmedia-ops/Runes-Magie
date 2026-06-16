@@ -171,6 +171,51 @@ export async function createCalendarEventForAppointment(
 }
 
 /**
+ * Met à jour l'événement Google d'un RDV (ex : déplacement). Patch début/fin + lieu.
+ * Best-effort : retourne true si patché, false sinon (pas d'événement, non connectée…).
+ * Ne lève jamais.
+ */
+export async function updateCalendarEventForAppointment(
+  appointmentId: string,
+): Promise<boolean> {
+  try {
+    const appt = await prisma.holisticAppointment.findUnique({
+      where: { id: appointmentId },
+      select: {
+        id: true,
+        practitionerId: true,
+        googleEventId: true,
+        startsAt: true,
+        endsAt: true,
+        notes: true,
+      },
+    });
+    if (!appt?.googleEventId) return false;
+
+    const calendar = await getCalendarForPractitioner(appt.practitionerId);
+    if (!calendar) return false;
+
+    const isVirtual = (appt.notes ?? '').toLowerCase().includes('virtuel');
+    const consultationUrl = `${APP_URL}/soins/consultation/${appt.id}`;
+    const location = isVirtual ? consultationUrl : BOUTIQUE_LOCATION;
+
+    await calendar.events.patch({
+      calendarId: 'primary',
+      eventId: appt.googleEventId,
+      requestBody: {
+        location,
+        start: { dateTime: appt.startsAt.toISOString(), timeZone: TIMEZONE },
+        end: { dateTime: appt.endsAt.toISOString(), timeZone: TIMEZONE },
+      },
+    });
+    return true;
+  } catch (err) {
+    console.error('[Google Calendar] échec mise à jour événement', { appointmentId, err });
+    return false;
+  }
+}
+
+/**
  * Supprime l'événement Google d'un RDV (ex : annulation). Best-effort.
  */
 export async function deleteCalendarEventForAppointment(
