@@ -22,7 +22,8 @@ Trois manques à combler :
   reprogrammer un RDV confirmé, avec mise à jour de l'agenda Google + courriel au client.
 - Envoyer un **courriel d'annulation** au client et à la praticienne quand un RDV
   passe en `CANCELLED`.
-- Envoyer un **rappel automatique** au client ~24h avant le RDV, via un cron Vercel.
+- Envoyer **deux rappels automatiques** au client avant le RDV (3 jours avant et
+  24h avant), via un cron Vercel.
 
 ## Hors périmètre (YAGNI)
 
@@ -30,7 +31,7 @@ Trois manques à combler :
 - **Remboursement automatisé** à l'annulation (le courriel reste informationnel ;
   le remboursement éventuel se gère manuellement via Stripe).
 - **Rappel SMS** (séparé, nécessite Twilio — reste au backlog).
-- **Rappel 1h avant** (on se limite au 24h pour cette itération).
+- **Rappel 1h avant** (on se limite aux rappels 3 jours + 24h pour cette itération).
 - Contrainte du nouveau créneau aux disponibilités publiées (la praticienne choisit librement).
 
 ---
@@ -56,11 +57,14 @@ déplacement, d'annulation et de rappel.
   recalculé selon présentiel/virtuel). Best-effort, ne lève jamais. No-op si pas
   d'événement (ex. praticienne non connectée).
 
-### B3. Colonne anti-doublon rappel
-- `HolisticAppointment.reminderSentAt DateTime?` (nullable, additif).
-- Migration SQL dans `prisma/migrations/<timestamp>_add_reminder_sent_at/migration.sql`,
-  appliquée à Supabase (même procédure que la migration Google Agenda du 2026-06-08).
-- Ajout du champ dans `prisma/schema.prisma` (modèle `HolisticAppointment`).
+### B3. Colonnes anti-doublon rappels
+Deux rappels distincts → deux marqueurs (un seul flag ne saurait pas lequel a été envoyé) :
+- `HolisticAppointment.reminder3dSentAt DateTime?` (rappel 3 jours avant)
+- `HolisticAppointment.reminder24hSentAt DateTime?` (rappel 24h avant)
+- Les deux nullables, additifs. Migration SQL dans
+  `prisma/migrations/<timestamp>_add_reminder_sent_at/migration.sql`, appliquée à
+  Supabase (même procédure que la migration Google Agenda du 2026-06-08).
+- Ajout des champs dans `prisma/schema.prisma` (modèle `HolisticAppointment`).
 
 ---
 
@@ -80,7 +84,8 @@ déplacement, d'annulation et de rappel.
   - Pas de chevauchement avec un autre RDV non annulé de la praticienne
     (réutiliser la logique `startsAt < endsAt && endsAt > startsAt`, **exclure l'id courant**),
     sinon 409.
-- **Effet** : `update` `startsAt`/`endsAt` + `reminderSentAt: null`.
+- **Effet** : `update` `startsAt`/`endsAt` + `reminder3dSentAt: null` + `reminder24hSentAt: null`
+  (les rappels repartent sur la nouvelle date).
 - **Effets de bord (best-effort, non bloquants)** : `updateCalendarEventForAppointment(id)`,
   `sendRescheduleToClient(...)`, mise à jour des horaires Booking V2.
 
@@ -113,20 +118,28 @@ mode + adresse (présentiel) ou lien consultation (virtuel), praticienne. Réuti
 
 ---
 
-## Feature 3 — Rappel 24h
+## Feature 3 — Rappels 3 jours + 24h
 
 - **Route cron** `GET /api/cron/holistic-reminders/route.ts` :
   - Auth identique aux crons Clover : header `x-cron-secret` ou `authorization: Bearer`
     == `process.env.CRON_SECRET`, sinon 401.
-  - Sélection : `status === 'CONFIRMED'`, `startsAt` entre `now` et `now + 24h`,
-    `reminderSentAt === null`.
-  - Pour chacun : `sendReminderToClient(...)` (via B1) puis `update { reminderSentAt: now }`.
-    Best-effort par RDV (un échec n'empêche pas les autres). Retourne un récap JSON
-    (`{ sent, failed }`).
+  - **Rappel 3 jours** : `status === 'CONFIRMED'`, `startsAt <= now + 72h`,
+    `startsAt > now + 24h`, `reminder3dSentAt === null` → `sendReminderToClient(data, '3d')`
+    puis `update { reminder3dSentAt: now }`.
+  - **Rappel 24h** : `status === 'CONFIRMED'`, `startsAt <= now + 24h`, `startsAt > now`,
+    `reminder24hSentAt === null` → `sendReminderToClient(data, '24h')`
+    puis `update { reminder24hSentAt: now }`.
+  - Le garde `startsAt > now + 24h` sur le rappel 3 jours évite le doublon quand un
+    RDV est déjà à moins de 24h (il ne reçoit alors que le rappel 24h). Un RDV réservé
+    à moins de 3 jours reçoit un rappel anticipé au prochain tick puis celui de 24h —
+    comportement voulu.
+  - Best-effort par RDV (un échec n'empêche pas les autres). Récap JSON
+    (`{ sent3d, sent24h, failed }`).
 - **`vercel.json`** : ajouter `{ "path": "/api/cron/holistic-reminders", "schedule": "0 * * * *" }`
-  (toutes les heures ; dédoublonné par `reminderSentAt`). 3ᵉ cron (OK Vercel Pro).
-- **Courriel** : `sendReminderToClient(data)` — rappel au **client** seulement, avec
-  date/heure, mode + adresse/lien, et lien vers son tableau de bord.
+  (toutes les heures ; dédoublonné par les deux colonnes). 3ᵉ cron (OK Vercel Pro).
+- **Courriel** : `sendReminderToClient(data, lead: '3d' | '24h')` — rappel au **client**
+  seulement, formulation adaptée (« dans 3 jours » / « demain »), date/heure, mode +
+  adresse/lien, lien vers son tableau de bord.
 
 ---
 
@@ -134,7 +147,8 @@ mode + adresse (présentiel) ou lien consultation (virtuel), praticienne. Réuti
 
 | Table | Colonne | Type | Note |
 |---|---|---|---|
-| `HolisticAppointment` | `reminderSentAt` | `DateTime?` | anti-doublon du rappel 24h ; remis à `null` au déplacement |
+| `HolisticAppointment` | `reminder3dSentAt` | `DateTime?` | anti-doublon du rappel 3 jours ; remis à `null` au déplacement |
+| `HolisticAppointment` | `reminder24hSentAt` | `DateTime?` | anti-doublon du rappel 24h ; remis à `null` au déplacement |
 
 Migration additive (nullable), appliquée à Supabase comme la migration Google Agenda.
 
