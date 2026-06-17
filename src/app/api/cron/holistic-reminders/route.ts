@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { buildBookingEmailData, sendReminderToClient } from '@/lib/holistic-booking-email';
+import { isInternalEmail } from '@/lib/holistic-clients';
 
 /**
  * GET /api/cron/holistic-reminders
@@ -49,9 +50,14 @@ export async function GET(req: Request) {
     try {
       const data = await buildBookingEmailData(a.id);
       if (data) {
-        await sendReminderToClient(data, '3d');
-        await prisma.holisticAppointment.update({ where: { id: a.id }, data: { reminder3dSentAt: new Date() } });
-        sent3d++;
+        if (isInternalEmail(data.clientEmail)) {
+          // Compte interne (sans courriel) → on marque comme traité sans envoyer.
+          await prisma.holisticAppointment.update({ where: { id: a.id }, data: { reminder3dSentAt: new Date() } });
+        } else {
+          await sendReminderToClient(data, '3d');
+          await prisma.holisticAppointment.update({ where: { id: a.id }, data: { reminder3dSentAt: new Date() } });
+          sent3d++;
+        }
       }
     } catch (err) {
       failed++;
@@ -72,9 +78,13 @@ export async function GET(req: Request) {
     try {
       const data = await buildBookingEmailData(a.id);
       if (data) {
-        await sendReminderToClient(data, '24h');
-        await prisma.holisticAppointment.update({ where: { id: a.id }, data: { reminder24hSentAt: new Date() } });
-        sent24h++;
+        if (isInternalEmail(data.clientEmail)) {
+          await prisma.holisticAppointment.update({ where: { id: a.id }, data: { reminder24hSentAt: new Date() } });
+        } else {
+          await sendReminderToClient(data, '24h');
+          await prisma.holisticAppointment.update({ where: { id: a.id }, data: { reminder24hSentAt: new Date() } });
+          sent24h++;
+        }
       }
     } catch (err) {
       failed++;
