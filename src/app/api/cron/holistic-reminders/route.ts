@@ -8,7 +8,12 @@ import { buildBookingEmailData, sendReminderToClient } from '@/lib/holistic-book
  * Envoie deux rappels au client : 3 jours avant et 24h avant le RDV.
  * Dédoublonné par `reminder3dSentAt` / `reminder24hSentAt`.
  * Auth : header x-cron-secret OU authorization: Bearer == process.env.CRON_SECRET.
- * Cron horaire (vercel.json).
+ *
+ * Cron QUOTIDIEN (vercel.json, plan Vercel gratuit = 1 passage/jour). Chaque
+ * fenêtre ci-dessous fait exactement 24h de large : comme les passages sont
+ * espacés de 24h, chaque RDV traverse chaque fenêtre lors d'un seul passage →
+ * un rappel et un seul, envoyé la veille (« demain » reste exact). Les flags
+ * `reminder*SentAt` servent de garde-fou supplémentaire.
  */
 
 async function isAuthorized(req: Request): Promise<boolean> {
@@ -22,19 +27,21 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
-  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const in72h = new Date(now.getTime() + 72 * 60 * 60 * 1000);
+  const h = (n: number) => new Date(now.getTime() + n * 60 * 60 * 1000);
+  // Fenêtres de 24h de large, calées pour un passage quotidien :
+  const lo3d = h(60), hi3d = h(84);   // « dans 3 jours » : RDV à 60–84h (~3 jours)
+  const lo24h = h(12), hi24h = h(36); // « demain »       : RDV à 12–36h (~1 jour, envoyé la veille)
 
   let sent3d = 0;
   let sent24h = 0;
   let failed = 0;
 
-  // Rappel 3 jours : commence dans (24h, 72h], pas encore envoyé
+  // Rappel 3 jours : RDV dans (60h, 84h], pas encore envoyé
   const due3d = await prisma.holisticAppointment.findMany({
     where: {
       status: 'CONFIRMED',
       reminder3dSentAt: null,
-      startsAt: { gt: in24h, lte: in72h },
+      startsAt: { gt: lo3d, lte: hi3d },
     },
     select: { id: true },
   });
@@ -52,12 +59,12 @@ export async function GET(req: Request) {
     }
   }
 
-  // Rappel 24h : commence dans (now, 24h], pas encore envoyé
+  // Rappel « demain » : RDV dans (12h, 36h], pas encore envoyé
   const due24h = await prisma.holisticAppointment.findMany({
     where: {
       status: 'CONFIRMED',
       reminder24hSentAt: null,
-      startsAt: { gt: now, lte: in24h },
+      startsAt: { gt: lo24h, lte: hi24h },
     },
     select: { id: true },
   });
