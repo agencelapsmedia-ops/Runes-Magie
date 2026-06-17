@@ -13,6 +13,30 @@ export default function GoogleCalendarBanner({ connected, googleEmail }: Props) 
   const googleStatus = searchParams.get('google'); // 'connected' | 'error' | 'denied' | null
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [syncing, startSync] = useTransition();
+
+  function resync() {
+    setSyncMsg(null);
+    setError(null);
+    startSync(async () => {
+      try {
+        const res = await fetch('/api/holistique/auth/google/sync', { method: 'POST' });
+        if (!res.ok) {
+          setError('Échec de la synchronisation.');
+          return;
+        }
+        const data = (await res.json()) as { synced: number; total: number };
+        setSyncMsg(
+          data.total === 0
+            ? 'Ton agenda est déjà à jour ✓'
+            : `${data.synced} rendez-vous synchronisé${data.synced > 1 ? 's' : ''} ✓`,
+        );
+      } catch {
+        setError('Impossible de joindre le serveur.');
+      }
+    });
+  }
 
   function disconnect() {
     setError(null);
@@ -76,26 +100,52 @@ export default function GoogleCalendarBanner({ connected, googleEmail }: Props) 
               {error}
             </p>
           )}
+          {syncMsg && (
+            <p style={{ marginTop: '8px', fontSize: '0.85rem', color: 'var(--turquoise-cristal)', fontFamily: 'var(--font-cormorant)' }}>
+              {syncMsg}
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={disconnect}
-          disabled={pending}
-          style={{
-            padding: '8px 16px',
-            background: 'transparent',
-            border: '1px solid rgba(245, 240, 232, 0.3)',
-            color: 'var(--parchemin)',
-            fontFamily: 'var(--font-cinzel)',
-            fontSize: '0.75rem',
-            letterSpacing: '0.08em',
-            borderRadius: '4px',
-            cursor: pending ? 'wait' : 'pointer',
-            opacity: pending ? 0.6 : 1,
-          }}
-        >
-          {pending ? '…' : 'Déconnecter'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={resync}
+            disabled={syncing || pending}
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              border: '1px solid rgba(46, 196, 182, 0.5)',
+              color: 'var(--turquoise-cristal)',
+              fontFamily: 'var(--font-cinzel)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.08em',
+              borderRadius: '4px',
+              cursor: syncing ? 'wait' : 'pointer',
+              opacity: syncing || pending ? 0.6 : 1,
+            }}
+          >
+            {syncing ? 'Synchronisation…' : 'Resynchroniser'}
+          </button>
+          <button
+            type="button"
+            onClick={disconnect}
+            disabled={pending || syncing}
+            style={{
+              padding: '8px 16px',
+              background: 'transparent',
+              border: '1px solid rgba(245, 240, 232, 0.3)',
+              color: 'var(--parchemin)',
+              fontFamily: 'var(--font-cinzel)',
+              fontSize: '0.75rem',
+              letterSpacing: '0.08em',
+              borderRadius: '4px',
+              cursor: pending ? 'wait' : 'pointer',
+              opacity: pending ? 0.6 : 1,
+            }}
+          >
+            {pending ? '…' : 'Déconnecter'}
+          </button>
+        </div>
       </div>
     );
   }

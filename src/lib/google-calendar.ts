@@ -242,3 +242,35 @@ export async function deleteCalendarEventForAppointment(
     return false;
   }
 }
+
+/**
+ * Rattrapage : pousse dans Google tous les RDV FUTURS déjà CONFIRMÉS de la
+ * praticienne qui n'ont pas encore d'événement (googleEventId null).
+ * Sert au rattrapage automatique à la connexion ET au bouton « Resynchroniser ».
+ * Best-effort : ne lève jamais. Retourne le nombre synchronisé et le total candidat.
+ */
+export async function syncFutureConfirmedAppointments(
+  practitionerId: string,
+): Promise<{ synced: number; total: number }> {
+  try {
+    const now = new Date();
+    const appts = await prisma.holisticAppointment.findMany({
+      where: {
+        practitionerId,
+        status: 'CONFIRMED',
+        googleEventId: null,
+        startsAt: { gte: now },
+      },
+      select: { id: true },
+    });
+    let synced = 0;
+    for (const a of appts) {
+      const eventId = await createCalendarEventForAppointment(a.id);
+      if (eventId) synced++;
+    }
+    return { synced, total: appts.length };
+  } catch (err) {
+    console.error('[Google Calendar] échec rattrapage RDV', { practitionerId, err });
+    return { synced: 0, total: 0 };
+  }
+}

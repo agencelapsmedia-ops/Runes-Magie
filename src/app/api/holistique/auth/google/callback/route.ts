@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { exchangeCodeForTokens } from '@/lib/google-calendar';
+import { exchangeCodeForTokens, syncFutureConfirmedAppointments } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +42,10 @@ export async function GET(req: Request) {
       googleCalendarConnectedAt: new Date(),
     },
   });
+
+  // Rattrapage auto : pousser les RDV futurs déjà confirmés dans l'agenda
+  // fraîchement connecté (best-effort, ne bloque pas la redirection).
+  await syncFutureConfirmedAppointments(practitionerId);
 
   back.searchParams.set('google', 'connected');
   return NextResponse.redirect(back);
