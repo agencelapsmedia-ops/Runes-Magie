@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { getBusyPeriods } from '@/lib/google-calendar';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,5 +45,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     select: { startsAt: true, endsAt: true, status: true },
   });
 
-  return NextResponse.json({ ...p, bookedAppointments });
+  // Sens entrant Google → site : si la praticienne a connecté son agenda, on
+  // retire aussi les créneaux où elle est occupée dans Google (perso, autre RDV…).
+  // Horizon 90 j (limite raisonnable pour free/busy ; les RDV se prennent à court terme).
+  let googleBusy: { startsAt: string; endsAt: string }[] = [];
+  if (p.googleRefreshToken) {
+    const busyHorizon = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    const busy = await getBusyPeriods(id, now, busyHorizon);
+    googleBusy = busy.map((b) => ({ startsAt: b.start, endsAt: b.end }));
+  }
+
+  // Sécurité : ne JAMAIS exposer le refresh token Google au navigateur.
+  const { googleRefreshToken: _googleRefreshToken, ...safe } = p;
+  return NextResponse.json({ ...safe, bookedAppointments, googleBusy });
 }

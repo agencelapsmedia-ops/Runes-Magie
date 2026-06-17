@@ -274,3 +274,40 @@ export async function syncFutureConfirmedAppointments(
     return { synced: 0, total: 0 };
   }
 }
+
+/**
+ * Sens ENTRANT (Google → site) : lit les plages OCCUPÉES de l'agenda de la
+ * praticienne via l'API free/busy. On ne lit QUE occupé/libre (jamais le contenu
+ * ni le titre des événements → respect de la vie privée). Sert à retirer ces
+ * créneaux de la disponibilité affichée aux clients.
+ *
+ * Best-effort : retourne [] si non connectée / non configuré / erreur (le site
+ * continue alors de fonctionner, sans blocage Google).
+ */
+export async function getBusyPeriods(
+  practitionerId: string,
+  from: Date,
+  to: Date,
+): Promise<{ start: string; end: string }[]> {
+  try {
+    const calendar = await getCalendarForPractitioner(practitionerId);
+    if (!calendar) return [];
+
+    const res = await calendar.freebusy.query({
+      requestBody: {
+        timeMin: from.toISOString(),
+        timeMax: to.toISOString(),
+        timeZone: TIMEZONE,
+        items: [{ id: 'primary' }],
+      },
+    });
+
+    const busy = res.data.calendars?.primary?.busy ?? [];
+    return busy
+      .filter((b): b is { start: string; end: string } => Boolean(b.start && b.end))
+      .map((b) => ({ start: b.start, end: b.end }));
+  } catch (err) {
+    console.error('[Google Calendar] échec lecture free/busy', { practitionerId, err });
+    return [];
+  }
+}

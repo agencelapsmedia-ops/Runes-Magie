@@ -29,6 +29,7 @@ interface Practitioner {
   photoUrl: string | null;
   availabilities: Availability[];
   bookedAppointments?: BookedAppointment[];
+  googleBusy?: { startsAt: string; endsAt: string }[]; // plages occupées du Google Agenda
   user: { firstName: string; lastName: string; email?: string };
 }
 
@@ -247,6 +248,10 @@ export default function ReservationPage({
       return t >= dayStart.getTime() && t < dayEnd.getTime();
     });
 
+    // Plages occupées dans le Google Agenda de la praticienne (sens entrant) :
+    // elles bloquent le créneau pour TOUS les services (individuel comme groupe).
+    const gBusy = practitioner.googleBusy ?? [];
+
     const capacity = offering?.capacity ?? 1;
     const isGroup = capacity > 1;
 
@@ -257,6 +262,14 @@ export default function ReservationPage({
       const slotStart = new Date(day);
       slotStart.setHours(h, m, 0, 0);
       const slotEnd = new Date(slotStart.getTime() + sessionDuration * 60 * 1000);
+
+      // Occupé dans Google Agenda → créneau retiré.
+      const googleBlocked = gBusy.some((g) => {
+        const gStart = new Date(g.startsAt).getTime();
+        const gEnd = new Date(g.endsAt).getTime();
+        return slotStart.getTime() < gEnd && slotEnd.getTime() > gStart;
+      });
+      if (googleBlocked) continue;
 
       if (isGroup) {
         // Service de groupe (formation) : jusqu'à `capacity` inscriptions au MÊME créneau.
