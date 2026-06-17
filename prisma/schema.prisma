@@ -380,6 +380,7 @@ model HolisticAppointment {
   cancelledAt    DateTime?
   cancelledBy    String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
   notes          String?
+  paymentMode    String? // RDV manuel : CASH | STRIPE_LINK | INTERAC (null = parcours public Stripe)
 
   // ─── Modèle acompte + solde (Phase 2 MVP - paiement en 2 temps) ──────────
   // Pour services individuels : acompte de 25 $ à la résa, solde facturé après la séance.
