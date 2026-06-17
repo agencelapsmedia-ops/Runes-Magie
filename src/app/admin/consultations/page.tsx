@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db';
 import RescheduleButton from '@/app/(holistique)/soins/dashboard/praticien/RescheduleButton';
+import ManualAppointmentButton from '@/components/holistique/ManualAppointmentButton';
+import MarkPaidButton from '@/components/holistique/MarkPaidButton';
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; color: string; border: string; label: string }> = {
@@ -36,6 +38,25 @@ export default async function ConsultationsAdminPage() {
     orderBy: { startsAt: 'desc' },
   });
 
+  const practitionerRows = await prisma.practitioner.findMany({
+    where: { status: 'APPROVED' },
+    select: {
+      id: true,
+      user: { select: { firstName: true, lastName: true } },
+      offerings: {
+        where: { isActive: true },
+        select: { id: true, name: true, durationMinutes: true, price: true },
+        orderBy: { name: 'asc' },
+      },
+    },
+    orderBy: { user: { firstName: 'asc' } },
+  });
+  const practitionerOptions = practitionerRows.map((p) => ({
+    id: p.id,
+    name: `${p.user.firstName} ${p.user.lastName}`,
+    offerings: p.offerings,
+  }));
+
   const durationMin = (a: { startsAt: Date; endsAt: Date }) => {
     return Math.round((new Date(a.endsAt).getTime() - new Date(a.startsAt).getTime()) / 60000);
   };
@@ -43,13 +64,16 @@ export default async function ConsultationsAdminPage() {
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '8px' }}>
-          ᛜ Consultations Holistiques
-        </h1>
-        <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
-          {appointments.length} consultation{appointments.length !== 1 ? 's' : ''} au total
-        </p>
+      <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.75rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '8px' }}>
+            ᛜ Consultations Holistiques
+          </h1>
+          <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>
+            {appointments.length} consultation{appointments.length !== 1 ? 's' : ''} au total
+          </p>
+        </div>
+        <ManualAppointmentButton practitioners={practitionerOptions} variant="light" />
       </div>
 
       {/* Table */}
@@ -126,15 +150,21 @@ export default async function ConsultationsAdminPage() {
                   </td>
                   {/* Actions */}
                   <td style={{ padding: '14px 16px' }}>
-                    {appt.status === 'CONFIRMED' ? (
-                      <RescheduleButton
-                        appointmentId={appt.id}
-                        currentStartsAt={new Date(appt.startsAt).toISOString()}
-                        variant="light"
-                      />
-                    ) : (
-                      <span style={{ color: '#9CA3AF', fontSize: '0.8rem' }}>—</span>
-                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start' }}>
+                      {appt.status === 'CONFIRMED' && (
+                        <RescheduleButton
+                          appointmentId={appt.id}
+                          currentStartsAt={new Date(appt.startsAt).toISOString()}
+                          variant="light"
+                        />
+                      )}
+                      {appt.paymentMode === 'INTERAC' && appt.payment?.status !== 'PAID' && (
+                        <MarkPaidButton appointmentId={appt.id} />
+                      )}
+                      {appt.status !== 'CONFIRMED' && !(appt.paymentMode === 'INTERAC' && appt.payment?.status !== 'PAID') && (
+                        <span style={{ color: '#9CA3AF', fontSize: '0.8rem' }}>—</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
