@@ -7,6 +7,7 @@ import StripeConnectBanner from './StripeConnectBanner';
 import GoogleCalendarBanner from './GoogleCalendarBanner';
 import CompleteAppointmentButton from './CompleteAppointmentButton';
 import RescheduleButton from './RescheduleButton';
+import ManualAppointmentButton from '@/components/holistique/ManualAppointmentButton';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
@@ -236,7 +237,7 @@ export default async function PraticienDashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [upcomingAppointments, monthRevenue, totalCompleted, pendingChangesCount] = await Promise.all([
+  const [upcomingAppointments, monthRevenue, totalCompleted, pendingChangesCount, myOfferings] = await Promise.all([
     prisma.holisticAppointment.findMany({
       where: {
         practitionerId,
@@ -267,6 +268,11 @@ export default async function PraticienDashboardPage() {
     }),
     prisma.pendingPractitionerChange.count({
       where: { practitionerId, status: 'PENDING' },
+    }),
+    prisma.offering.findMany({
+      where: { practitionerId, isActive: true },
+      select: { id: true, name: true, durationMinutes: true, price: true },
+      orderBy: { name: 'asc' },
     }),
   ]);
 
@@ -487,7 +493,13 @@ export default async function PraticienDashboardPage() {
 
         {/* Upcoming appointments */}
         <section style={{ marginBottom: '48px' }}>
-          <h2 style={sectionTitle}>Rendez-vous à venir</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid rgba(201, 168, 76, 0.2)' }}>
+            <h2 style={{ ...sectionTitle, marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>Rendez-vous à venir</h2>
+            <ManualAppointmentButton
+              practitioners={[{ id: practitionerId, name: `${practitioner.user.firstName} ${practitioner.user.lastName}`, offerings: myOfferings }]}
+              lockedPractitionerId={practitionerId}
+            />
+          </div>
 
           {upcomingAppointments.length === 0 ? (
             <div
