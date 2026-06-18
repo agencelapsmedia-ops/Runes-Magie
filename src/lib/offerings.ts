@@ -20,6 +20,7 @@ const offeringInclude = {
 type OfferingRow = Prisma.OfferingGetPayload<{ include: typeof offeringInclude }>;
 
 export interface OfferingView {
+  id: string;
   slug: string;
   name: string;
   emoji: string;
@@ -54,6 +55,7 @@ function toView(o: OfferingRow): OfferingView {
     : `/ecole/${o.slug}`;
 
   return {
+    id: o.id,
     slug: o.slug,
     name: o.name,
     emoji: o.emoji,

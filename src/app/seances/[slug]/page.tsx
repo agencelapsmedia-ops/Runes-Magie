@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { getActiveOfferingViewBySlug } from '@/lib/offerings';
-import OfferingDetailView from '@/components/services/OfferingDetailView';
+import { buildServiceLandingMetadata } from '@/lib/service-landing';
+import ServiceLandingTemplate from '@/components/services/ServiceLandingTemplate';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,8 +14,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const offering = await getActiveOfferingViewBySlug(slug);
-  if (!offering) return { title: 'Séance introuvable | Runes & Magie' };
-  return { title: `${offering.name} | Runes & Magie`, description: offering.description };
+  if (!offering) return { title: 'Seance introuvable | Runes & Magie' };
+  return buildServiceLandingMetadata(offering);
 }
 
 export default async function SeanceDetailPage({
@@ -24,5 +26,9 @@ export default async function SeanceDetailPage({
   const { slug } = await params;
   const offering = await getActiveOfferingViewBySlug(slug);
   if (!offering) notFound();
-  return <OfferingDetailView offering={offering} />;
+
+  const session = await auth();
+  const role = session?.user && 'role' in session.user ? session.user.role : null;
+
+  return <ServiceLandingTemplate offering={offering} canEdit={role === 'ADMIN'} />;
 }
