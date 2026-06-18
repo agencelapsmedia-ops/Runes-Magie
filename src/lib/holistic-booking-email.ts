@@ -11,7 +11,7 @@ import { BOUTIQUE_LOCATION, INTERAC_EMAIL, INTERAC_MESSAGE, INTERAC_ANSWER } fro
 import { prisma } from '@/lib/db';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.FROM_EMAIL || 'Runes & Magie <onboarding@resend.dev>';
+const FROM = process.env.FROM_EMAIL || 'Runes & Magie <noreply@runesetmagie.ca>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
 
 function formatMontrealDateTime(date: Date): string {

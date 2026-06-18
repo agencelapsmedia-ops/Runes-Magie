@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.FROM_EMAIL || "Runes & Magie <noreply@runesetmagie.com>";
-const CONTACT_TO = process.env.CONTACT_EMAIL || "info@runesetmagie.com";
+const FROM = process.env.FROM_EMAIL || "Runes & Magie <noreply@runesetmagie.ca>";
+const CONTACT_TO = process.env.CONTACT_EMAIL || "info@runesetmagie.ca";
 
 function escapeHtml(s: string): string {
   return s
