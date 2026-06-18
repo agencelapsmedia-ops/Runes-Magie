@@ -12,9 +12,7 @@ interface ServiceLandingTemplateProps {
 export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLandingTemplateProps) {
   const content = buildServiceLandingContent(offering);
   const heroImage = content.heroImage;
-  const faqImage = offering.slug === 'soin-rituel'
-    ? '/images/services/arcane/soin-rituel-faq.jpg'
-    : heroImage;
+  const faqImage = content.faqImageUrl ?? heroImage;
   const jsonLd = buildServiceJsonLd(offering);
 
   // Colonne de texte partagée par les deux variantes de hero.
@@ -235,7 +233,8 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <section className="grid bg-[#050711] md:grid-cols-[0.9fr_1.1fr]">
         <div className="relative min-h-[360px] md:min-h-[760px]">
-          {canEdit && <ArcaneFieldButton field="faqImageAlt" label="Modifier le texte alternatif de l'image FAQ (SEO)" position="left-3 top-3" />}
+          {canEdit && <ArcaneFieldButton field="faqImageUrl" label="Changer l'image de la FAQ (médiathèque)" position="left-3 top-3" />}
+          {canEdit && <ArcaneFieldButton field="faqImageAlt" label="Modifier le texte alternatif de l'image FAQ (SEO)" position="left-3 top-14" />}
           {faqImage && (
             <Image
               src={faqImage}
@@ -352,6 +351,12 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           label: 'Questions fréquentes',
           value: content.faqs.map((faq) => `${faq.question} || ${faq.answer}`),
           helper: 'Une question par ligne, au format : Question || Réponse.',
+        },
+        {
+          field: 'faqImageUrl',
+          label: 'Image de la section FAQ',
+          value: content.faqImageUrl ?? '',
+          helper: 'Recommandé : 1080 × 1080 px (carré). Téléverse ou choisis dans la médiathèque.',
         },
         { field: 'faqImageAlt', label: "Texte alternatif de l'image FAQ (SEO)", value: content.faqImageAlt },
         { field: 'finalTitle', label: "Titre de l'appel final", value: content.finalTitle },

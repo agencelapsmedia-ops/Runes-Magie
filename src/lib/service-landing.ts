@@ -23,6 +23,7 @@ export interface ServiceLandingContent {
   // Hero immersif (fond + personnage). Null = ancien hero en dégradé.
   backgroundUrl: string | null;
   characterUrl: string | null;
+  faqImageUrl: string | null;
   pillarRunes: string[];
   steps: Array<{ number: string; title: string; text: string }>;
   faqs: Array<{ question: string; answer: string }>;
@@ -50,6 +51,7 @@ export interface ServiceLandingOverrides {
   faqImageAlt?: string;
   backgroundUrl?: string;
   characterUrl?: string;
+  faqImageUrl?: string;
   pillarRunes?: string[];
   steps?: Array<{ number: string; title: string; text: string }>;
   faqs?: Array<{ question: string; answer: string }>;
@@ -70,6 +72,7 @@ export const LANDING_TEXT_FIELDS = [
   'faqImageAlt',
   'backgroundUrl',
   'characterUrl',
+  'faqImageUrl',
 ] as const;
 
 /** Champs listes structurées surchargeables. */
@@ -139,6 +142,7 @@ function applyOverrides(
     faqImageAlt: overrides.faqImageAlt ?? base.faqImageAlt,
     backgroundUrl: overrides.backgroundUrl ?? base.backgroundUrl,
     characterUrl: overrides.characterUrl ?? base.characterUrl,
+    faqImageUrl: overrides.faqImageUrl ?? base.faqImageUrl,
     pillarRunes: overrides.pillarRunes?.length ? overrides.pillarRunes : base.pillarRunes,
     steps: overrides.steps?.length ? overrides.steps : base.steps,
     faqs: overrides.faqs?.length ? overrides.faqs : base.faqs,
@@ -229,6 +233,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       faqImageAlt: 'Questions fréquentes sur le Soin Rituel',
       backgroundUrl: '/images/services/arcane/soin-rituel-fond.jpg',
       characterUrl: '/images/services/arcane/soin-rituel-personnage.webp',
+      faqImageUrl: '/images/services/arcane/soin-rituel-faq.jpg',
       pillarRunes: DEFAULT_PILLAR_RUNES,
       steps: SOIN_RITUEL_STEPS,
       faqs: [
@@ -270,6 +275,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     faqImageAlt: `Questions fréquentes sur ${offering.name}`,
     backgroundUrl: null,
     characterUrl: null,
+    faqImageUrl: null,
     pillarRunes: DEFAULT_PILLAR_RUNES,
     steps: buildGenericSteps(offering),
     faqs: [

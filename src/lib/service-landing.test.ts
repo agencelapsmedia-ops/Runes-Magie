@@ -35,6 +35,7 @@ assert.match(content.intro, /âme n'arrive plus à porter/);
 // Soin Rituel : hero immersif activé par défaut (fond + personnage + runes).
 assert.match(content.backgroundUrl ?? '', /soin-rituel-fond/);
 assert.match(content.characterUrl ?? '', /soin-rituel-personnage/);
+assert.match(content.faqImageUrl ?? '', /soin-rituel-faq/);
 assert.ok(content.pillarRunes.length > 0);
 
 const metadata = buildServiceLandingMetadata(soinRituel);
@@ -86,6 +87,7 @@ assert.match(genContent.faqImageAlt, /Guidance Runique/);
 // Service générique sans image de fond → hero classique (pas d'immersif).
 assert.equal(genContent.backgroundUrl, null);
 assert.equal(genContent.characterUrl, null);
+assert.equal(genContent.faqImageUrl, null);
 
 // --- Cas overrides : textes personnalisés depuis l'admin ---
 const personnalise: OfferingView = {
