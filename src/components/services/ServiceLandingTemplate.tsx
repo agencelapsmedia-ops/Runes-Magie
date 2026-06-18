@@ -17,6 +17,142 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
     : heroImage;
   const jsonLd = buildServiceJsonLd(offering);
 
+  // Colonne de texte partagée par les deux variantes de hero.
+  const heroText = (titleClassName: string) => (
+    <div className="relative z-10">
+      <div className="relative inline-block">
+        {canEdit && <ArcaneFieldButton field="eyebrow" label="Modifier le petit texte au-dessus du titre" />}
+        <p className="font-cinzel text-xs uppercase tracking-[0.36em] text-[#00D9D9]">
+          {content.eyebrow}
+        </p>
+      </div>
+      <div className="relative mt-5">
+        {canEdit && <ArcaneFieldButton field="name" label="Modifier le titre du service" />}
+        <h1 className={titleClassName}>{content.title}</h1>
+      </div>
+      <div className="relative mt-7 max-w-xl">
+        {canEdit && <ArcaneFieldButton field="subtitle" label="Modifier le sous-titre" />}
+        <p className="font-cinzel text-sm uppercase tracking-[0.18em] text-[#E6C87A]/90 md:text-base">
+          {content.subtitle}
+        </p>
+      </div>
+      <div className="relative mt-6 max-w-xl">
+        {canEdit && <ArcaneFieldButton field="description" label="Modifier le texte d'ouverture" />}
+        <p className="font-cormorant text-xl italic leading-relaxed text-parchemin-vieilli/90 md:text-2xl">
+          {content.intro}
+        </p>
+      </div>
+      <div className="relative mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
+        {canEdit && <ArcaneFieldButton field="ctaLabel" label="Modifier le texte des boutons de réservation" />}
+        <Button href={offering.bookingHref} variant="or" size="lg">
+          {content.ctaLabel}
+        </Button>
+        <p className="font-philosopher text-sm text-parchemin/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+          {offering.priceLabel} · {offering.durationLabel}
+        </p>
+      </div>
+    </div>
+  );
+
+  // Hero immersif : fond pleine largeur + personnage détouré + panneau des piliers.
+  const immersiveHero = (
+    <section className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-[#050711]">
+      {content.backgroundUrl && (
+        <Image
+          src={content.backgroundUrl}
+          alt={content.imageAlt}
+          fill
+          priority
+          quality={82}
+          sizes="100vw"
+          className="object-cover"
+        />
+      )}
+      {/* Voile sombre pour la lisibilité (plus dense à gauche et en bas) */}
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,17,0.92)_0%,rgba(5,7,17,0.6)_38%,rgba(5,7,17,0.25)_70%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,7,17,0.85)_0%,transparent_45%)]" />
+
+      {canEdit && <ArcaneFieldButton field="backgroundUrl" label="Modifier l'image de fond du hero" position="left-3 top-3" />}
+      {canEdit && <ArcaneFieldButton field="imageAlt" label="Modifier le texte alternatif du fond (SEO)" position="left-3 top-14" />}
+
+      {/* Personnage détouré */}
+      {content.characterUrl && (
+        <div className="pointer-events-none absolute bottom-0 right-0 h-[58%] w-[88%] opacity-45 sm:h-[72%] sm:w-[62%] sm:opacity-100 md:h-[90%] md:w-[52%]">
+          <Image
+            src={content.characterUrl}
+            alt={content.imageAlt}
+            fill
+            priority
+            quality={85}
+            sizes="(max-width: 768px) 88vw, 52vw"
+            className="object-contain object-bottom drop-shadow-[0_0_60px_rgba(106,0,255,0.4)]"
+          />
+        </div>
+      )}
+      {canEdit && <ArcaneFieldButton field="characterUrl" label="Modifier l'image du personnage (PNG transparent)" position="right-3 top-3" />}
+
+      <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-center gap-10 px-5 py-16 md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:px-8 lg:px-10">
+        {heroText(
+          'font-cinzel-decorative text-[clamp(3rem,9vw,7.5rem)] font-black uppercase leading-[0.85] tracking-[0.04em] bg-gradient-to-br from-[#E7D6FF] via-[#A56BFF] to-[#6A00FF] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(106,0,255,0.45)]',
+        )}
+
+        {/* Panneau des piliers (verre) */}
+        <div className="relative z-10 ml-auto w-full max-w-md rounded-2xl border border-[#D4AF37]/30 bg-[#0A1028]/55 p-6 shadow-[0_0_40px_rgba(106,0,255,0.3)] backdrop-blur-md md:p-7">
+          {canEdit && <ArcaneFieldButton field="features" label="Modifier les piliers" />}
+          {canEdit && <ArcaneFieldButton field="pillarRunes" label="Modifier les runes des piliers" position="-right-3 top-8" />}
+          <ul className="flex flex-col">
+            {offering.features.map((feature, index) => (
+              <li
+                key={`${feature}-${index}`}
+                className="flex items-center gap-4 border-b border-[#D4AF37]/12 py-3 last:border-b-0"
+              >
+                <span aria-hidden className="w-7 shrink-0 text-center font-cinzel-decorative text-2xl text-[#E6C87A] drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                  {content.pillarRunes[index % content.pillarRunes.length]}
+                </span>
+                <span className="font-cinzel text-sm uppercase tracking-[0.12em] text-parchemin/90">
+                  {feature}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+
+  // Ancien hero (dégradé) : conservé pour les services sans image de fond définie.
+  const classicHero = (
+    <section className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(255,0,184,0.28),transparent_28%),linear-gradient(135deg,#0A1028_0%,#2D1B69_48%,#050711_100%)]">
+      <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(115deg,transparent_0_44%,rgba(212,175,55,0.18)_45%,transparent_46%),radial-gradient(circle_at_18%_18%,rgba(0,217,217,0.18),transparent_22%)]" />
+      <div className="absolute left-1/2 top-10 h-[82vh] w-[82vh] -translate-x-1/2 rounded-full border border-[#D4AF37]/20 opacity-70 shadow-[0_0_90px_rgba(106,0,255,0.45)]" />
+
+      <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-[0.92fr_1.08fr] md:px-8 lg:px-10">
+        {heroText(
+          'font-cinzel-decorative text-[clamp(3rem,9vw,8rem)] font-black uppercase leading-[0.85] tracking-[0.05em] text-gradient-gold drop-shadow-[0_0_28px_rgba(212,175,55,0.22)]',
+        )}
+
+        <div className="relative min-h-[420px] md:min-h-[680px]">
+          {canEdit && <ArcaneFieldButton field="imageUrl" label="Modifier l'image principale du service" />}
+          {canEdit && <ArcaneFieldButton field="imageAlt" label="Modifier le texte alternatif de l'image (SEO)" position="-right-3 top-8" />}
+          {canEdit && <ArcaneFieldButton field="backgroundUrl" label="Activer le hero immersif : ajouter une image de fond" position="-right-3 top-20" />}
+          {heroImage && (
+            <Image
+              src={heroImage}
+              alt={content.imageAlt}
+              fill
+              priority
+              quality={85}
+              sizes="(max-width: 768px) 100vw, 54vw"
+              className="object-contain drop-shadow-[0_0_55px_rgba(255,0,184,0.34)]"
+            />
+          )}
+        </div>
+      </div>
+    </section>
+  );
+
+  const heroSection = content.backgroundUrl ? immersiveHero : classicHero;
+
   const body = (
     <article className="overflow-hidden bg-[#050711] text-parchemin">
       <script
@@ -24,64 +160,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <section className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(255,0,184,0.28),transparent_28%),linear-gradient(135deg,#0A1028_0%,#2D1B69_48%,#050711_100%)]">
-        <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(115deg,transparent_0_44%,rgba(212,175,55,0.18)_45%,transparent_46%),radial-gradient(circle_at_18%_18%,rgba(0,217,217,0.18),transparent_22%)]" />
-        <div className="absolute left-1/2 top-10 h-[82vh] w-[82vh] -translate-x-1/2 rounded-full border border-[#D4AF37]/20 opacity-70 shadow-[0_0_90px_rgba(106,0,255,0.45)]" />
-
-        <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-[0.92fr_1.08fr] md:px-8 lg:px-10">
-          <div className="z-10">
-            <div className="relative inline-block">
-              {canEdit && <ArcaneFieldButton field="eyebrow" label="Modifier le petit texte au-dessus du titre" />}
-              <p className="font-cinzel text-xs uppercase tracking-[0.36em] text-[#00D9D9]">
-                {content.eyebrow}
-              </p>
-            </div>
-            <div className="relative mt-5">
-              {canEdit && <ArcaneFieldButton field="name" label="Modifier le titre du service" />}
-              <h1 className="font-cinzel-decorative text-[clamp(3rem,9vw,8rem)] font-black uppercase leading-[0.85] tracking-[0.05em] text-gradient-gold drop-shadow-[0_0_28px_rgba(212,175,55,0.22)]">
-                {content.title}
-              </h1>
-            </div>
-            <div className="relative mt-7 max-w-2xl">
-              {canEdit && <ArcaneFieldButton field="subtitle" label="Modifier le sous-titre" />}
-              <p className="font-cinzel text-sm uppercase tracking-[0.18em] text-[#E6C87A]/90 md:text-base">
-                {content.subtitle}
-              </p>
-            </div>
-            <div className="relative mt-7 max-w-2xl">
-              {canEdit && <ArcaneFieldButton field="description" label="Modifier le texte d'ouverture" />}
-              <p className="font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/90 md:text-3xl">
-                {content.intro}
-              </p>
-            </div>
-            <div className="relative mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-              {canEdit && <ArcaneFieldButton field="ctaLabel" label="Modifier le texte des boutons de réservation" />}
-              <Button href={offering.bookingHref} variant="or" size="lg">
-                {content.ctaLabel}
-              </Button>
-              <p className="font-philosopher text-sm text-parchemin/60">
-                {offering.priceLabel} · {offering.durationLabel}
-              </p>
-            </div>
-          </div>
-
-          <div className="relative min-h-[420px] md:min-h-[680px]">
-            {canEdit && <ArcaneFieldButton field="imageUrl" label="Modifier l'image principale du service" />}
-            {canEdit && <ArcaneFieldButton field="imageAlt" label="Modifier le texte alternatif de l'image (SEO)" position="-right-3 top-8" />}
-            {heroImage && (
-              <Image
-                src={heroImage}
-                alt={content.imageAlt}
-                fill
-                priority
-                quality={85}
-                sizes="(max-width: 768px) 100vw, 54vw"
-                className="object-contain drop-shadow-[0_0_55px_rgba(255,0,184,0.34)]"
-              />
-            )}
-          </div>
-        </div>
-      </section>
+      {heroSection}
 
       <section className="relative border-y border-[#D4AF37]/20 bg-[linear-gradient(180deg,#050711,#0A1028)] px-5 py-20 md:py-28">
         <div className="absolute inset-x-8 top-8 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-transparent" />
@@ -233,6 +312,24 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           helper: 'Colle une URL publique. Si le champ reste vide, le template utilise le visuel Noctura + Caracal fourni.',
         },
         { field: 'imageAlt', label: "Texte alternatif de l'image principale (SEO)", value: content.imageAlt },
+        {
+          field: 'backgroundUrl',
+          label: 'Image de fond du hero',
+          value: content.backgroundUrl ?? '',
+          helper: 'URL publique. Recommandé : 1920 × 1080 px (paysage), JPG ou PNG. Vide = ancien hero en dégradé.',
+        },
+        {
+          field: 'characterUrl',
+          label: 'Image du personnage (premier plan)',
+          value: content.characterUrl ?? '',
+          helper: 'URL publique d\'un PNG/WebP TRANSPARENT (sujet détouré). Recommandé : ~1400 × 1600 px (portrait).',
+        },
+        {
+          field: 'pillarRunes',
+          label: 'Runes devant les piliers',
+          value: content.pillarRunes,
+          helper: 'Une rune par ligne, alignée aux piliers (1ʳᵉ rune = 1ᵉʳ pilier). Si vide, des runes par défaut défilent.',
+        },
         { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
         { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
         { field: 'pillarsTitle', label: 'Titre de la section des piliers', value: content.pillarsTitle },

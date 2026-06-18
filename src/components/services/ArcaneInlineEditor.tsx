@@ -15,13 +15,16 @@ type LandingTextField =
   | 'finalText'
   | 'ctaLabel'
   | 'imageAlt'
-  | 'faqImageAlt';
-type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs';
+  | 'faqImageAlt'
+  | 'backgroundUrl'
+  | 'characterUrl';
+type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs' | 'pillarRunes';
 
 const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
   'features',
   'steps',
   'faqs',
+  'pillarRunes',
   'longDescription',
   'finalText',
 ]);
@@ -52,6 +55,9 @@ function splitPair(line: string): [string, string] {
 function buildPayload(field: EditableField, draft: string): Record<string, unknown> {
   if (field === 'features') {
     return { features: LINES(draft) };
+  }
+  if (field === 'pillarRunes') {
+    return { pillarRunes: LINES(draft) };
   }
   if (field === 'steps') {
     return {

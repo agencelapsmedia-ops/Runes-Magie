@@ -32,6 +32,10 @@ const content = buildServiceLandingContent(soinRituel);
 assert.equal(content.ctaLabel, 'Réserver le soin');
 assert.match(content.subtitle, /Noctura/);
 assert.match(content.intro, /âme n'arrive plus à porter/);
+// Soin Rituel : hero immersif activé par défaut (fond + personnage + runes).
+assert.match(content.backgroundUrl ?? '', /soin-rituel-fond/);
+assert.match(content.characterUrl ?? '', /soin-rituel-personnage/);
+assert.ok(content.pillarRunes.length > 0);
 
 const metadata = buildServiceLandingMetadata(soinRituel);
 assert.equal(metadata.title, 'Le Soin Rituel avec Noctura | La Voie des Arcanes');
@@ -79,6 +83,9 @@ assert.equal(genJsonLd.offers.price, '90.00');
 const genContent = buildServiceLandingContent(generique);
 assert.equal(genContent.steps.length, 4);
 assert.match(genContent.faqImageAlt, /Guidance Runique/);
+// Service générique sans image de fond → hero classique (pas d'immersif).
+assert.equal(genContent.backgroundUrl, null);
+assert.equal(genContent.characterUrl, null);
 
 // --- Cas overrides : textes personnalisés depuis l'admin ---
 const personnalise: OfferingView = {
@@ -87,6 +94,9 @@ const personnalise: OfferingView = {
     eyebrow: 'Mon eyebrow',
     sanctuaryTitle: 'Mon titre de sanctuaire',
     finalText: 'Mon texte final',
+    backgroundUrl: '/images/services/mon-fond.jpg',
+    characterUrl: '/images/services/mon-perso.webp',
+    pillarRunes: ['ᚠ', 'ᚢ'],
     steps: [
       { number: '01', title: 'Étape A', text: 'Texte A' },
       { number: '02', title: 'Étape B', text: 'Texte B' },
@@ -103,6 +113,10 @@ assert.equal(persoContent.steps.length, 2);
 assert.equal(persoContent.steps[1].title, 'Étape B');
 assert.equal(persoContent.faqs.length, 1);
 assert.equal(persoContent.faqs[0].question, 'Q1 ?');
+// Le hero immersif s'active aussi pour un service générique si on lui donne un fond.
+assert.equal(persoContent.backgroundUrl, '/images/services/mon-fond.jpg');
+assert.equal(persoContent.characterUrl, '/images/services/mon-perso.webp');
+assert.deepEqual(persoContent.pillarRunes, ['ᚠ', 'ᚢ']);
 // Les champs non surchargés gardent le défaut.
 assert.match(persoContent.processTitle, /déroulement/);
 

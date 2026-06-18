@@ -20,9 +20,16 @@ export interface ServiceLandingContent {
   mobileImage: string | null;
   imageAlt: string;
   faqImageAlt: string;
+  // Hero immersif (fond + personnage). Null = ancien hero en dégradé.
+  backgroundUrl: string | null;
+  characterUrl: string | null;
+  pillarRunes: string[];
   steps: Array<{ number: string; title: string; text: string }>;
   faqs: Array<{ question: string; answer: string }>;
 }
+
+/** Runes vikings dorées utilisées par défaut devant les piliers (cycle). */
+export const DEFAULT_PILLAR_RUNES = ['ᚱ', 'ᚨ', 'ᛟ', 'ᚦ', 'ᛜ', 'ᛉ', 'ᚹ', 'ᛊ', 'ᚲ', 'ᛇ'];
 
 /**
  * Textes personnalisables depuis l'admin, stockés dans `Offering.landingContent`
@@ -41,6 +48,9 @@ export interface ServiceLandingOverrides {
   ctaLabel?: string;
   imageAlt?: string;
   faqImageAlt?: string;
+  backgroundUrl?: string;
+  characterUrl?: string;
+  pillarRunes?: string[];
   steps?: Array<{ number: string; title: string; text: string }>;
   faqs?: Array<{ question: string; answer: string }>;
 }
@@ -58,10 +68,12 @@ export const LANDING_TEXT_FIELDS = [
   'ctaLabel',
   'imageAlt',
   'faqImageAlt',
+  'backgroundUrl',
+  'characterUrl',
 ] as const;
 
 /** Champs listes structurées surchargeables. */
-export const LANDING_LIST_FIELDS = ['steps', 'faqs'] as const;
+export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes'] as const;
 
 export type LandingTextField = (typeof LANDING_TEXT_FIELDS)[number];
 
@@ -86,6 +98,11 @@ export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
       }))
       .filter((s) => s.title || s.text);
     if (steps.length) out.steps = steps;
+  }
+
+  if (Array.isArray(source.pillarRunes)) {
+    const runes = source.pillarRunes.map((r) => String(r ?? '').trim()).filter(Boolean);
+    if (runes.length) out.pillarRunes = runes;
   }
 
   if (Array.isArray(source.faqs)) {
@@ -120,6 +137,9 @@ function applyOverrides(
     ctaLabel: overrides.ctaLabel ?? base.ctaLabel,
     imageAlt: overrides.imageAlt ?? base.imageAlt,
     faqImageAlt: overrides.faqImageAlt ?? base.faqImageAlt,
+    backgroundUrl: overrides.backgroundUrl ?? base.backgroundUrl,
+    characterUrl: overrides.characterUrl ?? base.characterUrl,
+    pillarRunes: overrides.pillarRunes?.length ? overrides.pillarRunes : base.pillarRunes,
     steps: overrides.steps?.length ? overrides.steps : base.steps,
     faqs: overrides.faqs?.length ? overrides.faqs : base.faqs,
   };
@@ -207,6 +227,9 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       mobileImage: serviceImage,
       imageAlt: 'Noctura, prêtresse de La Voie des Arcanes, guidant le Soin Rituel',
       faqImageAlt: 'Questions fréquentes sur le Soin Rituel',
+      backgroundUrl: '/images/services/arcane/soin-rituel-fond.jpg',
+      characterUrl: '/images/services/arcane/soin-rituel-personnage.webp',
+      pillarRunes: DEFAULT_PILLAR_RUNES,
       steps: SOIN_RITUEL_STEPS,
       faqs: [
         {
@@ -245,6 +268,9 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     mobileImage: serviceImage,
     imageAlt: `${offering.name} avec ${offering.practitionerName}`,
     faqImageAlt: `Questions fréquentes sur ${offering.name}`,
+    backgroundUrl: null,
+    characterUrl: null,
+    pillarRunes: DEFAULT_PILLAR_RUNES,
     steps: buildGenericSteps(offering),
     faqs: [
       {
