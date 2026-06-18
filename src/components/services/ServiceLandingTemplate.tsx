@@ -30,25 +30,32 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
         <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-[0.92fr_1.08fr] md:px-8 lg:px-10">
           <div className="z-10">
-            <p className="font-cinzel text-xs uppercase tracking-[0.36em] text-[#00D9D9]">
-              {content.eyebrow}
-            </p>
+            <div className="relative inline-block">
+              {canEdit && <ArcaneFieldButton field="eyebrow" label="Modifier le petit texte au-dessus du titre" />}
+              <p className="font-cinzel text-xs uppercase tracking-[0.36em] text-[#00D9D9]">
+                {content.eyebrow}
+              </p>
+            </div>
             <div className="relative mt-5">
               {canEdit && <ArcaneFieldButton field="name" label="Modifier le titre du service" />}
               <h1 className="font-cinzel-decorative text-[clamp(3rem,9vw,8rem)] font-black uppercase leading-[0.85] tracking-[0.05em] text-gradient-gold drop-shadow-[0_0_28px_rgba(212,175,55,0.22)]">
                 {content.title}
               </h1>
             </div>
-            <p className="mt-7 max-w-2xl font-cinzel text-sm uppercase tracking-[0.18em] text-[#E6C87A]/90 md:text-base">
-              {content.subtitle}
-            </p>
+            <div className="relative mt-7 max-w-2xl">
+              {canEdit && <ArcaneFieldButton field="subtitle" label="Modifier le sous-titre" />}
+              <p className="font-cinzel text-sm uppercase tracking-[0.18em] text-[#E6C87A]/90 md:text-base">
+                {content.subtitle}
+              </p>
+            </div>
             <div className="relative mt-7 max-w-2xl">
               {canEdit && <ArcaneFieldButton field="description" label="Modifier le texte d'ouverture" />}
               <p className="font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/90 md:text-3xl">
                 {content.intro}
               </p>
             </div>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+              {canEdit && <ArcaneFieldButton field="ctaLabel" label="Modifier le texte des boutons de réservation" />}
               <Button href={offering.bookingHref} variant="or" size="lg">
                 {content.ctaLabel}
               </Button>
@@ -60,6 +67,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
           <div className="relative min-h-[420px] md:min-h-[680px]">
             {canEdit && <ArcaneFieldButton field="imageUrl" label="Modifier l'image principale du service" />}
+            {canEdit && <ArcaneFieldButton field="imageAlt" label="Modifier le texte alternatif de l'image (SEO)" position="-right-3 top-8" />}
             {heroImage && (
               <Image
                 src={heroImage}
@@ -78,7 +86,8 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       <section className="relative border-y border-[#D4AF37]/20 bg-[linear-gradient(180deg,#050711,#0A1028)] px-5 py-20 md:py-28">
         <div className="absolute inset-x-8 top-8 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-transparent" />
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.82fr_1.18fr] md:items-center">
-          <div>
+          <div className="relative">
+            {canEdit && <ArcaneFieldButton field="sanctuaryTitle" label="Modifier le titre du sanctuaire" />}
             <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-[#FF4FD8]">Le sanctuaire</p>
             <h2 className="mt-4 font-cinzel-decorative text-4xl font-bold uppercase leading-tight text-gradient-gold md:text-6xl">
               {content.sanctuaryTitle}
@@ -94,7 +103,8 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       </section>
 
       <section className="relative bg-[radial-gradient(circle_at_50%_0%,rgba(106,0,255,0.28),transparent_34%),#080812] px-5 py-20 md:py-28">
-        <div className="mx-auto max-w-6xl">
+        <div className="relative mx-auto max-w-6xl">
+          {canEdit && <ArcaneFieldButton field="pillarsTitle" label="Modifier le titre de la section des piliers" />}
           <p className="text-center font-cinzel text-xs uppercase tracking-[0.34em] text-[#00D9D9]">Activation</p>
           <h2 className="mx-auto mt-4 max-w-4xl text-center font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
             {content.pillarsTitle}
@@ -121,10 +131,14 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <section className="bg-[linear-gradient(135deg,#0A1028,#2D1B69_55%,#050711)] px-5 py-20 md:py-28">
         <div className="mx-auto max-w-6xl">
-          <h2 className="font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
-            {content.processTitle}
-          </h2>
-          <div className="mt-12 grid gap-5 md:grid-cols-4">
+          <div className="relative inline-block">
+            {canEdit && <ArcaneFieldButton field="processTitle" label="Modifier le titre de la section des étapes" />}
+            <h2 className="font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
+              {content.processTitle}
+            </h2>
+          </div>
+          <div className="relative mt-12 grid gap-5 md:grid-cols-4">
+            {canEdit && <ArcaneFieldButton field="steps" label="Modifier les étapes du déroulement" />}
             {content.steps.map((step) => (
               <div key={step.number} className="border-l border-[#D4AF37]/40 pl-5">
                 <span className="font-cinzel text-sm tracking-[0.25em] text-[#FF4FD8]">{step.number}</span>
@@ -142,6 +156,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <section className="grid bg-[#050711] md:grid-cols-[0.9fr_1.1fr]">
         <div className="relative min-h-[360px] md:min-h-[760px]">
+          {canEdit && <ArcaneFieldButton field="faqImageAlt" label="Modifier le texte alternatif de l'image FAQ (SEO)" position="left-3 top-3" />}
           {faqImage && (
             <Image
               src={faqImage}
@@ -154,12 +169,14 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#050711] md:bg-gradient-to-l" />
         </div>
-        <div className="px-5 py-20 md:px-12 md:py-28">
+        <div className="relative px-5 py-20 md:px-12 md:py-28">
+          {canEdit && <ArcaneFieldButton field="faqTitle" label="Modifier le titre de la section FAQ" />}
           <p className="font-cinzel text-xs uppercase tracking-[0.34em] text-[#00D9D9]">Avant de réserver</p>
           <h2 className="mt-4 font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
             {content.faqTitle}
           </h2>
-          <div className="mt-10 space-y-5">
+          <div className="relative mt-10 space-y-5">
+            {canEdit && <ArcaneFieldButton field="faqs" label="Modifier les questions fréquentes" />}
             {content.faqs.map((faq) => (
               <details key={faq.question} className="rounded-sm border border-[#D4AF37]/25 bg-[#0A1028]/70 p-5">
                 <summary className="font-cinzel text-sm uppercase tracking-[0.13em] text-[#E6C87A]">
@@ -176,12 +193,18 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <section className="relative overflow-hidden bg-[radial-gradient(circle_at_50%_30%,rgba(255,0,184,0.28),transparent_30%),linear-gradient(180deg,#2D1B69,#050711)] px-5 py-24 text-center md:py-32">
         <div className="absolute inset-x-10 top-12 h-px bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
-        <h2 className="mx-auto max-w-5xl font-cinzel-decorative text-4xl font-black uppercase leading-tight text-gradient-gold md:text-7xl">
-          {content.finalTitle}
-        </h2>
-        <p className="mx-auto mt-8 max-w-3xl font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/85">
-          {content.finalText}
-        </p>
+        <div className="relative mx-auto max-w-5xl">
+          {canEdit && <ArcaneFieldButton field="finalTitle" label="Modifier le titre de l'appel final" />}
+          <h2 className="font-cinzel-decorative text-4xl font-black uppercase leading-tight text-gradient-gold md:text-7xl">
+            {content.finalTitle}
+          </h2>
+        </div>
+        <div className="relative mx-auto mt-8 max-w-3xl">
+          {canEdit && <ArcaneFieldButton field="finalText" label="Modifier le texte de l'appel final" />}
+          <p className="font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/85">
+            {content.finalText}
+          </p>
+        </div>
         <div className="mt-10">
           <Button href={offering.bookingHref} variant="or" size="lg">
             {content.ctaLabel}
@@ -199,20 +222,43 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       offeringId={offering.id}
       targets={[
         { field: 'name', label: 'Titre principal du service', value: offering.name },
+        { field: 'eyebrow', label: 'Petit texte au-dessus du titre', value: content.eyebrow },
+        { field: 'subtitle', label: 'Sous-titre (sous le grand titre)', value: content.subtitle },
         { field: 'description', label: "Texte d'ouverture et méta description automatique", value: offering.description },
-        { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
+        { field: 'ctaLabel', label: 'Texte des boutons de réservation', value: content.ctaLabel },
         {
           field: 'imageUrl',
           label: 'Image du service',
           value: offering.imageUrl ?? '',
           helper: 'Colle une URL publique. Si le champ reste vide, le template utilise le visuel Noctura + Caracal fourni.',
         },
+        { field: 'imageAlt', label: "Texte alternatif de l'image principale (SEO)", value: content.imageAlt },
+        { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
+        { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
+        { field: 'pillarsTitle', label: 'Titre de la section des piliers', value: content.pillarsTitle },
         {
           field: 'features',
           label: 'Piliers du soin',
           value: offering.features,
           helper: 'Un pilier par ligne.',
         },
+        { field: 'processTitle', label: 'Titre de la section des étapes', value: content.processTitle },
+        {
+          field: 'steps',
+          label: 'Étapes du déroulement',
+          value: content.steps.map((step) => `${step.title} || ${step.text}`),
+          helper: 'Une étape par ligne, au format : Titre || Description. La numérotation (01, 02…) est automatique.',
+        },
+        { field: 'faqTitle', label: 'Titre de la section FAQ', value: content.faqTitle },
+        {
+          field: 'faqs',
+          label: 'Questions fréquentes',
+          value: content.faqs.map((faq) => `${faq.question} || ${faq.answer}`),
+          helper: 'Une question par ligne, au format : Question || Réponse.',
+        },
+        { field: 'faqImageAlt', label: "Texte alternatif de l'image FAQ (SEO)", value: content.faqImageAlt },
+        { field: 'finalTitle', label: "Titre de l'appel final", value: content.finalTitle },
+        { field: 'finalText', label: "Texte de l'appel final", value: content.finalText },
       ]}
     >
       {body}

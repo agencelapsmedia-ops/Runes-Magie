@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { parseLandingOverrides, type ServiceLandingOverrides } from '@/lib/service-landing';
 
 /**
  * Regroupement des types d'offering par page publique.
@@ -37,6 +38,7 @@ export interface OfferingView {
   bookingHref: string;
   imageUrl: string | null;
   detailHref: string;
+  landing: ServiceLandingOverrides;
 }
 
 function money(n: number): string {
@@ -73,6 +75,7 @@ function toView(o: OfferingRow): OfferingView {
     bookingHref: `/soins/reserver/${o.practitionerId}?offering=${o.slug}`,
     imageUrl: o.imageUrl,
     detailHref,
+    landing: parseLandingOverrides(o.landingContent),
   };
 }
 

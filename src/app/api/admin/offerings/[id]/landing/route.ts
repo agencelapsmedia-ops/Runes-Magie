@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
+import {
+  LANDING_TEXT_FIELDS,
+  LANDING_LIST_FIELDS,
+  parseLandingOverrides,
+} from '@/lib/service-landing';
 
-const EDITABLE_FIELDS = ['name', 'description', 'longDescription', 'imageUrl', 'features'] as const;
+// Champs stockés directement comme colonnes de l'Offering (partagés ailleurs :
+// cartes de service, menus, méta SEO).
+const COLUMN_FIELDS = ['name', 'description', 'longDescription', 'imageUrl', 'features'] as const;
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin();
@@ -15,9 +23,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
 
-  const data: Record<string, string | string[] | null> = {};
+  const data: Prisma.OfferingUpdateInput = {};
 
-  for (const field of EDITABLE_FIELDS) {
+  // 1) Champs-colonnes
+  for (const field of COLUMN_FIELDS) {
     if (!(field in body)) continue;
     const value = body[field];
 
@@ -39,6 +48,37 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     data[field] = value.trim();
+  }
+
+  // 2) Textes personnalisés de la page (stockés dans landingContent JSON)
+  const landingPatch: Record<string, unknown> = {};
+  for (const field of LANDING_TEXT_FIELDS) {
+    if (!(field in body)) continue;
+    if (typeof body[field] !== 'string') {
+      return NextResponse.json({ error: `Le champ ${field} doit etre du texte.` }, { status: 400 });
+    }
+    landingPatch[field] = body[field];
+  }
+  for (const field of LANDING_LIST_FIELDS) {
+    if (!(field in body)) continue;
+    if (!Array.isArray(body[field])) {
+      return NextResponse.json({ error: `Le champ ${field} doit etre une liste.` }, { status: 400 });
+    }
+    landingPatch[field] = body[field];
+  }
+
+  if (Object.keys(landingPatch).length > 0) {
+    const existing = await prisma.offering.findUnique({
+      where: { id },
+      select: { landingContent: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Service introuvable.' }, { status: 404 });
+    }
+    const existingOverrides = parseLandingOverrides(existing.landingContent);
+    // Fusion puis nettoyage : un champ vidé revient au texte par défaut.
+    const merged = parseLandingOverrides({ ...existingOverrides, ...landingPatch });
+    data.landingContent = merged as Prisma.InputJsonValue;
   }
 
   if (Object.keys(data).length === 0) {

@@ -500,6 +500,9 @@ model Offering {
   emoji            String       @default("*")
   imageUrl         String?
   features         String[]     @default([])
+  // Textes personnalisés de la page de présentation (overrides JSON par-dessus
+  // les valeurs par défaut générées). Voir src/lib/service-landing.ts.
+  landingContent   Json?
   isActive         Boolean      @default(true)
   isFeatured       Boolean      @default(false)
   sortOrder        Int          @default(0)

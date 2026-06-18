@@ -24,6 +24,107 @@ export interface ServiceLandingContent {
   faqs: Array<{ question: string; answer: string }>;
 }
 
+/**
+ * Textes personnalisables depuis l'admin, stockés dans `Offering.landingContent`
+ * et fusionnés par-dessus les valeurs par défaut générées. Tous optionnels :
+ * un champ absent garde le texte par défaut.
+ */
+export interface ServiceLandingOverrides {
+  eyebrow?: string;
+  subtitle?: string;
+  sanctuaryTitle?: string;
+  pillarsTitle?: string;
+  processTitle?: string;
+  faqTitle?: string;
+  finalTitle?: string;
+  finalText?: string;
+  ctaLabel?: string;
+  imageAlt?: string;
+  faqImageAlt?: string;
+  steps?: Array<{ number: string; title: string; text: string }>;
+  faqs?: Array<{ question: string; answer: string }>;
+}
+
+/** Champs texte simples surchargeables (un par bouton ✦). */
+export const LANDING_TEXT_FIELDS = [
+  'eyebrow',
+  'subtitle',
+  'sanctuaryTitle',
+  'pillarsTitle',
+  'processTitle',
+  'faqTitle',
+  'finalTitle',
+  'finalText',
+  'ctaLabel',
+  'imageAlt',
+  'faqImageAlt',
+] as const;
+
+/** Champs listes structurées surchargeables. */
+export const LANDING_LIST_FIELDS = ['steps', 'faqs'] as const;
+
+export type LandingTextField = (typeof LANDING_TEXT_FIELDS)[number];
+
+/** Valide et nettoie un objet `landingContent` brut venu de la base. */
+export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
+  if (!raw || typeof raw !== 'object') return {};
+  const source = raw as Record<string, unknown>;
+  const out: ServiceLandingOverrides = {};
+
+  for (const field of LANDING_TEXT_FIELDS) {
+    const value = source[field];
+    if (typeof value === 'string' && value.trim()) out[field] = value;
+  }
+
+  if (Array.isArray(source.steps)) {
+    const steps = source.steps
+      .filter((s): s is Record<string, unknown> => !!s && typeof s === 'object')
+      .map((s, i) => ({
+        number: String(i + 1).padStart(2, '0'),
+        title: String(s.title ?? '').trim(),
+        text: String(s.text ?? '').trim(),
+      }))
+      .filter((s) => s.title || s.text);
+    if (steps.length) out.steps = steps;
+  }
+
+  if (Array.isArray(source.faqs)) {
+    const faqs = source.faqs
+      .filter((f): f is Record<string, unknown> => !!f && typeof f === 'object')
+      .map((f) => ({
+        question: String(f.question ?? '').trim(),
+        answer: String(f.answer ?? '').trim(),
+      }))
+      .filter((f) => f.question || f.answer);
+    if (faqs.length) out.faqs = faqs;
+  }
+
+  return out;
+}
+
+/** Applique les textes personnalisés par-dessus le contenu par défaut. */
+function applyOverrides(
+  base: ServiceLandingContent,
+  overrides: ServiceLandingOverrides,
+): ServiceLandingContent {
+  return {
+    ...base,
+    eyebrow: overrides.eyebrow ?? base.eyebrow,
+    subtitle: overrides.subtitle ?? base.subtitle,
+    sanctuaryTitle: overrides.sanctuaryTitle ?? base.sanctuaryTitle,
+    pillarsTitle: overrides.pillarsTitle ?? base.pillarsTitle,
+    processTitle: overrides.processTitle ?? base.processTitle,
+    faqTitle: overrides.faqTitle ?? base.faqTitle,
+    finalTitle: overrides.finalTitle ?? base.finalTitle,
+    finalText: overrides.finalText ?? base.finalText,
+    ctaLabel: overrides.ctaLabel ?? base.ctaLabel,
+    imageAlt: overrides.imageAlt ?? base.imageAlt,
+    faqImageAlt: overrides.faqImageAlt ?? base.faqImageAlt,
+    steps: overrides.steps?.length ? overrides.steps : base.steps,
+    faqs: overrides.faqs?.length ? overrides.faqs : base.faqs,
+  };
+}
+
 const SOIN_RITUEL_STEPS: ServiceLandingContent['steps'] = [
   {
     number: '01',
@@ -73,6 +174,11 @@ function buildGenericSteps(offering: OfferingView): ServiceLandingContent['steps
 }
 
 export function buildServiceLandingContent(offering: OfferingView): ServiceLandingContent {
+  const base = buildDefaultLandingContent(offering);
+  return applyOverrides(base, offering.landing ?? {});
+}
+
+function buildDefaultLandingContent(offering: OfferingView): ServiceLandingContent {
   const isSoinRituel = offering.slug === 'soin-rituel';
   const soinRituelDefaultImage = '/images/services/arcane/noctura-caracal.png';
   const serviceImage =

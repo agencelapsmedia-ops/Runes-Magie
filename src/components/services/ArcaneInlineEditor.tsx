@@ -3,7 +3,28 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type EditableField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
+type ColumnField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
+type LandingTextField =
+  | 'eyebrow'
+  | 'subtitle'
+  | 'sanctuaryTitle'
+  | 'pillarsTitle'
+  | 'processTitle'
+  | 'faqTitle'
+  | 'finalTitle'
+  | 'finalText'
+  | 'ctaLabel'
+  | 'imageAlt'
+  | 'faqImageAlt';
+type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs';
+
+const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
+  'features',
+  'steps',
+  'faqs',
+  'longDescription',
+  'finalText',
+]);
 
 interface EditTarget {
   field: EditableField;
@@ -18,32 +39,69 @@ interface ArcaneEditorProviderProps {
   children: React.ReactNode;
 }
 
+const LINES = (draft: string) =>
+  draft.split('\n').map((line) => line.trim()).filter(Boolean);
+
+/** Découpe une ligne « Partie A || Partie B » en deux morceaux nettoyés. */
+function splitPair(line: string): [string, string] {
+  const [first, ...rest] = line.split('||');
+  return [first.trim(), rest.join('||').trim()];
+}
+
+/** Construit le corps de la requête PATCH selon le type de champ. */
+function buildPayload(field: EditableField, draft: string): Record<string, unknown> {
+  if (field === 'features') {
+    return { features: LINES(draft) };
+  }
+  if (field === 'steps') {
+    return {
+      steps: LINES(draft).map((line, index) => {
+        const [title, text] = splitPair(line);
+        return { number: String(index + 1).padStart(2, '0'), title, text };
+      }),
+    };
+  }
+  if (field === 'faqs') {
+    return {
+      faqs: LINES(draft).map((line) => {
+        const [question, answer] = splitPair(line);
+        return { question, answer };
+      }),
+    };
+  }
+  return { [field]: draft };
+}
+
 /** Contexte qui expose l'ouverture du pupitre d'édition aux boutons ✦ disséminés dans la page. */
 const ArcaneEditorContext = createContext<((field: EditableField) => void) | null>(null);
 
 export function ArcaneFieldButton({
   field,
   label,
+  position = '-right-3 -top-3',
 }: {
   field: EditableField;
   label: string;
+  position?: string;
 }) {
   const openEditor = useContext(ArcaneEditorContext);
-  return <ArcaneEditButton label={label} onClick={() => openEditor?.(field)} />;
+  return <ArcaneEditButton label={label} position={position} onClick={() => openEditor?.(field)} />;
 }
 
 function ArcaneEditButton({
   label,
   onClick,
+  position,
 }: {
   label: string;
   onClick: () => void;
+  position: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="absolute -right-3 -top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#D4AF37]/70 bg-[#0A1028]/95 text-[#E6C87A] shadow-[0_0_18px_rgba(255,0,184,0.35)] transition hover:scale-105 hover:border-[#FF4FD8]"
+      className={`absolute ${position} z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#D4AF37]/70 bg-[#0A1028]/95 text-[#E6C87A] shadow-[0_0_18px_rgba(255,0,184,0.35)] transition hover:scale-105 hover:border-[#FF4FD8]`}
       aria-label={label}
       title={label}
     >
@@ -85,10 +143,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, children }: 
     setSaving(true);
     setError('');
 
-    const payload =
-      activeTarget.field === 'features'
-        ? { features: draft.split('\n').map((line) => line.trim()).filter(Boolean) }
-        : { [activeTarget.field]: draft };
+    const payload = buildPayload(activeTarget.field, draft);
 
     const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
       method: 'PATCH',
@@ -144,7 +199,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, children }: 
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              rows={activeTarget.field === 'features' || activeTarget.field === 'longDescription' ? 12 : 5}
+              rows={MULTILINE_FIELDS.has(activeTarget.field) ? 12 : 5}
               className="mt-3 min-h-40 resize-y rounded-sm border border-[#D4AF37]/35 bg-black/35 p-4 font-cormorant text-lg leading-relaxed text-parchemin outline-none transition focus:border-[#FF4FD8] focus:shadow-[0_0_22px_rgba(255,0,184,0.24)]"
             />
             {activeTarget.helper && (

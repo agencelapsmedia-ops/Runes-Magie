@@ -3,6 +3,7 @@ import {
   buildServiceJsonLd,
   buildServiceLandingContent,
   buildServiceLandingMetadata,
+  parseLandingOverrides,
 } from './service-landing';
 import type { OfferingView } from './offerings';
 
@@ -24,6 +25,7 @@ const soinRituel: OfferingView = {
   bookingHref: '/soins/reserver/noctura?offering=soin-rituel',
   imageUrl: '/images/services/soin-rituel.svg',
   detailHref: '/seances/soin-rituel',
+  landing: {},
 };
 
 const content = buildServiceLandingContent(soinRituel);
@@ -61,6 +63,7 @@ const generique: OfferingView = {
   bookingHref: '/soins/reserver/annabelle?offering=guidance-runique',
   imageUrl: '/images/services/guidance.jpg',
   detailHref: '/seances/guidance-runique',
+  landing: {},
 };
 
 const genMeta = buildServiceLandingMetadata(generique);
@@ -76,5 +79,43 @@ assert.equal(genJsonLd.offers.price, '90.00');
 const genContent = buildServiceLandingContent(generique);
 assert.equal(genContent.steps.length, 4);
 assert.match(genContent.faqImageAlt, /Guidance Runique/);
+
+// --- Cas overrides : textes personnalisés depuis l'admin ---
+const personnalise: OfferingView = {
+  ...generique,
+  landing: {
+    eyebrow: 'Mon eyebrow',
+    sanctuaryTitle: 'Mon titre de sanctuaire',
+    finalText: 'Mon texte final',
+    steps: [
+      { number: '01', title: 'Étape A', text: 'Texte A' },
+      { number: '02', title: 'Étape B', text: 'Texte B' },
+    ],
+    faqs: [{ question: 'Q1 ?', answer: 'R1.' }],
+  },
+};
+
+const persoContent = buildServiceLandingContent(personnalise);
+assert.equal(persoContent.eyebrow, 'Mon eyebrow');
+assert.equal(persoContent.sanctuaryTitle, 'Mon titre de sanctuaire');
+assert.equal(persoContent.finalText, 'Mon texte final');
+assert.equal(persoContent.steps.length, 2);
+assert.equal(persoContent.steps[1].title, 'Étape B');
+assert.equal(persoContent.faqs.length, 1);
+assert.equal(persoContent.faqs[0].question, 'Q1 ?');
+// Les champs non surchargés gardent le défaut.
+assert.match(persoContent.processTitle, /déroulement/);
+
+// parseLandingOverrides nettoie les entrées invalides.
+const parsed = parseLandingOverrides({
+  eyebrow: '  ',
+  faqTitle: 'Titre FAQ',
+  steps: [{ title: 'X', text: '' }, { title: '', text: '' }],
+  faqs: 'pas une liste',
+});
+assert.equal(parsed.eyebrow, undefined);
+assert.equal(parsed.faqTitle, 'Titre FAQ');
+assert.equal(parsed.steps?.length, 1);
+assert.equal(parsed.faqs, undefined);
 
 console.log('service-landing tests passed');
