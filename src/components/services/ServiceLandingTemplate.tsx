@@ -2,35 +2,12 @@ import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import type { OfferingView } from '@/lib/offerings';
 import { buildServiceJsonLd, buildServiceLandingContent } from '@/lib/service-landing';
-import ArcaneInlineEditor, { ArcaneFieldButton } from '@/components/services/ArcaneInlineEditor';
+import ArcaneEditorProvider, { ArcaneFieldButton } from '@/components/services/ArcaneInlineEditor';
 
 interface ServiceLandingTemplateProps {
   offering: OfferingView;
   canEdit: boolean;
 }
-
-const RITUAL_STEPS = [
-  {
-    number: '01',
-    title: 'Accueil du seuil',
-    text: "Noctura t'accueille dans un espace calme, protégé, sans jugement. Tu peux nommer ce qui pèse ou simplement arriver avec ton silence.",
-  },
-  {
-    number: '02',
-    title: 'Lecture de ce qui pèse',
-    text: "Le rituel s'ouvre par l'écoute de ton énergie, de ton souffle, de tes tensions et de ce que l'invisible révèle.",
-  },
-  {
-    number: '03',
-    title: 'Transmutation',
-    text: "Les outils sacrés, les chants, les éléments et la présence de Noctura accompagnent la dissolution des charges qui ne t'appartiennent plus.",
-  },
-  {
-    number: '04',
-    title: 'Retour au souffle',
-    text: "Le soin se referme doucement pour que ton corps, ton coeur et ton âme puissent intégrer l'apaisement.",
-  },
-];
 
 export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLandingTemplateProps) {
   const content = buildServiceLandingContent(offering);
@@ -40,7 +17,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
     : heroImage;
   const jsonLd = buildServiceJsonLd(offering);
 
-  return (
+  const body = (
     <article className="overflow-hidden bg-[#050711] text-parchemin">
       <script
         type="application/ld+json"
@@ -148,7 +125,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
             {content.processTitle}
           </h2>
           <div className="mt-12 grid gap-5 md:grid-cols-4">
-            {RITUAL_STEPS.map((step) => (
+            {content.steps.map((step) => (
               <div key={step.number} className="border-l border-[#D4AF37]/40 pl-5">
                 <span className="font-cinzel text-sm tracking-[0.25em] text-[#FF4FD8]">{step.number}</span>
                 <h3 className="mt-4 font-cinzel text-lg uppercase tracking-[0.12em] text-[#E6C87A]">
@@ -168,7 +145,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           {faqImage && (
             <Image
               src={faqImage}
-              alt="Questions fréquentes sur le Soin Rituel"
+              alt={content.faqImageAlt}
               fill
               quality={85}
               sizes="(max-width: 768px) 100vw, 44vw"
@@ -212,28 +189,33 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         </div>
       </section>
 
-      {canEdit && (
-        <ArcaneInlineEditor
-          offeringId={offering.id}
-          targets={[
-            { field: 'name', label: 'Titre principal du service', value: offering.name },
-            { field: 'description', label: "Texte d'ouverture et méta description automatique", value: offering.description },
-            { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
-            {
-              field: 'imageUrl',
-              label: 'Image du service',
-              value: offering.imageUrl ?? '',
-              helper: 'Colle une URL publique. Si le champ reste vide, le template utilise le visuel Noctura + Caracal fourni.',
-            },
-            {
-              field: 'features',
-              label: 'Piliers du soin',
-              value: offering.features,
-              helper: 'Un pilier par ligne.',
-            },
-          ]}
-        />
-      )}
     </article>
+  );
+
+  if (!canEdit) return body;
+
+  return (
+    <ArcaneEditorProvider
+      offeringId={offering.id}
+      targets={[
+        { field: 'name', label: 'Titre principal du service', value: offering.name },
+        { field: 'description', label: "Texte d'ouverture et méta description automatique", value: offering.description },
+        { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
+        {
+          field: 'imageUrl',
+          label: 'Image du service',
+          value: offering.imageUrl ?? '',
+          helper: 'Colle une URL publique. Si le champ reste vide, le template utilise le visuel Noctura + Caracal fourni.',
+        },
+        {
+          field: 'features',
+          label: 'Piliers du soin',
+          value: offering.features,
+          helper: 'Un pilier par ligne.',
+        },
+      ]}
+    >
+      {body}
+    </ArcaneEditorProvider>
   );
 }

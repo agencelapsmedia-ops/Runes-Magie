@@ -19,7 +19,57 @@ export interface ServiceLandingContent {
   heroImage: string | null;
   mobileImage: string | null;
   imageAlt: string;
+  faqImageAlt: string;
+  steps: Array<{ number: string; title: string; text: string }>;
   faqs: Array<{ question: string; answer: string }>;
+}
+
+const SOIN_RITUEL_STEPS: ServiceLandingContent['steps'] = [
+  {
+    number: '01',
+    title: 'Accueil du seuil',
+    text: "Noctura t'accueille dans un espace calme, protégé, sans jugement. Tu peux nommer ce qui pèse ou simplement arriver avec ton silence.",
+  },
+  {
+    number: '02',
+    title: 'Lecture de ce qui pèse',
+    text: "Le rituel s'ouvre par l'écoute de ton énergie, de ton souffle, de tes tensions et de ce que l'invisible révèle.",
+  },
+  {
+    number: '03',
+    title: 'Transmutation',
+    text: "Les outils sacrés, les chants, les éléments et la présence de Noctura accompagnent la dissolution des charges qui ne t'appartiennent plus.",
+  },
+  {
+    number: '04',
+    title: 'Retour au souffle',
+    text: "Le soin se referme doucement pour que ton corps, ton coeur et ton âme puissent intégrer l'apaisement.",
+  },
+];
+
+function buildGenericSteps(offering: OfferingView): ServiceLandingContent['steps'] {
+  return [
+    {
+      number: '01',
+      title: 'Accueil',
+      text: `${offering.practitionerName} t'accueille dans un espace calme et bienveillant, à ton rythme.`,
+    },
+    {
+      number: '02',
+      title: 'Écoute',
+      text: 'La rencontre commence par un temps d’écoute de ce que tu portes et de ton intention.',
+    },
+    {
+      number: '03',
+      title: 'Le service',
+      text: offering.description,
+    },
+    {
+      number: '04',
+      title: 'Intégration',
+      text: 'Un temps de retour au calme pour que ce qui a été vécu puisse s’ancrer doucement.',
+    },
+  ];
 }
 
 export function buildServiceLandingContent(offering: OfferingView): ServiceLandingContent {
@@ -50,6 +100,8 @@ export function buildServiceLandingContent(offering: OfferingView): ServiceLandi
       heroImage: serviceImage,
       mobileImage: serviceImage,
       imageAlt: 'Noctura, prêtresse de La Voie des Arcanes, guidant le Soin Rituel',
+      faqImageAlt: 'Questions fréquentes sur le Soin Rituel',
+      steps: SOIN_RITUEL_STEPS,
       faqs: [
         {
           question: 'Quels sont les effets du Soin Rituel?',
@@ -86,6 +138,8 @@ export function buildServiceLandingContent(offering: OfferingView): ServiceLandi
     heroImage: serviceImage,
     mobileImage: serviceImage,
     imageAlt: `${offering.name} avec ${offering.practitionerName}`,
+    faqImageAlt: `Questions fréquentes sur ${offering.name}`,
+    steps: buildGenericSteps(offering),
     faqs: [
       {
         question: 'Comment se déroule ce service?',
@@ -101,7 +155,7 @@ export function buildServiceLandingContent(offering: OfferingView): ServiceLandi
 
 export function buildServiceLandingMetadata(offering: OfferingView): Metadata {
   const content = buildServiceLandingContent(offering);
-  const title = `${offering.name} avec Noctura | La Voie des Arcanes`;
+  const title = `${offering.name} avec ${offering.practitionerName} | La Voie des Arcanes`;
   const description = content.intro.length > 155 ? `${content.intro.slice(0, 152)}...` : content.intro;
   const url = `${SITE_URL}${offering.detailHref}`;
   const imageUrl = content.heroImage
@@ -141,7 +195,7 @@ export function buildServiceJsonLd(offering: OfferingView) {
     description: offering.description,
     provider: {
       '@type': 'Person',
-      name: 'Noctura',
+      name: offering.practitionerName,
     },
     areaServed: {
       '@type': 'Place',
@@ -150,7 +204,7 @@ export function buildServiceJsonLd(offering: OfferingView) {
     url: `${SITE_URL}${offering.detailHref}`,
     offers: {
       '@type': 'Offer',
-      price: offering.priceLabel.replace(/[^0-9.,]/g, '').replace(',', '.'),
+      price: offering.price.toFixed(2),
       priceCurrency: 'CAD',
       availability: 'https://schema.org/InStock',
       url: `${SITE_URL}${offering.bookingHref}`,

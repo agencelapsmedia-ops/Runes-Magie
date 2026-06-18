@@ -26,6 +26,7 @@ export interface OfferingView {
   emoji: string;
   description: string;
   longDescription: string;
+  price: number;
   priceLabel: string;
   durationLabel: string;
   features: string[];
@@ -61,6 +62,7 @@ function toView(o: OfferingRow): OfferingView {
     emoji: o.emoji,
     description: o.description,
     longDescription: o.longDescription || o.description,
+    price: o.price,
     priceLabel,
     durationLabel,
     features: o.features,

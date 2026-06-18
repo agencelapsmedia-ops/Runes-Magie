@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type EditableField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
@@ -12,10 +12,14 @@ interface EditTarget {
   helper?: string;
 }
 
-interface ArcaneInlineEditorProps {
+interface ArcaneEditorProviderProps {
   offeringId: string;
   targets: EditTarget[];
+  children: React.ReactNode;
 }
+
+/** Contexte qui expose l'ouverture du pupitre d'édition aux boutons ✦ disséminés dans la page. */
+const ArcaneEditorContext = createContext<((field: EditableField) => void) | null>(null);
 
 export function ArcaneFieldButton({
   field,
@@ -24,7 +28,8 @@ export function ArcaneFieldButton({
   field: EditableField;
   label: string;
 }) {
-  return <ArcaneEditButton label={label} onClick={() => window.__openArcaneEditor?.(field)} />;
+  const openEditor = useContext(ArcaneEditorContext);
+  return <ArcaneEditButton label={label} onClick={() => openEditor?.(field)} />;
 }
 
 function ArcaneEditButton({
@@ -47,7 +52,12 @@ function ArcaneEditButton({
   );
 }
 
-export default function ArcaneInlineEditor({ offeringId, targets }: ArcaneInlineEditorProps) {
+/**
+ * Enveloppe la page de service en mode admin : fournit le contexte d'édition aux
+ * boutons ✦ et rend le pupitre coulissant. Les boutons appellent `openEditor(field)`
+ * via le contexte React (plus de pont `window`).
+ */
+export default function ArcaneEditorProvider({ offeringId, targets, children }: ArcaneEditorProviderProps) {
   const router = useRouter();
   const [activeField, setActiveField] = useState<EditableField | null>(null);
   const [draft, setDraft] = useState('');
@@ -59,13 +69,16 @@ export default function ArcaneInlineEditor({ offeringId, targets }: ArcaneInline
     [activeField, targets],
   );
 
-  function openEditor(field: EditableField) {
-    const target = targets.find((item) => item.field === field);
-    if (!target) return;
-    setActiveField(field);
-    setDraft(Array.isArray(target.value) ? target.value.join('\n') : target.value);
-    setError('');
-  }
+  const openEditor = useMemo(
+    () => (field: EditableField) => {
+      const target = targets.find((item) => item.field === field);
+      if (!target) return;
+      setActiveField(field);
+      setDraft(Array.isArray(target.value) ? target.value.join('\n') : target.value);
+      setError('');
+    },
+    [targets],
+  );
 
   async function save() {
     if (!activeTarget) return;
@@ -96,15 +109,11 @@ export default function ArcaneInlineEditor({ offeringId, targets }: ArcaneInline
   }
 
   return (
-    <>
+    <ArcaneEditorContext.Provider value={openEditor}>
+      {children}
+
       <div className="fixed bottom-5 left-5 z-40 hidden rounded-sm border border-[#D4AF37]/40 bg-[#0A1028]/90 px-4 py-3 font-cinzel text-[0.68rem] uppercase tracking-[0.18em] text-[#E6C87A] shadow-[0_0_24px_rgba(106,0,255,0.35)] backdrop-blur md:block">
         Mode édition des arcanes actif
-      </div>
-
-      <div className="hidden">
-        {targets.map((target) => (
-          <button key={target.field} type="button" data-arcane-editor={target.field} onClick={() => openEditor(target.field)} />
-        ))}
       </div>
 
       {activeTarget && (
@@ -169,21 +178,6 @@ export default function ArcaneInlineEditor({ offeringId, targets }: ArcaneInline
           </aside>
         </div>
       )}
-
-      <ArcaneEditorBridge onOpen={openEditor} />
-    </>
+    </ArcaneEditorContext.Provider>
   );
-}
-
-function ArcaneEditorBridge({ onOpen }: { onOpen: (field: EditableField) => void }) {
-  if (typeof window !== 'undefined') {
-    window.__openArcaneEditor = onOpen;
-  }
-  return null;
-}
-
-declare global {
-  interface Window {
-    __openArcaneEditor?: (field: EditableField) => void;
-  }
 }
