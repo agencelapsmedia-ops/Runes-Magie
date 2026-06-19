@@ -410,6 +410,94 @@ function PillarIconsEditor({
   );
 }
 
+/**
+ * Éditeur de listes « paire » (étapes, FAQ) : chaque entrée est scindée en deux
+ * champs distincts (titre + texte) plutôt qu'une ligne « A || B ». La valeur
+ * retenue reste « Titre || Texte » jointe par retour-ligne (compatible buildPayload).
+ */
+function PairListEditor({
+  draft,
+  setDraft,
+  firstLabel,
+  secondLabel,
+  addLabel,
+  helper,
+}: {
+  draft: string;
+  setDraft: (value: string) => void;
+  firstLabel: string;
+  secondLabel: string;
+  addLabel: string;
+  helper?: string;
+}) {
+  const rows = useMemo<[string, string][]>(
+    () => (draft.length ? draft.split('\n').map((line) => splitPair(line)) : []),
+    [draft],
+  );
+
+  const commit = (next: [string, string][]) =>
+    setDraft(next.map(([a, b]) => `${a} || ${b}`).join('\n'));
+
+  const update = (index: number, slot: 0 | 1, value: string) => {
+    const next = rows.map((row) => [...row] as [string, string]);
+    if (!next[index]) next[index] = ['', ''];
+    next[index][slot] = value;
+    commit(next);
+  };
+
+  const inputClass =
+    'w-full rounded-sm border border-[#D4AF37]/30 bg-black/35 p-2 font-cormorant text-base text-parchemin outline-none transition focus:border-[#FF4FD8]';
+
+  return (
+    <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+      {rows.map(([first, second], index) => (
+        <div key={index} className="rounded-sm border border-[#D4AF37]/25 bg-black/20 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-cinzel text-[0.62rem] uppercase tracking-[0.18em] text-[#00D9D9]">
+              {index + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => commit(rows.filter((_, j) => j !== index))}
+              className="rounded-sm border border-[#FF4FD8]/40 px-2 py-1 font-cinzel text-[0.58rem] uppercase tracking-[0.14em] text-[#FF4FD8]/80 transition hover:border-[#FF4FD8]"
+            >
+              Supprimer
+            </button>
+          </div>
+          <label className="font-cinzel text-[0.6rem] uppercase tracking-[0.16em] text-[#E6C87A]">
+            {firstLabel}
+          </label>
+          <input
+            type="text"
+            value={first}
+            onChange={(e) => update(index, 0, e.target.value)}
+            className={`mt-1 mb-3 ${inputClass}`}
+          />
+          <label className="font-cinzel text-[0.6rem] uppercase tracking-[0.16em] text-[#E6C87A]">
+            {secondLabel}
+          </label>
+          <textarea
+            value={second}
+            onChange={(e) => update(index, 1, e.target.value)}
+            rows={3}
+            className={`mt-1 resize-y leading-relaxed ${inputClass}`}
+          />
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={() => commit([...rows, ['', '']])}
+        className="rounded-sm border border-[#9A6CFF]/50 px-4 py-2 font-cinzel text-[0.62rem] uppercase tracking-[0.16em] text-parchemin/80 transition hover:border-[#00D9D9] hover:text-[#00D9D9]"
+      >
+        + {addLabel}
+      </button>
+
+      {helper && <p className="mt-1 font-philosopher text-sm text-parchemin-vieilli/55">{helper}</p>}
+    </div>
+  );
+}
+
 /** Contexte qui expose l'ouverture du pupitre d'édition aux boutons ✦ disséminés dans la page. */
 const ArcaneEditorContext = createContext<((field: EditableField) => void) | null>(null);
 
@@ -537,6 +625,23 @@ export default function ArcaneEditorProvider({ offeringId, targets, children }: 
                 setDraft={setDraft}
                 items={activeTarget.items ?? []}
                 helper={activeTarget.helper}
+              />
+            ) : activeTarget.field === 'steps' ? (
+              <PairListEditor
+                draft={draft}
+                setDraft={setDraft}
+                firstLabel="Titre de l'étape"
+                secondLabel="Texte de l'étape"
+                addLabel="Ajouter une étape"
+                helper="La numérotation (01, 02…) est automatique."
+              />
+            ) : activeTarget.field === 'faqs' ? (
+              <PairListEditor
+                draft={draft}
+                setDraft={setDraft}
+                firstLabel="Question"
+                secondLabel="Réponse"
+                addLabel="Ajouter une question"
               />
             ) : IMAGE_FIELDS.has(activeTarget.field) ? (
               <ImageFieldEditor draft={draft} setDraft={setDraft} helper={activeTarget.helper} />
