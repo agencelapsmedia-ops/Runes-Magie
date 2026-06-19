@@ -39,6 +39,39 @@ export interface ServiceLandingContent {
   focusKeyword: string;
   /** Image de partage réseaux sociaux (Open Graph). Vide → image héro. */
   ogImage: string;
+  /** Police des grands titres (H1 + titres de sections). */
+  titleFont: FontKey;
+  /** Police des sous-titres et labels. */
+  labelFont: FontKey;
+  /** Police des paragraphes. */
+  bodyFont: FontKey;
+}
+
+/** Polices disponibles dans le projet (chargées dans layout.tsx). */
+export const FONTS = {
+  'cinzel-decorative': { label: 'Cinzel Decorative', css: "'Cinzel Decorative', serif" },
+  cinzel: { label: 'Cinzel', css: "'Cinzel', serif" },
+  cormorant: { label: 'Cormorant Garamond', css: "'Cormorant Garamond', serif" },
+  philosopher: { label: 'Philosopher', css: "'Philosopher', sans-serif" },
+  medieval: { label: 'MedievalSharp', css: "'MedievalSharp', cursive" },
+} as const;
+
+export type FontKey = keyof typeof FONTS;
+export const FONT_KEYS = Object.keys(FONTS) as FontKey[];
+
+/** Les 3 réglages de police surchargeables (catégories de texte). */
+export const FONT_FIELDS = ['titleFont', 'labelFont', 'bodyFont'] as const;
+export type FontField = (typeof FONT_FIELDS)[number];
+
+/** Police par défaut de chaque catégorie (rendu identique à l'actuel). */
+export const DEFAULT_FONTS: Record<FontField, FontKey> = {
+  titleFont: 'cinzel-decorative',
+  labelFont: 'cinzel',
+  bodyFont: 'cormorant',
+};
+
+function isFontKey(value: unknown): value is FontKey {
+  return typeof value === 'string' && value in FONTS;
 }
 
 /** Runes vikings dorées utilisées par défaut devant les piliers (cycle). */
@@ -86,6 +119,9 @@ export interface ServiceLandingOverrides {
   metaDescription?: string;
   focusKeyword?: string;
   ogImage?: string;
+  titleFont?: FontKey;
+  labelFont?: FontKey;
+  bodyFont?: FontKey;
 }
 
 /** Champs texte simples surchargeables (un par bouton ✦). */
@@ -168,6 +204,10 @@ export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
     if (faqs.length) out.faqs = faqs;
   }
 
+  for (const field of FONT_FIELDS) {
+    if (isFontKey(source[field])) out[field] = source[field] as FontKey;
+  }
+
   return out;
 }
 
@@ -203,6 +243,9 @@ function applyOverrides(
     metaDescription: overrides.metaDescription ?? base.metaDescription,
     focusKeyword: overrides.focusKeyword ?? base.focusKeyword,
     ogImage: overrides.ogImage ?? base.ogImage,
+    titleFont: overrides.titleFont ?? base.titleFont,
+    labelFont: overrides.labelFont ?? base.labelFont,
+    bodyFont: overrides.bodyFont ?? base.bodyFont,
   };
 }
 
@@ -316,6 +359,9 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       metaDescription: '',
       focusKeyword: '',
       ogImage: '',
+      titleFont: DEFAULT_FONTS.titleFont,
+      labelFont: DEFAULT_FONTS.labelFont,
+      bodyFont: DEFAULT_FONTS.bodyFont,
     };
   }
 
@@ -357,6 +403,9 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     metaDescription: '',
     focusKeyword: '',
     ogImage: '',
+    titleFont: DEFAULT_FONTS.titleFont,
+    labelFont: DEFAULT_FONTS.labelFont,
+    bodyFont: DEFAULT_FONTS.bodyFont,
   };
 }
 

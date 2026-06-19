@@ -201,4 +201,24 @@ assert.equal(crumb.itemListElement.length, 3);
 assert.equal(crumb.itemListElement[1].name, 'Séances');
 assert.equal(crumb.itemListElement[2].name, 'Le Soin Rituel');
 
+// --- Polices : valeurs par défaut ---
+assert.equal(content.titleFont, 'cinzel-decorative');
+assert.equal(content.labelFont, 'cinzel');
+assert.equal(content.bodyFont, 'cormorant');
+
+// --- Polices : parseLandingOverrides conserve une clé valide, ignore une invalide ---
+const fontOverrides = parseLandingOverrides({ titleFont: 'medieval', labelFont: 'pas-une-police' });
+assert.equal(fontOverrides.titleFont, 'medieval');
+assert.equal(fontOverrides.labelFont, undefined);
+
+// --- Polices : override appliqué, champ non surchargé garde le défaut ---
+const themedOffering: OfferingView = {
+  ...soinRituel,
+  landing: { titleFont: 'medieval', bodyFont: 'philosopher' },
+};
+const themed = buildServiceLandingContent(themedOffering);
+assert.equal(themed.titleFont, 'medieval');
+assert.equal(themed.bodyFont, 'philosopher');
+assert.equal(themed.labelFont, 'cinzel');
+
 console.log('service-landing tests passed');
