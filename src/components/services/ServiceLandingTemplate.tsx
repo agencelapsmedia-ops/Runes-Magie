@@ -87,7 +87,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       {/* Personnage détouré */}
       {content.characterUrl && (
-        <div className="pointer-events-none absolute left-1/2 top-20 h-[46vh] w-[92%] -translate-x-1/2 opacity-70 sm:top-24 sm:h-[54vh] sm:w-[72%] sm:opacity-90 md:bottom-0 md:top-auto md:h-[92%] md:w-[44%] md:opacity-100 lg:w-[46%]">
+        <div className="pointer-events-none absolute left-1/2 top-20 h-[46vh] w-[92%] -translate-x-1/2 opacity-100 sm:top-24 sm:h-[54vh] sm:w-[72%] md:bottom-0 md:top-auto md:h-[92%] md:w-[44%] lg:w-[46%]">
           <Image
             src={content.characterUrl}
             alt={content.imageAlt}
