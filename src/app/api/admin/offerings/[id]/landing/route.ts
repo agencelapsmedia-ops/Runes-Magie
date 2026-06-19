@@ -7,6 +7,7 @@ import {
   LANDING_TEXT_FIELDS,
   LANDING_LIST_FIELDS,
   FONT_FIELDS,
+  TITLE_FONT_FIELDS,
   parseLandingOverrides,
 } from '@/lib/service-landing';
 
@@ -68,6 +69,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     landingPatch[field] = body[field];
   }
   for (const field of FONT_FIELDS) {
+    if (!(field in body)) continue;
+    if (typeof body[field] !== 'string') {
+      return NextResponse.json({ error: `Le champ ${field} doit etre du texte.` }, { status: 400 });
+    }
+    landingPatch[field] = body[field];
+  }
+  // Polices par titre : une valeur vide (« par défaut ») fait hériter de la police globale.
+  for (const field of TITLE_FONT_FIELDS) {
     if (!(field in body)) continue;
     if (typeof body[field] !== 'string') {
       return NextResponse.json({ error: `Le champ ${field} doit etre du texte.` }, { status: 400 });

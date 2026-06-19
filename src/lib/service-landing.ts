@@ -45,6 +45,13 @@ export interface ServiceLandingContent {
   labelFont: FontKey;
   /** Police des paragraphes. */
   bodyFont: FontKey;
+  // Polices par titre (héritent de `titleFont` si non personnalisées).
+  heroTitleFont: FontKey;
+  sanctuaryTitleFont: FontKey;
+  pillarsTitleFont: FontKey;
+  processTitleFont: FontKey;
+  faqTitleFont: FontKey;
+  finalTitleFont: FontKey;
 }
 
 /** Polices disponibles dans le projet (chargées dans layout.tsx). */
@@ -62,6 +69,27 @@ export const FONT_KEYS = Object.keys(FONTS) as FontKey[];
 /** Les 3 réglages de police surchargeables (catégories de texte). */
 export const FONT_FIELDS = ['titleFont', 'labelFont', 'bodyFont'] as const;
 export type FontField = (typeof FONT_FIELDS)[number];
+
+/** Polices par titre individuel (héritent de `titleFont` si laissées « par défaut »). */
+export const TITLE_FONT_FIELDS = [
+  'heroTitleFont',
+  'sanctuaryTitleFont',
+  'pillarsTitleFont',
+  'processTitleFont',
+  'faqTitleFont',
+  'finalTitleFont',
+] as const;
+export type TitleFontField = (typeof TITLE_FONT_FIELDS)[number];
+
+/** Libellés lisibles des polices par titre (réutilisés dans le panneau admin). */
+export const TITLE_FONT_LABELS: Record<TitleFontField, string> = {
+  heroTitleFont: 'Titre principal (hero)',
+  sanctuaryTitleFont: 'Titre du sanctuaire',
+  pillarsTitleFont: 'Titre des bienfaits',
+  processTitleFont: 'Titre des étapes',
+  faqTitleFont: 'Titre de la FAQ',
+  finalTitleFont: "Titre de l'appel final",
+};
 
 /** Police par défaut de chaque catégorie (rendu identique à l'actuel). */
 export const DEFAULT_FONTS: Record<FontField, FontKey> = {
@@ -122,6 +150,12 @@ export interface ServiceLandingOverrides {
   titleFont?: FontKey;
   labelFont?: FontKey;
   bodyFont?: FontKey;
+  heroTitleFont?: FontKey;
+  sanctuaryTitleFont?: FontKey;
+  pillarsTitleFont?: FontKey;
+  processTitleFont?: FontKey;
+  faqTitleFont?: FontKey;
+  finalTitleFont?: FontKey;
 }
 
 /** Champs texte simples surchargeables (un par bouton ✦). */
@@ -207,6 +241,9 @@ export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
   for (const field of FONT_FIELDS) {
     if (isFontKey(source[field])) out[field] = source[field] as FontKey;
   }
+  for (const field of TITLE_FONT_FIELDS) {
+    if (isFontKey(source[field])) out[field] = source[field] as FontKey;
+  }
 
   return out;
 }
@@ -246,6 +283,13 @@ function applyOverrides(
     titleFont: overrides.titleFont ?? base.titleFont,
     labelFont: overrides.labelFont ?? base.labelFont,
     bodyFont: overrides.bodyFont ?? base.bodyFont,
+    // Polices par titre : override individuel, sinon on suit la police globale des titres.
+    heroTitleFont: overrides.heroTitleFont ?? overrides.titleFont ?? base.titleFont,
+    sanctuaryTitleFont: overrides.sanctuaryTitleFont ?? overrides.titleFont ?? base.titleFont,
+    pillarsTitleFont: overrides.pillarsTitleFont ?? overrides.titleFont ?? base.titleFont,
+    processTitleFont: overrides.processTitleFont ?? overrides.titleFont ?? base.titleFont,
+    faqTitleFont: overrides.faqTitleFont ?? overrides.titleFont ?? base.titleFont,
+    finalTitleFont: overrides.finalTitleFont ?? overrides.titleFont ?? base.titleFont,
   };
 }
 
@@ -362,6 +406,12 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       titleFont: DEFAULT_FONTS.titleFont,
       labelFont: DEFAULT_FONTS.labelFont,
       bodyFont: DEFAULT_FONTS.bodyFont,
+      heroTitleFont: DEFAULT_FONTS.titleFont,
+      sanctuaryTitleFont: DEFAULT_FONTS.titleFont,
+      pillarsTitleFont: DEFAULT_FONTS.titleFont,
+      processTitleFont: DEFAULT_FONTS.titleFont,
+      faqTitleFont: DEFAULT_FONTS.titleFont,
+      finalTitleFont: DEFAULT_FONTS.titleFont,
     };
   }
 
@@ -406,6 +456,12 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     titleFont: DEFAULT_FONTS.titleFont,
     labelFont: DEFAULT_FONTS.labelFont,
     bodyFont: DEFAULT_FONTS.bodyFont,
+    heroTitleFont: DEFAULT_FONTS.titleFont,
+    sanctuaryTitleFont: DEFAULT_FONTS.titleFont,
+    pillarsTitleFont: DEFAULT_FONTS.titleFont,
+    processTitleFont: DEFAULT_FONTS.titleFont,
+    faqTitleFont: DEFAULT_FONTS.titleFont,
+    finalTitleFont: DEFAULT_FONTS.titleFont,
   };
 }
 
