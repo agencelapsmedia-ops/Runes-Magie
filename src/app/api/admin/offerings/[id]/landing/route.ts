@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/admin-guard';
 import {
   LANDING_TEXT_FIELDS,
   LANDING_LIST_FIELDS,
+  FONT_FIELDS,
   parseLandingOverrides,
 } from '@/lib/service-landing';
 
@@ -63,6 +64,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!(field in body)) continue;
     if (!Array.isArray(body[field])) {
       return NextResponse.json({ error: `Le champ ${field} doit etre une liste.` }, { status: 400 });
+    }
+    landingPatch[field] = body[field];
+  }
+  for (const field of FONT_FIELDS) {
+    if (!(field in body)) continue;
+    if (typeof body[field] !== 'string') {
+      return NextResponse.json({ error: `Le champ ${field} doit etre du texte.` }, { status: 400 });
     }
     landingPatch[field] = body[field];
   }
