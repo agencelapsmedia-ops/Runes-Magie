@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadImage, listImages } from '@/lib/supabase';
 import { analyzeSeo, scoreLabel, type SeoCheckStatus } from '@/lib/seo-analysis';
-import { FONTS, FONT_KEYS, FONT_FIELDS } from '@/lib/service-landing';
+import { FONTS, FONT_KEYS, FONT_FIELDS, TITLE_FONT_FIELDS } from '@/lib/service-landing';
 
 type ColumnField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
 type LandingTextField =
@@ -14,6 +14,10 @@ type LandingTextField =
   | 'intro'
   | 'sanctuaryTitle'
   | 'sanctuaryText'
+  | 'recognitionTitle'
+  | 'recognitionIntro'
+  | 'recognitionFinalText'
+  | 'recognitionPortalText'
   | 'pillarsTitle'
   | 'processTitle'
   | 'faqTitle'
@@ -26,18 +30,28 @@ type LandingTextField =
   | 'characterUrl'
   | 'faqImageUrl';
 type FontField = 'titleFont' | 'labelFont' | 'bodyFont';
+type TitleFontField =
+  | 'heroTitleFont'
+  | 'sanctuaryTitleFont'
+  | 'recognitionTitleFont'
+  | 'pillarsTitleFont'
+  | 'processTitleFont'
+  | 'faqTitleFont'
+  | 'finalTitleFont';
 type EditableField =
   | ColumnField
   | LandingTextField
   | FontField
+  | TitleFontField
   | 'steps'
   | 'faqs'
   | 'pillarRunes'
   | 'pillarIcons'
-  | 'benefits';
+  | 'benefits'
+  | 'recognitionItems';
 
 /** Champs qui pointent vers une police → sélecteur visuel FontPicker. */
-const FONT_FIELD_SET: ReadonlySet<EditableField> = new Set(FONT_FIELDS);
+const FONT_FIELD_SET: ReadonlySet<EditableField> = new Set([...FONT_FIELDS, ...TITLE_FONT_FIELDS]);
 
 /** Champs qui pointent vers une image → sélecteur visuel + médiathèque. */
 const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
@@ -50,12 +64,15 @@ const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
 const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
   'features',
   'benefits',
+  'recognitionItems',
   'steps',
   'faqs',
   'pillarRunes',
   'intro',
   'longDescription',
   'sanctuaryText',
+  'recognitionFinalText',
+  'recognitionPortalText',
   'finalText',
 ]);
 
@@ -114,6 +131,9 @@ function buildPayload(field: EditableField, draft: string): Record<string, unkno
   }
   if (field === 'benefits') {
     return { benefits: LINES(draft) };
+  }
+  if (field === 'recognitionItems') {
+    return { recognitionItems: LINES(draft) };
   }
   if (field === 'pillarRunes') {
     return { pillarRunes: LINES(draft) };

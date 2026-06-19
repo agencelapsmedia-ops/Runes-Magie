@@ -220,22 +220,23 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
         <div className="relative mx-auto grid max-w-6xl gap-12 md:grid-cols-[0.8fr_1.2fr] md:items-center">
           <div className="max-w-md">
-            <h2 className="ff-titre text-3xl font-bold uppercase leading-tight tracking-[0.08em] text-[#E6C87A] drop-shadow-[0_0_18px_rgba(212,175,55,0.28)] md:text-5xl">
-              Est-ce que tu<br />te reconnais ?
-            </h2>
-            <p className="mt-5 ff-corps text-xl font-semibold leading-snug text-parchemin-vieilli/85 md:text-2xl">
-              Peut-être portes-tu plus que tu ne devrais porter...
-            </p>
+            <div className="relative">
+              {canEdit && <ArcaneFieldButton field="recognitionTitle" label="Modifier le titre de la section reconnaissance" />}
+              {canEdit && <ArcaneFieldButton field="recognitionTitleFont" label="Police du titre reconnaissance" position="-right-12 top-0" />}
+              <h2 className="ff-titre text-3xl font-bold uppercase leading-tight tracking-[0.08em] text-[#E6C87A] drop-shadow-[0_0_18px_rgba(212,175,55,0.28)] md:text-5xl" style={{ fontFamily: FONTS[content.recognitionTitleFont].css }}>
+                {content.recognitionTitle}
+              </h2>
+            </div>
+            <div className="relative mt-5">
+              {canEdit && <ArcaneFieldButton field="recognitionIntro" label="Modifier le texte d'introduction reconnaissance" />}
+              <p className="ff-corps text-xl font-semibold leading-snug text-parchemin-vieilli/85 md:text-2xl">
+                {content.recognitionIntro}
+              </p>
+            </div>
 
-            <ul className="mt-7 space-y-4">
-              {[
-                'Tu te sens épuisé même lorsque tu te reposes.',
-                'Tu portes des émotions qui semblent bloquées.',
-                "Tu absorbes facilement l'énergie des autres.",
-                'Tu traverses une période difficile ou un changement important.',
-                "Tu ressens une lourdeur intérieure sans pouvoir l'expliquer.",
-                'Tu cherches simplement un moment pour souffler et revenir à toi.',
-              ].map((item) => (
+            <ul className="relative mt-7 space-y-4">
+              {canEdit && <ArcaneFieldButton field="recognitionItems" label="Modifier la liste de reconnaissance" />}
+              {content.recognitionItems.map((item) => (
                 <li key={item} className="flex gap-3 ff-corps text-lg leading-snug text-parchemin/88">
                   <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#C47BFF]/80 text-xs text-white shadow-[0_0_12px_rgba(196,123,255,0.55)]">
                     ✓
@@ -245,22 +246,19 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
               ))}
             </ul>
 
-            <div className="mt-9 flex gap-4 text-[#DDB7FF]">
+            <div className="relative mt-9 flex gap-4 text-[#DDB7FF]">
+              {canEdit && <ArcaneFieldButton field="recognitionFinalText" label="Modifier la phrase finale reconnaissance" />}
               <span aria-hidden className="ff-titre text-4xl leading-none">✥</span>
-              <p className="ff-corps text-xl font-semibold leading-snug">
-                Si tu t&apos;es reconnu dans l&apos;un de ces points,<br className="hidden sm:block" />
-                ce soin a été créé pour toi.
+              <p className="whitespace-pre-line ff-corps text-xl font-semibold leading-snug">
+                {content.recognitionFinalText}
               </p>
             </div>
           </div>
 
           <div className="flex justify-center md:justify-end">
-            <div className="max-w-sm text-center ff-corps text-3xl font-semibold leading-relaxed text-parchemin drop-shadow-[0_0_18px_rgba(196,123,255,0.35)] md:mr-20 md:text-4xl">
-              Ici, tu peux<br />
-              déposer ce qui<br />
-              pèse et retrouver<br />
-              la paix, la clarté<br />
-              et la légèreté.
+            <div className="relative max-w-sm text-center ff-corps text-3xl font-semibold leading-relaxed text-parchemin drop-shadow-[0_0_18px_rgba(196,123,255,0.35)] md:mr-20 md:text-4xl">
+              {canEdit && <ArcaneFieldButton field="recognitionPortalText" label="Modifier le texte du portail" />}
+              <p className="whitespace-pre-line">{content.recognitionPortalText}</p>
               <div className="mx-auto mt-7 h-px w-28 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
             </div>
           </div>
@@ -452,6 +450,11 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
   const seoBodyText = [
     content.subtitle,
     content.intro,
+    content.recognitionTitle,
+    content.recognitionIntro,
+    ...content.recognitionItems,
+    content.recognitionFinalText,
+    content.recognitionPortalText,
     content.sanctuaryText,
     ...offering.features,
     ...content.benefits,
@@ -520,6 +523,22 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         },
         { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
         { field: 'sanctuaryText', label: 'Texte du sanctuaire', value: content.sanctuaryText },
+        { field: 'recognitionTitleFont', label: 'Police du titre de reconnaissance', value: content.recognitionTitleFont },
+        { field: 'recognitionTitle', label: 'Titre de la section reconnaissance', value: content.recognitionTitle },
+        { field: 'recognitionIntro', label: 'Introduction de la section reconnaissance', value: content.recognitionIntro },
+        {
+          field: 'recognitionItems',
+          label: 'Liste de reconnaissance',
+          value: content.recognitionItems,
+          helper: 'Un point par ligne. Ces éléments s’affichent avec les pastilles violettes.',
+        },
+        { field: 'recognitionFinalText', label: 'Phrase finale de reconnaissance', value: content.recognitionFinalText },
+        {
+          field: 'recognitionPortalText',
+          label: 'Texte dans le portail',
+          value: content.recognitionPortalText,
+          helper: 'Texte court recommandé pour rester lisible dans le portail.',
+        },
         { field: 'pillarsTitle', label: 'Titre de la section des bienfaits', value: content.pillarsTitle },
         {
           field: 'features',

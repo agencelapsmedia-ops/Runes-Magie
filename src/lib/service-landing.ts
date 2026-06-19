@@ -9,6 +9,11 @@ export interface ServiceLandingContent {
   intro: string;
   sanctuaryTitle: string;
   sanctuaryText: string;
+  recognitionTitle: string;
+  recognitionIntro: string;
+  recognitionItems: string[];
+  recognitionFinalText: string;
+  recognitionPortalText: string;
   pillarsTitle: string;
   processTitle: string;
   faqTitle: string;
@@ -48,6 +53,7 @@ export interface ServiceLandingContent {
   // Polices par titre (héritent de `titleFont` si non personnalisées).
   heroTitleFont: FontKey;
   sanctuaryTitleFont: FontKey;
+  recognitionTitleFont: FontKey;
   pillarsTitleFont: FontKey;
   processTitleFont: FontKey;
   faqTitleFont: FontKey;
@@ -74,6 +80,7 @@ export type FontField = (typeof FONT_FIELDS)[number];
 export const TITLE_FONT_FIELDS = [
   'heroTitleFont',
   'sanctuaryTitleFont',
+  'recognitionTitleFont',
   'pillarsTitleFont',
   'processTitleFont',
   'faqTitleFont',
@@ -85,6 +92,7 @@ export type TitleFontField = (typeof TITLE_FONT_FIELDS)[number];
 export const TITLE_FONT_LABELS: Record<TitleFontField, string> = {
   heroTitleFont: 'Titre principal (hero)',
   sanctuaryTitleFont: 'Titre du sanctuaire',
+  recognitionTitleFont: 'Titre de la section reconnaissance',
   pillarsTitleFont: 'Titre des bienfaits',
   processTitleFont: 'Titre des étapes',
   faqTitleFont: 'Titre de la FAQ',
@@ -127,6 +135,11 @@ export interface ServiceLandingOverrides {
   intro?: string;
   sanctuaryTitle?: string;
   sanctuaryText?: string;
+  recognitionTitle?: string;
+  recognitionIntro?: string;
+  recognitionItems?: string[];
+  recognitionFinalText?: string;
+  recognitionPortalText?: string;
   pillarsTitle?: string;
   processTitle?: string;
   faqTitle?: string;
@@ -152,6 +165,7 @@ export interface ServiceLandingOverrides {
   bodyFont?: FontKey;
   heroTitleFont?: FontKey;
   sanctuaryTitleFont?: FontKey;
+  recognitionTitleFont?: FontKey;
   pillarsTitleFont?: FontKey;
   processTitleFont?: FontKey;
   faqTitleFont?: FontKey;
@@ -165,6 +179,10 @@ export const LANDING_TEXT_FIELDS = [
   'intro',
   'sanctuaryTitle',
   'sanctuaryText',
+  'recognitionTitle',
+  'recognitionIntro',
+  'recognitionFinalText',
+  'recognitionPortalText',
   'pillarsTitle',
   'processTitle',
   'faqTitle',
@@ -183,7 +201,7 @@ export const LANDING_TEXT_FIELDS = [
 ] as const;
 
 /** Champs listes structurées surchargeables. */
-export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes', 'pillarIcons', 'benefits'] as const;
+export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes', 'pillarIcons', 'benefits', 'recognitionItems'] as const;
 
 export type LandingTextField = (typeof LANDING_TEXT_FIELDS)[number];
 
@@ -227,6 +245,11 @@ export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
     if (benefits.length) out.benefits = benefits;
   }
 
+  if (Array.isArray(source.recognitionItems)) {
+    const recognitionItems = source.recognitionItems.map((b) => String(b ?? '').trim()).filter(Boolean);
+    if (recognitionItems.length) out.recognitionItems = recognitionItems;
+  }
+
   if (Array.isArray(source.faqs)) {
     const faqs = source.faqs
       .filter((f): f is Record<string, unknown> => !!f && typeof f === 'object')
@@ -260,6 +283,11 @@ function applyOverrides(
     intro: overrides.intro ?? base.intro,
     sanctuaryTitle: overrides.sanctuaryTitle ?? base.sanctuaryTitle,
     sanctuaryText: overrides.sanctuaryText ?? base.sanctuaryText,
+    recognitionTitle: overrides.recognitionTitle ?? base.recognitionTitle,
+    recognitionIntro: overrides.recognitionIntro ?? base.recognitionIntro,
+    recognitionItems: overrides.recognitionItems?.length ? overrides.recognitionItems : base.recognitionItems,
+    recognitionFinalText: overrides.recognitionFinalText ?? base.recognitionFinalText,
+    recognitionPortalText: overrides.recognitionPortalText ?? base.recognitionPortalText,
     pillarsTitle: overrides.pillarsTitle ?? base.pillarsTitle,
     processTitle: overrides.processTitle ?? base.processTitle,
     faqTitle: overrides.faqTitle ?? base.faqTitle,
@@ -286,6 +314,7 @@ function applyOverrides(
     // Polices par titre : override individuel, sinon on suit la police globale des titres.
     heroTitleFont: overrides.heroTitleFont ?? overrides.titleFont ?? base.titleFont,
     sanctuaryTitleFont: overrides.sanctuaryTitleFont ?? overrides.titleFont ?? base.titleFont,
+    recognitionTitleFont: overrides.recognitionTitleFont ?? overrides.titleFont ?? base.titleFont,
     pillarsTitleFont: overrides.pillarsTitleFont ?? overrides.titleFont ?? base.titleFont,
     processTitleFont: overrides.processTitleFont ?? overrides.titleFont ?? base.titleFont,
     faqTitleFont: overrides.faqTitleFont ?? overrides.titleFont ?? base.titleFont,
@@ -364,6 +393,18 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       sanctuaryTitle: 'Un seuil où rien en toi ne sera jugé',
       sanctuaryText:
         "Entre les mains de Noctura, les fardeaux ne sont pas jugés: ils sont entendus. Le rituel devient alors un seuil où l'âme se déleste, se réaccorde et retrouve son souffle.",
+      recognitionTitle: 'Est-ce que tu te reconnais ?',
+      recognitionIntro: 'Peut-être portes-tu plus que tu ne devrais porter...',
+      recognitionItems: [
+        'Tu te sens épuisé même lorsque tu te reposes.',
+        'Tu portes des émotions qui semblent bloquées.',
+        "Tu absorbes facilement l'énergie des autres.",
+        'Tu traverses une période difficile ou un changement important.',
+        "Tu ressens une lourdeur intérieure sans pouvoir l'expliquer.",
+        'Tu cherches simplement un moment pour souffler et revenir à toi.',
+      ],
+      recognitionFinalText: "Si tu t'es reconnu dans l'un de ces points, ce soin a été créé pour toi.",
+      recognitionPortalText: 'Ici, tu peux déposer ce qui pèse et retrouver la paix, la clarté et la légèreté.',
       pillarsTitle: 'Les bienfaits que le rituel procure',
       processTitle: 'Le passage du soin',
       faqTitle: 'Questions avant de franchir le seuil',
@@ -408,6 +449,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       bodyFont: DEFAULT_FONTS.bodyFont,
       heroTitleFont: DEFAULT_FONTS.titleFont,
       sanctuaryTitleFont: DEFAULT_FONTS.titleFont,
+      recognitionTitleFont: DEFAULT_FONTS.titleFont,
       pillarsTitleFont: DEFAULT_FONTS.titleFont,
       processTitleFont: DEFAULT_FONTS.titleFont,
       faqTitleFont: DEFAULT_FONTS.titleFont,
@@ -422,6 +464,11 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     intro: offering.description,
     sanctuaryTitle: 'Un espace pour déposer ce qui demande à être vu',
     sanctuaryText: offering.longDescription,
+    recognitionTitle: 'Est-ce que tu te reconnais ?',
+    recognitionIntro: 'Peut-être portes-tu plus que tu ne devrais porter...',
+    recognitionItems: [...offering.features],
+    recognitionFinalText: "Si tu t'es reconnu dans l'un de ces points, ce service a été créé pour toi.",
+    recognitionPortalText: 'Ici, tu peux déposer ce qui pèse et retrouver plus de clarté.',
     pillarsTitle: 'Ce que comprend ce service',
     processTitle: "Le déroulement de l'expérience",
     faqTitle: 'Questions fréquentes',
@@ -458,6 +505,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     bodyFont: DEFAULT_FONTS.bodyFont,
     heroTitleFont: DEFAULT_FONTS.titleFont,
     sanctuaryTitleFont: DEFAULT_FONTS.titleFont,
+    recognitionTitleFont: DEFAULT_FONTS.titleFont,
     pillarsTitleFont: DEFAULT_FONTS.titleFont,
     processTitleFont: DEFAULT_FONTS.titleFont,
     faqTitleFont: DEFAULT_FONTS.titleFont,
