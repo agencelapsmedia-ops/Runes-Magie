@@ -21,7 +21,7 @@ type LandingTextField =
   | 'backgroundUrl'
   | 'characterUrl'
   | 'faqImageUrl';
-type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs' | 'pillarRunes' | 'pillarIcons';
+type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs' | 'pillarRunes' | 'pillarIcons' | 'benefits';
 
 /** Champs qui pointent vers une image → sélecteur visuel + médiathèque. */
 const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
@@ -33,6 +33,7 @@ const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
 
 const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
   'features',
+  'benefits',
   'steps',
   'faqs',
   'pillarRunes',
@@ -68,6 +69,9 @@ function splitPair(line: string): [string, string] {
 function buildPayload(field: EditableField, draft: string): Record<string, unknown> {
   if (field === 'features') {
     return { features: LINES(draft) };
+  }
+  if (field === 'benefits') {
+    return { benefits: LINES(draft) };
   }
   if (field === 'pillarRunes') {
     return { pillarRunes: LINES(draft) };

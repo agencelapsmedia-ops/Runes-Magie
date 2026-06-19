@@ -40,6 +40,10 @@ assert.ok(content.pillarRunes.length > 0);
 // Soin Rituel : icônes-symboles dorées par défaut devant les piliers.
 assert.ok(content.pillarIcons.length > 0);
 assert.match(content.pillarIcons[0], /\/images\/services\/arcane\/icons\//);
+// Section « bienfaits » : par défaut elle reprend la liste des piliers (features).
+assert.deepEqual(content.benefits, soinRituel.features);
+// Le titre de la section du bas reflète les bienfaits.
+assert.match(content.pillarsTitle, /bienfaits/i);
 
 const metadata = buildServiceLandingMetadata(soinRituel);
 assert.equal(metadata.title, 'Le Soin Rituel avec Noctura | La Voie des Arcanes');
@@ -105,6 +109,7 @@ const personnalise: OfferingView = {
     characterUrl: '/images/services/mon-perso.webp',
     pillarRunes: ['ᚠ', 'ᚢ'],
     pillarIcons: ['/img/a.webp', '/img/b.webp'],
+    benefits: ['Bienfait 1', 'Bienfait 2', 'Bienfait 3'],
     steps: [
       { number: '01', title: 'Étape A', text: 'Texte A' },
       { number: '02', title: 'Étape B', text: 'Texte B' },
@@ -126,6 +131,9 @@ assert.equal(persoContent.backgroundUrl, '/images/services/mon-fond.jpg');
 assert.equal(persoContent.characterUrl, '/images/services/mon-perso.webp');
 assert.deepEqual(persoContent.pillarRunes, ['ᚠ', 'ᚢ']);
 assert.deepEqual(persoContent.pillarIcons, ['/img/a.webp', '/img/b.webp']);
+// Les bienfaits sont indépendants des piliers (features) : éditer l'un ne touche pas l'autre.
+assert.deepEqual(persoContent.benefits, ['Bienfait 1', 'Bienfait 2', 'Bienfait 3']);
+assert.notDeepEqual(persoContent.benefits, generique.features);
 // Les champs non surchargés gardent le défaut.
 assert.match(persoContent.processTitle, /déroulement/);
 

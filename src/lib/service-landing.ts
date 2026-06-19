@@ -27,6 +27,8 @@ export interface ServiceLandingContent {
   pillarRunes: string[];
   /** Icônes images (URL) affichées devant chaque pilier, alignées sur `features`. Prioritaires sur `pillarRunes`. */
   pillarIcons: string[];
+  /** Liste de la section « bienfaits » (cartes numérotées), indépendante de `features`. */
+  benefits: string[];
   steps: Array<{ number: string; title: string; text: string }>;
   faqs: Array<{ question: string; answer: string }>;
 }
@@ -67,6 +69,7 @@ export interface ServiceLandingOverrides {
   faqImageUrl?: string;
   pillarRunes?: string[];
   pillarIcons?: string[];
+  benefits?: string[];
   steps?: Array<{ number: string; title: string; text: string }>;
   faqs?: Array<{ question: string; answer: string }>;
 }
@@ -90,7 +93,7 @@ export const LANDING_TEXT_FIELDS = [
 ] as const;
 
 /** Champs listes structurées surchargeables. */
-export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes', 'pillarIcons'] as const;
+export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes', 'pillarIcons', 'benefits'] as const;
 
 export type LandingTextField = (typeof LANDING_TEXT_FIELDS)[number];
 
@@ -127,6 +130,11 @@ export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
     // mais on n'enregistre l'override que si au moins une icône est définie.
     const icons = source.pillarIcons.map((i) => String(i ?? '').trim());
     if (icons.some(Boolean)) out.pillarIcons = icons;
+  }
+
+  if (Array.isArray(source.benefits)) {
+    const benefits = source.benefits.map((b) => String(b ?? '').trim()).filter(Boolean);
+    if (benefits.length) out.benefits = benefits;
   }
 
   if (Array.isArray(source.faqs)) {
@@ -166,6 +174,7 @@ function applyOverrides(
     faqImageUrl: overrides.faqImageUrl ?? base.faqImageUrl,
     pillarRunes: overrides.pillarRunes?.length ? overrides.pillarRunes : base.pillarRunes,
     pillarIcons: overrides.pillarIcons?.length ? overrides.pillarIcons : base.pillarIcons,
+    benefits: overrides.benefits?.length ? overrides.benefits : base.benefits,
     steps: overrides.steps?.length ? overrides.steps : base.steps,
     faqs: overrides.faqs?.length ? overrides.faqs : base.faqs,
   };
@@ -242,7 +251,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       sanctuaryTitle: 'Un seuil où rien en toi ne sera jugé',
       sanctuaryText:
         "Entre les mains de Noctura, les fardeaux ne sont pas jugés: ils sont entendus. Le rituel devient alors un seuil où l'âme se déleste, se réaccorde et retrouve son souffle.",
-      pillarsTitle: 'Ce que le rituel vient toucher',
+      pillarsTitle: 'Les bienfaits que le rituel procure',
       processTitle: 'Le passage du soin',
       faqTitle: 'Questions avant de franchir le seuil',
       finalTitle: "Ce que tu portes n'a pas à rester en toi",
@@ -258,6 +267,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       faqImageUrl: '/images/services/arcane/soin-rituel-faq.jpg',
       pillarRunes: DEFAULT_PILLAR_RUNES,
       pillarIcons: SOIN_RITUEL_PILLAR_ICONS,
+      benefits: [...offering.features],
       steps: SOIN_RITUEL_STEPS,
       faqs: [
         {
@@ -301,6 +311,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     faqImageUrl: null,
     pillarRunes: DEFAULT_PILLAR_RUNES,
     pillarIcons: [],
+    benefits: [...offering.features],
     steps: buildGenericSteps(offering),
     faqs: [
       {

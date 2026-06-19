@@ -96,7 +96,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
         {/* Panneau des piliers (verre) */}
         <div className="relative z-10 ml-auto w-full max-w-md rounded-2xl border border-[#D4AF37]/30 bg-[#0A1028]/55 p-6 shadow-[0_0_40px_rgba(106,0,255,0.3)] backdrop-blur-md md:p-7">
-          {canEdit && <ArcaneFieldButton field="features" label="Modifier les piliers" />}
+          {canEdit && <ArcaneFieldButton field="features" label="Modifier la liste du panneau (hero)" />}
           {canEdit && <ArcaneFieldButton field="pillarIcons" label="Modifier les icônes des piliers" position="-right-3 top-8" />}
           <ul className="flex flex-col">
             {offering.features.map((feature, index) => {
@@ -196,23 +196,23 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <section className="relative bg-[radial-gradient(circle_at_50%_0%,rgba(106,0,255,0.28),transparent_34%),#080812] px-5 py-20 md:py-28">
         <div className="relative mx-auto max-w-6xl">
-          {canEdit && <ArcaneFieldButton field="pillarsTitle" label="Modifier le titre de la section des piliers" />}
+          {canEdit && <ArcaneFieldButton field="pillarsTitle" label="Modifier le titre de la section des bienfaits" />}
           <p className="text-center font-cinzel text-xs uppercase tracking-[0.34em] text-[#00D9D9]">Activation</p>
           <h2 className="mx-auto mt-4 max-w-4xl text-center font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
             {content.pillarsTitle}
           </h2>
           <div className="relative mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {canEdit && <ArcaneFieldButton field="features" label="Modifier les piliers du soin" />}
-            {offering.features.map((feature, index) => (
+            {canEdit && <ArcaneFieldButton field="benefits" label="Modifier les bienfaits du rituel" />}
+            {content.benefits.map((benefit, index) => (
               <div
-                key={`${feature}-${index}`}
+                key={`${benefit}-${index}`}
                 className="group relative overflow-hidden rounded-sm border border-[#D4AF37]/25 bg-[#101431]/80 p-6 shadow-[0_0_24px_rgba(45,27,105,0.32)]"
               >
                 <span className="font-cinzel-decorative text-5xl text-[#D4AF37]/28">
                   {(index + 1).toString().padStart(2, '0')}
                 </span>
                 <p className="mt-5 font-cinzel text-sm uppercase tracking-[0.16em] text-[#E6C87A]">
-                  {feature}
+                  {benefit}
                 </p>
                 <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#FF00B8] to-transparent opacity-60" />
               </div>
@@ -347,12 +347,18 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         },
         { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
         { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
-        { field: 'pillarsTitle', label: 'Titre de la section des piliers', value: content.pillarsTitle },
+        { field: 'pillarsTitle', label: 'Titre de la section des bienfaits', value: content.pillarsTitle },
         {
           field: 'features',
-          label: 'Piliers du soin',
+          label: 'Liste du panneau (hero)',
           value: offering.features,
-          helper: 'Un pilier par ligne.',
+          helper: 'Un élément par ligne. Aligné avec les icônes du panneau. Indépendant des bienfaits.',
+        },
+        {
+          field: 'benefits',
+          label: 'Bienfaits du rituel (cartes numérotées)',
+          value: content.benefits,
+          helper: 'Un bienfait par ligne. Section indépendante du panneau du hero.',
         },
         { field: 'processTitle', label: 'Titre de la section des étapes', value: content.processTitle },
         {
