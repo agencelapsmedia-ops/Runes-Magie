@@ -87,21 +87,21 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       {/* Personnage détouré */}
       {content.characterUrl && (
-        <div className="pointer-events-none absolute bottom-0 right-0 h-[58%] w-[88%] opacity-45 sm:h-[72%] sm:w-[62%] sm:opacity-100 md:h-[90%] md:w-[52%]">
+        <div className="pointer-events-none absolute left-1/2 top-20 h-[46vh] w-[92%] -translate-x-1/2 opacity-70 sm:top-24 sm:h-[54vh] sm:w-[72%] sm:opacity-90 md:bottom-0 md:top-auto md:h-[92%] md:w-[44%] md:opacity-100 lg:w-[46%]">
           <Image
             src={content.characterUrl}
             alt={content.imageAlt}
             fill
             priority
             quality={85}
-            sizes="(max-width: 768px) 88vw, 52vw"
-            className="object-contain object-bottom drop-shadow-[0_0_60px_rgba(106,0,255,0.4)]"
+            sizes="(max-width: 640px) 92vw, (max-width: 768px) 72vw, 46vw"
+            className="object-contain object-top drop-shadow-[0_0_60px_rgba(106,0,255,0.4)] md:object-bottom"
           />
         </div>
       )}
       {canEdit && <ArcaneFieldButton field="characterUrl" label="Modifier l'image du personnage (PNG transparent)" position="right-3 top-3" />}
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-center gap-10 px-5 py-16 md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:px-8 lg:px-10">
+      <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-start gap-10 px-5 pb-16 pt-[54vh] sm:pt-[58vh] md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:justify-center md:px-8 md:py-16 lg:px-10">
         {heroText(
           'ff-titre text-[clamp(3rem,9vw,7.5rem)] font-black uppercase leading-[0.85] tracking-[0.04em] bg-gradient-to-br from-[#E7D6FF] via-[#A56BFF] to-[#6A00FF] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(106,0,255,0.45)]',
         )}
