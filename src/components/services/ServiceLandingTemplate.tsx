@@ -79,8 +79,8 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         />
       )}
       {/* Voile sombre pour la lisibilité (plus dense à gauche et en bas) */}
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,17,0.92)_0%,rgba(5,7,17,0.6)_38%,rgba(5,7,17,0.25)_70%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,7,17,0.85)_0%,transparent_45%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,7,17,0.12)_0%,rgba(5,7,17,0.18)_38%,rgba(5,7,17,0.88)_55%,rgba(5,7,17,0.96)_100%)] md:bg-[linear-gradient(90deg,rgba(5,7,17,0.92)_0%,rgba(5,7,17,0.6)_38%,rgba(5,7,17,0.25)_70%)]" />
+      <div className="absolute inset-0 hidden bg-[linear-gradient(0deg,rgba(5,7,17,0.85)_0%,transparent_45%)] md:block" />
 
       {canEdit && <ArcaneFieldButton field="backgroundUrl" label="Modifier l'image de fond du hero" position="left-3 top-3" />}
       {canEdit && <ArcaneFieldButton field="imageAlt" label="Modifier le texte alternatif du fond (SEO)" position="left-3 top-14" />}
@@ -99,6 +99,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           />
         </div>
       )}
+      <div className="pointer-events-none absolute left-1/2 top-[48vh] h-28 w-[88%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(5,7,17,0.82)_0%,rgba(5,7,17,0.42)_45%,transparent_72%)] blur-sm md:hidden" />
       {canEdit && <ArcaneFieldButton field="characterUrl" label="Modifier l'image du personnage (PNG transparent)" position="right-3 top-3" />}
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-start gap-10 px-5 pb-16 pt-[54vh] sm:pt-[58vh] md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:justify-center md:px-8 md:py-16 lg:px-10">
