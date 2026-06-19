@@ -292,8 +292,6 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
               className="object-cover"
             />
           )}
-          {/* Fondu vers le fond : vers le bas en mobile (empilé), vers la droite en desktop */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#050711] md:bg-gradient-to-l" />
         </div>
 
         {/* Colonne droite : titre + questions à icônes */}
