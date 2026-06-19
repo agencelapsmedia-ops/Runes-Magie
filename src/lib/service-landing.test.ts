@@ -3,6 +3,8 @@ import {
   buildServiceJsonLd,
   buildServiceLandingContent,
   buildServiceLandingMetadata,
+  buildFaqJsonLd,
+  buildBreadcrumbJsonLd,
   parseLandingOverrides,
 } from './service-landing';
 import type { OfferingView } from './offerings';
@@ -155,5 +157,48 @@ assert.deepEqual(parsedIcons.pillarIcons, ['/x.webp', '', '/y.webp']);
 // …mais on ignore une liste entièrement vide.
 const parsedEmptyIcons = parseLandingOverrides({ pillarIcons: ['', '  '] });
 assert.equal(parsedEmptyIcons.pillarIcons, undefined);
+
+// --- SEO : champs vides par défaut + métadonnées auto ---
+assert.equal(content.metaTitle, '');
+assert.equal(content.metaDescription, '');
+assert.equal(content.focusKeyword, '');
+const autoMeta = buildServiceLandingMetadata(soinRituel);
+assert.equal(autoMeta.title, 'Le Soin Rituel avec Noctura | La Voie des Arcanes');
+assert.ok(typeof autoMeta.description === 'string' && autoMeta.description.length > 0);
+
+// --- SEO : les overrides personnalisés priment sur l'auto ---
+const seoOffering: OfferingView = {
+  ...soinRituel,
+  landing: {
+    metaTitle: 'Soin Rituel Saint-Eustache | Libération énergétique',
+    metaDescription: 'Une libération intérieure guidée par Noctura : déparasitage et apaisement.',
+    focusKeyword: 'soin rituel',
+    ogImage: '/images/og/soin.jpg',
+  },
+};
+const seoContent = buildServiceLandingContent(seoOffering);
+assert.equal(seoContent.metaTitle, 'Soin Rituel Saint-Eustache | Libération énergétique');
+assert.equal(seoContent.focusKeyword, 'soin rituel');
+const seoMeta = buildServiceLandingMetadata(seoOffering);
+assert.equal(seoMeta.title, 'Soin Rituel Saint-Eustache | Libération énergétique');
+assert.equal(
+  seoMeta.description,
+  'Une libération intérieure guidée par Noctura : déparasitage et apaisement.',
+);
+assert.deepEqual(seoMeta.keywords, ['soin rituel']);
+
+// --- JSON-LD FAQPage : une entrée par FAQ ---
+const faqLd = buildFaqJsonLd(soinRituel);
+assert.ok(faqLd);
+assert.equal(faqLd!['@type'], 'FAQPage');
+assert.equal(faqLd!.mainEntity.length, content.faqs.length);
+assert.equal(faqLd!.mainEntity[0]['@type'], 'Question');
+
+// --- JSON-LD BreadcrumbList : 3 niveaux, section Séances pour un soin ---
+const crumb = buildBreadcrumbJsonLd(soinRituel);
+assert.equal(crumb['@type'], 'BreadcrumbList');
+assert.equal(crumb.itemListElement.length, 3);
+assert.equal(crumb.itemListElement[1].name, 'Séances');
+assert.equal(crumb.itemListElement[2].name, 'Le Soin Rituel');
 
 console.log('service-landing tests passed');

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import type { OfferingView } from '@/lib/offerings';
-
-const SITE_URL = 'https://www.runesetmagie.ca';
+import { SITE_URL, BOUTIQUE_NAME } from '@/lib/constants';
 
 export interface ServiceLandingContent {
   eyebrow: string;
@@ -31,6 +30,15 @@ export interface ServiceLandingContent {
   benefits: string[];
   steps: Array<{ number: string; title: string; text: string }>;
   faqs: Array<{ question: string; answer: string }>;
+  // --- SEO (pilotable depuis le panneau « SEO ») ---
+  /** Meta-titre personnalisé. Vide → titre auto « {nom} avec {praticien} | … ». */
+  metaTitle: string;
+  /** Meta-description personnalisée. Vide → extrait de l'intro. */
+  metaDescription: string;
+  /** Mot-clé cible pour l'analyse SEO (non rendu sur la page). */
+  focusKeyword: string;
+  /** Image de partage réseaux sociaux (Open Graph). Vide → image héro. */
+  ogImage: string;
 }
 
 /** Runes vikings dorées utilisées par défaut devant les piliers (cycle). */
@@ -74,6 +82,10 @@ export interface ServiceLandingOverrides {
   benefits?: string[];
   steps?: Array<{ number: string; title: string; text: string }>;
   faqs?: Array<{ question: string; answer: string }>;
+  metaTitle?: string;
+  metaDescription?: string;
+  focusKeyword?: string;
+  ogImage?: string;
 }
 
 /** Champs texte simples surchargeables (un par bouton ✦). */
@@ -94,6 +106,10 @@ export const LANDING_TEXT_FIELDS = [
   'backgroundUrl',
   'characterUrl',
   'faqImageUrl',
+  'metaTitle',
+  'metaDescription',
+  'focusKeyword',
+  'ogImage',
 ] as const;
 
 /** Champs listes structurées surchargeables. */
@@ -183,6 +199,10 @@ function applyOverrides(
     benefits: overrides.benefits?.length ? overrides.benefits : base.benefits,
     steps: overrides.steps?.length ? overrides.steps : base.steps,
     faqs: overrides.faqs?.length ? overrides.faqs : base.faqs,
+    metaTitle: overrides.metaTitle ?? base.metaTitle,
+    metaDescription: overrides.metaDescription ?? base.metaDescription,
+    focusKeyword: overrides.focusKeyword ?? base.focusKeyword,
+    ogImage: overrides.ogImage ?? base.ogImage,
   };
 }
 
@@ -292,6 +312,10 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
             "Non. Noctura adapte le rituel à ton énergie, à ce que tu portes et à ce que le moment demande.",
         },
       ],
+      metaTitle: '',
+      metaDescription: '',
+      focusKeyword: '',
+      ogImage: '',
     };
   }
 
@@ -329,30 +353,44 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
         answer: `Prévois environ ${offering.durationLabel}.`,
       },
     ],
+    metaTitle: '',
+    metaDescription: '',
+    focusKeyword: '',
+    ogImage: '',
   };
+}
+
+/** Rend une URL absolue (préfixe SITE_URL si chemin relatif). */
+function toAbsoluteUrl(path: string | null | undefined): string | undefined {
+  if (!path) return undefined;
+  return path.startsWith('http') ? path : `${SITE_URL}${path}`;
 }
 
 export function buildServiceLandingMetadata(offering: OfferingView): Metadata {
   const content = buildServiceLandingContent(offering);
-  const title = `${offering.name} avec ${offering.practitionerName} | La Voie des Arcanes`;
-  const description = content.intro.length > 155 ? `${content.intro.slice(0, 152)}...` : content.intro;
+  // Meta-titre : valeur personnalisée (panneau SEO) sinon titre auto.
+  const autoTitle = `${offering.name} avec ${offering.practitionerName} | La Voie des Arcanes`;
+  const title = content.metaTitle.trim() || autoTitle;
+  // Meta-description : valeur personnalisée sinon extrait de l'intro.
+  const autoDescription =
+    content.intro.length > 155 ? `${content.intro.slice(0, 152)}...` : content.intro;
+  const description = content.metaDescription.trim() || autoDescription;
   const url = `${SITE_URL}${offering.detailHref}`;
-  const imageUrl = content.heroImage
-    ? content.heroImage.startsWith('http')
-      ? content.heroImage
-      : `${SITE_URL}${content.heroImage}`
-    : undefined;
+  // Image sociale : ogImage personnalisée sinon image héro.
+  const imageUrl = toAbsoluteUrl(content.ogImage.trim() || content.heroImage);
   const images = imageUrl ? [{ url: imageUrl, alt: content.imageAlt }] : undefined;
+  const keywords = content.focusKeyword.trim() ? [content.focusKeyword.trim()] : undefined;
 
   return {
     title,
     description,
+    keywords,
     alternates: { canonical: url },
     openGraph: {
       title,
       description,
       url,
-      siteName: 'Runes & Magie',
+      siteName: BOUTIQUE_NAME,
       locale: 'fr_CA',
       type: 'website',
       images,
@@ -363,6 +401,43 @@ export function buildServiceLandingMetadata(offering: OfferingView): Metadata {
       description,
       images: imageUrl ? [imageUrl] : undefined,
     },
+  };
+}
+
+/** Données structurées FAQPage (rich snippets Google) à partir des FAQ de la page. */
+export function buildFaqJsonLd(offering: OfferingView) {
+  const content = buildServiceLandingContent(offering);
+  const faqs = content.faqs.filter((f) => f.question && f.answer);
+  if (!faqs.length) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  };
+}
+
+/** Fil d'Ariane structuré (BreadcrumbList) : Accueil › Séances/École › Service. */
+export function buildBreadcrumbJsonLd(offering: OfferingView) {
+  const isFormation = offering.detailHref.startsWith('/ecole');
+  const sectionName = isFormation ? 'École de Sorcellerie' : 'Séances';
+  const sectionPath = isFormation ? '/ecole' : '/seances';
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Accueil', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: sectionName, item: `${SITE_URL}${sectionPath}` },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: offering.name,
+        item: `${SITE_URL}${offering.detailHref}`,
+      },
+    ],
   };
 }
 

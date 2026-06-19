@@ -9,6 +9,12 @@
 /** Nom commercial affiché. */
 export const BOUTIQUE_NAME = 'Runes & Magie';
 
+/** URL canonique du site (sans slash final). Source unique pour SEO/métadonnées. */
+export const SITE_URL = 'https://www.runesetmagie.ca';
+
+/** Logo public utilisé pour les données structurées (Organization) et l'Open Graph. */
+export const SITE_LOGO_URL = `${SITE_URL}/icon.png`;
+
 /** Adresse postale complète (une seule ligne — géolocalisable par Google). */
 export const BOUTIQUE_ADDRESS = '149 Rue Saint-Eustache, Saint-Eustache, QC J7R 2L5';
 

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadImage, listImages } from '@/lib/supabase';
+import { analyzeSeo, scoreLabel, type SeoCheckStatus } from '@/lib/seo-analysis';
 
 type ColumnField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
 type LandingTextField =
@@ -54,9 +55,33 @@ interface EditTarget {
   items?: string[];
 }
 
+/** Données fournies au panneau SEO (calculées côté serveur dans le template). */
+export interface SeoPanelData {
+  slug: string;
+  detailHref: string;
+  adminEditHref: string;
+  siteUrl: string;
+  // Valeurs personnalisées actuelles (overrides).
+  metaTitle: string;
+  metaDescription: string;
+  focusKeyword: string;
+  ogImage: string;
+  // Valeurs auto utilisées si les champs sont vides.
+  autoTitle: string;
+  autoDescription: string;
+  heroImage: string;
+  // Données d'analyse SEO.
+  h1: string;
+  intro: string;
+  bodyText: string;
+  imageAlts: string[];
+  faqCount: number;
+}
+
 interface ArcaneEditorProviderProps {
   offeringId: string;
   targets: EditTarget[];
+  seo?: SeoPanelData;
   children: React.ReactNode;
 }
 
@@ -540,17 +565,282 @@ function ArcaneEditButton({
   );
 }
 
+const STATUS_DOT: Record<SeoCheckStatus, string> = {
+  good: 'bg-[#2ecc71]',
+  warn: 'bg-[#E6C87A]',
+  bad: 'bg-[#FF4FD8]',
+};
+const TONE_TEXT: Record<SeoCheckStatus, string> = {
+  good: 'text-[#2ecc71]',
+  warn: 'text-[#E6C87A]',
+  bad: 'text-[#FF4FD8]',
+};
+
+/** Compteur de caractères coloré (vert dans la plage idéale). */
+function CharCount({ len, min, max }: { len: number; min: number; max: number }) {
+  const tone: SeoCheckStatus = len >= min && len <= max ? 'good' : len === 0 ? 'bad' : 'warn';
+  return (
+    <span className={`font-philosopher text-xs ${TONE_TEXT[tone]}`}>
+      {len} caractères · idéal {min}–{max}
+    </span>
+  );
+}
+
+/**
+ * Panneau SEO « façon Rank Math » : mot-clé cible, meta-titre/description avec
+ * compteurs, image de partage, aperçu Google en direct et score + check-list.
+ * Réservé à l'admin (rendu seulement par le provider quand `canEdit`).
+ */
+function SeoPanel({
+  offeringId,
+  seo,
+  onClose,
+}: {
+  offeringId: string;
+  seo: SeoPanelData;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [metaTitle, setMetaTitle] = useState(seo.metaTitle);
+  const [metaDescription, setMetaDescription] = useState(seo.metaDescription);
+  const [focusKeyword, setFocusKeyword] = useState(seo.focusKeyword);
+  const [ogImage, setOgImage] = useState(seo.ogImage);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  // Valeurs effectives (ce qui sera réellement utilisé si le champ est vide).
+  const effectiveTitle = metaTitle.trim() || seo.autoTitle;
+  const effectiveDescription = metaDescription.trim() || seo.autoDescription;
+  const effectiveOg = ogImage.trim() || seo.heroImage;
+
+  const analysis = useMemo(
+    () =>
+      analyzeSeo({
+        focusKeyword,
+        metaTitle: effectiveTitle,
+        metaDescription: effectiveDescription,
+        slug: seo.slug,
+        h1: seo.h1,
+        intro: seo.intro,
+        bodyText: seo.bodyText,
+        imageAlts: seo.imageAlts,
+        faqCount: seo.faqCount,
+      }),
+    [focusKeyword, effectiveTitle, effectiveDescription, seo],
+  );
+
+  const { label: scoreText, tone: scoreTone } = scoreLabel(analysis.score);
+  const previewUrl = `${seo.siteUrl}${seo.detailHref}`.replace(/^https?:\/\//, '');
+
+  async function save() {
+    setSaving(true);
+    setError('');
+    const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metaTitle, metaDescription, focusKeyword, ogImage }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error ?? "Le SEO n'a pas pu être scellé.");
+      return;
+    }
+    onClose();
+    router.refresh();
+  }
+
+  const fieldClass =
+    'mt-2 w-full rounded-sm border border-[#D4AF37]/35 bg-black/35 p-3 font-cormorant text-base text-parchemin outline-none transition focus:border-[#FF4FD8]';
+
+  return (
+    <div className="fixed inset-0 z-[90]">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+        aria-label="Refermer le panneau SEO"
+        onClick={onClose}
+      />
+      <div className="absolute left-1/2 top-1/2 max-h-[92vh] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-[#D4AF37]/50 bg-[linear-gradient(160deg,#0A1028_0%,#2D1B69_55%,#080812_100%)] p-6 text-[#F5F0E8] shadow-[0_0_70px_rgba(106,0,255,0.45)] md:p-8">
+        <div className="mb-6 flex items-start justify-between gap-4 border-b border-[#D4AF37]/25 pb-5">
+          <div>
+            <p className="font-cinzel text-xs uppercase tracking-[0.28em] text-[#00D9D9]">
+              Référencement (SEO)
+            </p>
+            <h2 className="mt-2 font-cinzel-decorative text-2xl text-gradient-gold">
+              Optimiser cette page
+            </h2>
+          </div>
+          {/* Score global */}
+          <div className="shrink-0 text-center">
+            <div
+              className={`flex h-16 w-16 items-center justify-center rounded-full border-2 font-cinzel text-xl font-bold ${
+                scoreTone === 'good'
+                  ? 'border-[#2ecc71] text-[#2ecc71]'
+                  : scoreTone === 'warn'
+                    ? 'border-[#E6C87A] text-[#E6C87A]'
+                    : 'border-[#FF4FD8] text-[#FF4FD8]'
+              }`}
+            >
+              {analysis.score}
+            </div>
+            <p className={`mt-1 font-cinzel text-[0.6rem] uppercase tracking-[0.14em] ${TONE_TEXT[scoreTone]}`}>
+              {scoreText}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Colonne gauche : champs */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <label className="font-cinzel text-xs uppercase tracking-[0.18em] text-[#E6C87A]">
+                Mot-clé cible
+              </label>
+              <input
+                type="text"
+                value={focusKeyword}
+                onChange={(e) => setFocusKeyword(e.target.value)}
+                placeholder="ex. soin énergétique Saint-Eustache"
+                className={fieldClass}
+              />
+            </div>
+
+            <div>
+              <label className="font-cinzel text-xs uppercase tracking-[0.18em] text-[#E6C87A]">
+                Titre SEO
+              </label>
+              <input
+                type="text"
+                value={metaTitle}
+                onChange={(e) => setMetaTitle(e.target.value)}
+                placeholder={seo.autoTitle}
+                className={fieldClass}
+              />
+              <div className="mt-1">
+                <CharCount len={effectiveTitle.length} min={50} max={60} />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-cinzel text-xs uppercase tracking-[0.18em] text-[#E6C87A]">
+                Méta-description
+              </label>
+              <textarea
+                value={metaDescription}
+                onChange={(e) => setMetaDescription(e.target.value)}
+                placeholder={seo.autoDescription}
+                rows={4}
+                className={`${fieldClass} resize-y leading-relaxed`}
+              />
+              <div className="mt-1">
+                <CharCount len={effectiveDescription.length} min={120} max={160} />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-cinzel text-xs uppercase tracking-[0.18em] text-[#E6C87A]">
+                Image de partage (réseaux sociaux)
+              </label>
+              <div className="mt-2">
+                <ImageFieldEditor
+                  draft={ogImage}
+                  setDraft={setOgImage}
+                  helper="Idéal 1200×630 px. Vide → image principale de la page."
+                />
+              </div>
+            </div>
+
+            <div className="rounded-sm border border-[#D4AF37]/20 bg-black/20 p-3">
+              <p className="font-philosopher text-xs text-parchemin-vieilli/70">
+                URL : <span className="text-parchemin">/{seo.slug}</span>
+              </p>
+              <a
+                href={seo.adminEditHref}
+                className="mt-1 inline-block font-cinzel text-[0.6rem] uppercase tracking-[0.14em] text-[#00D9D9] underline-offset-2 hover:underline"
+              >
+                Changer l&apos;URL dans la fiche admin →
+              </a>
+            </div>
+          </div>
+
+          {/* Colonne droite : aperçu Google + check-list */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="mb-2 font-cinzel text-xs uppercase tracking-[0.18em] text-[#E6C87A]">
+                Aperçu Google
+              </p>
+              <div className="rounded-sm border border-[#D4AF37]/20 bg-white p-4">
+                <p className="truncate font-philosopher text-xs text-[#4d5156]">{previewUrl}</p>
+                <p className="mt-1 truncate font-philosopher text-lg text-[#1a0dab]">
+                  {effectiveTitle}
+                </p>
+                <p className="mt-1 line-clamp-2 font-philosopher text-sm text-[#4d5156]">
+                  {effectiveDescription}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 font-cinzel text-xs uppercase tracking-[0.18em] text-[#E6C87A]">
+                Analyse ({analysis.checks.filter((c) => c.status === 'good').length}/
+                {analysis.checks.length})
+              </p>
+              <ul className="flex flex-col gap-2">
+                {analysis.checks.map((c) => (
+                  <li key={c.id} className="flex items-start gap-2">
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[c.status]}`} />
+                    <span className="font-philosopher text-sm">
+                      <span className="text-parchemin">{c.label}</span>
+                      <span className="block text-xs text-parchemin-vieilli/60">{c.hint}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-5 rounded-sm border border-[#FF4FD8]/40 bg-[#FF00B8]/10 px-3 py-2 font-philosopher text-sm text-[#FF4FD8]">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="flex-1 rounded-sm border border-[#E6C87A]/70 bg-[linear-gradient(90deg,#D4AF37,#E6C87A,#B8860B)] px-5 py-3 font-cinzel text-xs font-bold uppercase tracking-[0.18em] text-[#0A1028] shadow-[0_0_24px_rgba(212,175,55,0.35)] transition hover:brightness-110 disabled:opacity-60"
+          >
+            {saving ? 'Scellement...' : 'Sceller le SEO'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-sm border border-[#9A6CFF]/55 px-5 py-3 font-cinzel text-xs uppercase tracking-[0.18em] text-parchemin transition hover:border-[#00D9D9] hover:text-[#00D9D9]"
+          >
+            Refermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Enveloppe la page de service en mode admin : fournit le contexte d'édition aux
  * boutons ✦ et rend le pupitre coulissant. Les boutons appellent `openEditor(field)`
  * via le contexte React (plus de pont `window`).
  */
-export default function ArcaneEditorProvider({ offeringId, targets, children }: ArcaneEditorProviderProps) {
+export default function ArcaneEditorProvider({ offeringId, targets, seo, children }: ArcaneEditorProviderProps) {
   const router = useRouter();
   const [activeField, setActiveField] = useState<EditableField | null>(null);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [seoOpen, setSeoOpen] = useState(false);
 
   const activeTarget = useMemo(
     () => targets.find((target) => target.field === activeField) ?? null,
@@ -597,9 +887,24 @@ export default function ArcaneEditorProvider({ offeringId, targets, children }: 
     <ArcaneEditorContext.Provider value={openEditor}>
       {children}
 
-      <div className="fixed bottom-5 left-5 z-40 hidden rounded-sm border border-[#D4AF37]/40 bg-[#0A1028]/90 px-4 py-3 font-cinzel text-[0.68rem] uppercase tracking-[0.18em] text-[#E6C87A] shadow-[0_0_24px_rgba(106,0,255,0.35)] backdrop-blur md:block">
-        Mode édition des arcanes actif
+      <div className="fixed bottom-5 left-5 z-40 hidden flex-col gap-2 md:flex">
+        <div className="rounded-sm border border-[#D4AF37]/40 bg-[#0A1028]/90 px-4 py-3 font-cinzel text-[0.68rem] uppercase tracking-[0.18em] text-[#E6C87A] shadow-[0_0_24px_rgba(106,0,255,0.35)] backdrop-blur">
+          Mode édition des arcanes actif
+        </div>
+        {seo && (
+          <button
+            type="button"
+            onClick={() => setSeoOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-sm border border-[#00D9D9]/60 bg-[#0A1028]/90 px-4 py-3 font-cinzel text-[0.68rem] uppercase tracking-[0.18em] text-[#00D9D9] shadow-[0_0_24px_rgba(0,217,217,0.25)] backdrop-blur transition hover:border-[#00D9D9] hover:bg-[#00D9D9]/10"
+          >
+            🔍 Optimiser le SEO
+          </button>
+        )}
       </div>
+
+      {seo && seoOpen && (
+        <SeoPanel offeringId={offeringId} seo={seo} onClose={() => setSeoOpen(false)} />
+      )}
 
       {activeTarget && (
         <div className="fixed inset-0 z-[80]">
