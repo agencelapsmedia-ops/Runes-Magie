@@ -55,7 +55,9 @@ export const SOIN_RITUEL_PILLAR_ICONS = [
 export interface ServiceLandingOverrides {
   eyebrow?: string;
   subtitle?: string;
+  intro?: string;
   sanctuaryTitle?: string;
+  sanctuaryText?: string;
   pillarsTitle?: string;
   processTitle?: string;
   faqTitle?: string;
@@ -78,7 +80,9 @@ export interface ServiceLandingOverrides {
 export const LANDING_TEXT_FIELDS = [
   'eyebrow',
   'subtitle',
+  'intro',
   'sanctuaryTitle',
+  'sanctuaryText',
   'pillarsTitle',
   'processTitle',
   'faqTitle',
@@ -160,7 +164,9 @@ function applyOverrides(
     ...base,
     eyebrow: overrides.eyebrow ?? base.eyebrow,
     subtitle: overrides.subtitle ?? base.subtitle,
+    intro: overrides.intro ?? base.intro,
     sanctuaryTitle: overrides.sanctuaryTitle ?? base.sanctuaryTitle,
+    sanctuaryText: overrides.sanctuaryText ?? base.sanctuaryText,
     pillarsTitle: overrides.pillarsTitle ?? base.pillarsTitle,
     processTitle: overrides.processTitle ?? base.processTitle,
     faqTitle: overrides.faqTitle ?? base.faqTitle,

@@ -9,7 +9,9 @@ type ColumnField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'fe
 type LandingTextField =
   | 'eyebrow'
   | 'subtitle'
+  | 'intro'
   | 'sanctuaryTitle'
+  | 'sanctuaryText'
   | 'pillarsTitle'
   | 'processTitle'
   | 'faqTitle'
@@ -37,7 +39,9 @@ const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
   'steps',
   'faqs',
   'pillarRunes',
+  'intro',
   'longDescription',
+  'sanctuaryText',
   'finalText',
 ]);
 

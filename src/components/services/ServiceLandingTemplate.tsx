@@ -35,7 +35,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         </p>
       </div>
       <div className="relative mt-6 max-w-xl">
-        {canEdit && <ArcaneFieldButton field="description" label="Modifier le texte d'ouverture" />}
+        {canEdit && <ArcaneFieldButton field="intro" label="Modifier le texte d'ouverture" />}
         <p className="font-cormorant text-xl italic leading-relaxed text-parchemin-vieilli/90 md:text-2xl">
           {content.intro}
         </p>
@@ -186,7 +186,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
             </h2>
           </div>
           <div className="relative rounded-sm border border-[#D4AF37]/35 bg-[#0A1028]/72 p-7 shadow-[0_0_40px_rgba(106,0,255,0.22)] md:p-10">
-            {canEdit && <ArcaneFieldButton field="longDescription" label="Modifier le texte du sanctuaire" />}
+            {canEdit && <ArcaneFieldButton field="sanctuaryText" label="Modifier le texte du sanctuaire" />}
             <p className="font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/90">
               {content.sanctuaryText}
             </p>
@@ -317,7 +317,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         { field: 'name', label: 'Titre principal du service', value: offering.name },
         { field: 'eyebrow', label: 'Petit texte au-dessus du titre', value: content.eyebrow },
         { field: 'subtitle', label: 'Sous-titre (sous le grand titre)', value: content.subtitle },
-        { field: 'description', label: "Texte d'ouverture et méta description automatique", value: offering.description },
+        { field: 'intro', label: "Texte d'ouverture (paragraphe sous le titre + méta description)", value: content.intro },
         { field: 'ctaLabel', label: 'Texte des boutons de réservation', value: content.ctaLabel },
         {
           field: 'imageUrl',
@@ -346,7 +346,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           helper: 'Une icône par pilier (image transparente, idéalement WebP/PNG ~128 px). Laisse vide pour afficher une rune par défaut.',
         },
         { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
-        { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },
+        { field: 'sanctuaryText', label: 'Texte du sanctuaire', value: content.sanctuaryText },
         { field: 'pillarsTitle', label: 'Titre de la section des bienfaits', value: content.pillarsTitle },
         {
           field: 'features',
