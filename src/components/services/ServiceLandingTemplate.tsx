@@ -277,92 +277,86 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#050711] px-5 py-20 md:py-28">
-        {faqImage && (
-          <Image
-            src={faqImage}
-            alt=""
-            aria-hidden
-            fill
-            quality={78}
-            sizes="100vw"
-            className="object-cover opacity-20 blur-[1px]"
-          />
-        )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,0,184,0.22),transparent_30%),linear-gradient(180deg,rgba(5,7,17,0.92),rgba(10,16,40,0.96)_48%,rgba(5,7,17,0.98))]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#FF4FD8] to-transparent opacity-70" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#6A00FF] to-transparent opacity-80" />
-
-        <div className="relative mx-auto max-w-6xl">
+      <section className="grid bg-[#050711] md:grid-cols-[0.9fr_1.1fr]">
+        {/* Colonne gauche : image carrée (recommandé 1080 × 1080) */}
+        <div className="relative min-h-[420px] md:min-h-[720px]">
           {canEdit && <ArcaneFieldButton field="faqImageUrl" label="Changer l'image de la FAQ (médiathèque)" position="left-3 top-3" />}
           {canEdit && <ArcaneFieldButton field="faqImageAlt" label="Modifier le texte alternatif de l'image FAQ (SEO)" position="left-3 top-14" />}
-          <div className="relative overflow-hidden border border-[#FF4FD8]/45 bg-[#050711]/84 px-5 py-10 shadow-[0_0_55px_rgba(106,0,255,0.35),inset_0_0_40px_rgba(0,217,217,0.08)] backdrop-blur-sm md:px-10 md:py-14">
-            <div className="pointer-events-none absolute inset-4 border border-[#D4AF37]/24" />
-            <div className="pointer-events-none absolute left-4 right-4 top-8 h-px bg-gradient-to-r from-transparent via-[#FF4FD8]/85 to-transparent" />
-            <div className="pointer-events-none absolute bottom-8 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#00D9D9]/70 to-transparent" />
-            <div className="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 rounded-full border border-[#FF4FD8]/25 shadow-[0_0_80px_rgba(255,0,184,0.22)]" />
-            <div className="pointer-events-none absolute -right-24 bottom-1/4 h-72 w-72 rounded-full border border-[#00D9D9]/20 shadow-[0_0_80px_rgba(0,217,217,0.16)]" />
+          {faqImage && (
+            <Image
+              src={faqImage}
+              alt={content.faqImageAlt}
+              fill
+              quality={85}
+              sizes="(max-width: 768px) 100vw, 44vw"
+              className="object-cover"
+            />
+          )}
+          {/* Fondu vers le fond : vers le bas en mobile (empilé), vers la droite en desktop */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#050711] md:bg-gradient-to-l" />
+        </div>
 
-            <div className="relative text-center">
-              {canEdit && <ArcaneFieldButton field="faqTitle" label="Modifier le titre de la section FAQ" />}
-              <p className="ff-label text-xs uppercase tracking-[0.5em] text-[#00D9D9] drop-shadow-[0_0_12px_rgba(0,217,217,0.75)]">
-                Questions fréquemment posées
-              </p>
-              <h2 className="mx-auto mt-4 max-w-4xl ff-titre text-5xl font-black uppercase leading-none tracking-[0.08em] text-[#F8B7FF] drop-shadow-[0_0_22px_rgba(255,79,216,0.65)] md:text-7xl">
-                {content.title}
-              </h2>
-              <div className="mx-auto mt-5 flex max-w-3xl items-center gap-4">
-                <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-[#D4AF37]/20" />
-                <span className="h-3 w-3 rotate-45 border border-[#FF4FD8] shadow-[0_0_14px_rgba(255,79,216,0.9)]" />
-                <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[#D4AF37]/70 to-[#D4AF37]/20" />
-              </div>
-              <p className="mt-4 ff-label text-xs uppercase tracking-[0.28em] text-[#E6C87A]/85">
-                {content.faqTitle}
-              </p>
+        {/* Colonne droite : titre + questions à icônes */}
+        <div className="relative px-5 py-16 md:px-10 md:py-20">
+          <div className="relative">
+            {canEdit && <ArcaneFieldButton field="faqTitle" label="Modifier le titre de la section FAQ" />}
+            <p className="ff-label text-xs uppercase tracking-[0.4em] text-[#00D9D9] drop-shadow-[0_0_12px_rgba(0,217,217,0.6)]">
+              Questions fréquemment posées
+            </p>
+            <h2 className="mt-3 ff-titre text-4xl font-black uppercase leading-none tracking-[0.06em] text-[#F8B7FF] drop-shadow-[0_0_22px_rgba(255,79,216,0.6)] md:text-6xl">
+              {content.title}
+            </h2>
+            <div className="mt-5 flex max-w-md items-center gap-4">
+              <span className="h-px flex-1 bg-gradient-to-r from-[#D4AF37]/70 to-[#D4AF37]/10" />
+              <span className="h-3 w-3 rotate-45 border border-[#FF4FD8] shadow-[0_0_14px_rgba(255,79,216,0.9)]" />
+              <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/40" />
             </div>
+            <p className="mt-4 ff-label text-xs uppercase tracking-[0.28em] text-[#E6C87A]/85">
+              {content.faqTitle}
+            </p>
+          </div>
 
-            <div className="relative mt-12">
-              {canEdit && <ArcaneFieldButton field="faqs" label="Modifier les questions fréquentes" />}
-              <div className="space-y-0">
-                {content.faqs.map((faq, index) => {
-                  const icon = content.pillarIcons.length
-                    ? content.pillarIcons[index % content.pillarIcons.length]?.trim()
-                    : '';
-                  return (
-                    <div
-                      key={faq.question}
-                      className="grid gap-5 border-t border-[#D4AF37]/20 py-6 first:border-t-0 md:grid-cols-[8rem_1fr] md:items-center md:gap-7"
-                    >
-                      <div className="relative mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-[#F8B7FF]/70 bg-[#0A1028]/80 shadow-[0_0_24px_rgba(255,79,216,0.42),inset_0_0_24px_rgba(0,217,217,0.12)] md:h-28 md:w-28">
-                        <div className="absolute inset-2 rounded-full border border-[#00D9D9]/35" />
-                        {icon ? (
-                          <Image
-                            src={icon}
-                            alt=""
-                            aria-hidden
-                            width={64}
-                            height={64}
-                            unoptimized
-                            className="relative h-14 w-14 object-contain drop-shadow-[0_0_12px_rgba(212,175,55,0.65)]"
-                          />
-                        ) : (
-                          <span aria-hidden className="relative ff-titre text-4xl text-[#E6C87A] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)]">
-                            {content.pillarRunes[index % content.pillarRunes.length]}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="ff-label text-sm uppercase tracking-[0.16em] text-[#00D9D9] drop-shadow-[0_0_10px_rgba(0,217,217,0.5)] md:text-base">
-                          {faq.question}
-                        </h3>
-                        <p className="mt-3 ff-corps text-xl leading-relaxed text-parchemin-vieilli/82 md:text-2xl">
-                          {faq.answer}
-                        </p>
-                      </div>
+          <div className="relative mt-10">
+            {canEdit && <ArcaneFieldButton field="faqs" label="Modifier les questions fréquentes" />}
+            <div className="space-y-0">
+              {content.faqs.map((faq, index) => {
+                const icon = content.pillarIcons.length
+                  ? content.pillarIcons[index % content.pillarIcons.length]?.trim()
+                  : '';
+                return (
+                  <div
+                    key={faq.question}
+                    className="grid grid-cols-[auto_1fr] items-start gap-4 border-t border-[#D4AF37]/20 py-6 first:border-t-0 md:gap-6"
+                  >
+                    <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[#F8B7FF]/70 bg-[#0A1028]/80 shadow-[0_0_22px_rgba(255,79,216,0.4),inset_0_0_20px_rgba(0,217,217,0.12)] md:h-20 md:w-20">
+                      <div className="absolute inset-2 rounded-full border border-[#00D9D9]/35" />
+                      {icon ? (
+                        <Image
+                          src={icon}
+                          alt=""
+                          aria-hidden
+                          width={48}
+                          height={48}
+                          unoptimized
+                          className="relative h-10 w-10 object-contain drop-shadow-[0_0_12px_rgba(212,175,55,0.65)] md:h-12 md:w-12"
+                        />
+                      ) : (
+                        <span aria-hidden className="relative ff-titre text-3xl text-[#E6C87A] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)]">
+                          {content.pillarRunes[index % content.pillarRunes.length]}
+                        </span>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                    <div>
+                      <h3 className="ff-label text-sm uppercase tracking-[0.16em] text-[#00D9D9] drop-shadow-[0_0_10px_rgba(0,217,217,0.5)] md:text-base">
+                        {faq.question}
+                      </h3>
+                      <p className="mt-2 ff-corps text-lg leading-relaxed text-parchemin-vieilli/82 md:text-xl">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
