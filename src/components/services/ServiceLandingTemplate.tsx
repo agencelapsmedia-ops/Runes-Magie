@@ -6,6 +6,7 @@ import {
   buildServiceLandingContent,
   buildFaqJsonLd,
   buildBreadcrumbJsonLd,
+  FONTS,
 } from '@/lib/service-landing';
 import { SITE_URL } from '@/lib/constants';
 import ArcaneEditorProvider, { ArcaneFieldButton } from '@/components/services/ArcaneInlineEditor';
@@ -28,23 +29,26 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
     <div className="relative z-10">
       <div className="relative inline-block">
         {canEdit && <ArcaneFieldButton field="eyebrow" label="Modifier le petit texte au-dessus du titre" />}
-        <p className="font-cinzel text-xs uppercase tracking-[0.36em] text-[#00D9D9]">
+        <p className="ff-label text-xs uppercase tracking-[0.36em] text-[#00D9D9]">
           {content.eyebrow}
         </p>
       </div>
       <div className="relative mt-5">
         {canEdit && <ArcaneFieldButton field="name" label="Modifier le titre du service" />}
+        {canEdit && <ArcaneFieldButton field="titleFont" label="Police des grands titres" position="-left-3 -top-3" />}
         <h1 className={titleClassName}>{content.title}</h1>
       </div>
       <div className="relative mt-7 max-w-xl">
         {canEdit && <ArcaneFieldButton field="subtitle" label="Modifier le sous-titre" />}
-        <p className="font-cinzel text-sm uppercase tracking-[0.18em] text-[#E6C87A]/90 md:text-base">
+        {canEdit && <ArcaneFieldButton field="labelFont" label="Police des sous-titres et labels" position="-left-3 -top-3" />}
+        <p className="ff-label text-sm uppercase tracking-[0.18em] text-[#E6C87A]/90 md:text-base">
           {content.subtitle}
         </p>
       </div>
       <div className="relative mt-6 max-w-xl">
         {canEdit && <ArcaneFieldButton field="intro" label="Modifier le texte d'ouverture" />}
-        <p className="font-cormorant text-xl italic leading-relaxed text-parchemin-vieilli/90 md:text-2xl">
+        {canEdit && <ArcaneFieldButton field="bodyFont" label="Police des paragraphes" position="-left-3 -top-3" />}
+        <p className="ff-corps text-xl italic leading-relaxed text-parchemin-vieilli/90 md:text-2xl">
           {content.intro}
         </p>
       </div>
@@ -99,7 +103,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-center gap-10 px-5 py-16 md:grid md:grid-cols-[1.05fr_0.95fr] md:items-center md:px-8 lg:px-10">
         {heroText(
-          'font-cinzel-decorative text-[clamp(3rem,9vw,7.5rem)] font-black uppercase leading-[0.85] tracking-[0.04em] bg-gradient-to-br from-[#E7D6FF] via-[#A56BFF] to-[#6A00FF] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(106,0,255,0.45)]',
+          'ff-titre text-[clamp(3rem,9vw,7.5rem)] font-black uppercase leading-[0.85] tracking-[0.04em] bg-gradient-to-br from-[#E7D6FF] via-[#A56BFF] to-[#6A00FF] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(106,0,255,0.45)]',
         )}
 
         {/* Panneau des piliers (verre) */}
@@ -125,11 +129,11 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
                     className="h-7 w-7 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]"
                   />
                 ) : (
-                  <span aria-hidden className="w-7 shrink-0 text-center font-cinzel-decorative text-2xl text-[#E6C87A] drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                  <span aria-hidden className="w-7 shrink-0 text-center ff-titre text-2xl text-[#E6C87A] drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
                     {content.pillarRunes[index % content.pillarRunes.length]}
                   </span>
                 )}
-                <span className="font-cinzel text-sm uppercase tracking-[0.12em] text-parchemin/90">
+                <span className="ff-label text-sm uppercase tracking-[0.12em] text-parchemin/90">
                   {feature}
                 </span>
               </li>
@@ -149,7 +153,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
       <div className="relative mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-[0.92fr_1.08fr] md:px-8 lg:px-10">
         {heroText(
-          'font-cinzel-decorative text-[clamp(3rem,9vw,8rem)] font-black uppercase leading-[0.85] tracking-[0.05em] text-gradient-gold drop-shadow-[0_0_28px_rgba(212,175,55,0.22)]',
+          'ff-titre text-[clamp(3rem,9vw,8rem)] font-black uppercase leading-[0.85] tracking-[0.05em] text-gradient-gold drop-shadow-[0_0_28px_rgba(212,175,55,0.22)]',
         )}
 
         <div className="relative min-h-[420px] md:min-h-[680px]">
@@ -175,7 +179,16 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
   const heroSection = content.backgroundUrl ? immersiveHero : classicHero;
 
   const body = (
-    <article className="overflow-hidden bg-[#050711] text-parchemin">
+    <article
+      className="overflow-hidden bg-[#050711] text-parchemin"
+      style={
+        {
+          '--ff-titre': FONTS[content.titleFont].css,
+          '--ff-label': FONTS[content.labelFont].css,
+          '--ff-corps': FONTS[content.bodyFont].css,
+        } as React.CSSProperties
+      }
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -198,14 +211,14 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[0.82fr_1.18fr] md:items-center">
           <div className="relative">
             {canEdit && <ArcaneFieldButton field="sanctuaryTitle" label="Modifier le titre du sanctuaire" />}
-            <p className="font-cinzel text-xs uppercase tracking-[0.3em] text-[#FF4FD8]">Le sanctuaire</p>
-            <h2 className="mt-4 font-cinzel-decorative text-4xl font-bold uppercase leading-tight text-gradient-gold md:text-6xl">
+            <p className="ff-label text-xs uppercase tracking-[0.3em] text-[#FF4FD8]">Le sanctuaire</p>
+            <h2 className="mt-4 ff-titre text-4xl font-bold uppercase leading-tight text-gradient-gold md:text-6xl">
               {content.sanctuaryTitle}
             </h2>
           </div>
           <div className="relative rounded-sm border border-[#D4AF37]/35 bg-[#0A1028]/72 p-7 shadow-[0_0_40px_rgba(106,0,255,0.22)] md:p-10">
             {canEdit && <ArcaneFieldButton field="sanctuaryText" label="Modifier le texte du sanctuaire" />}
-            <p className="font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/90">
+            <p className="ff-corps text-2xl italic leading-relaxed text-parchemin-vieilli/90">
               {content.sanctuaryText}
             </p>
           </div>
@@ -215,8 +228,8 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       <section className="relative bg-[radial-gradient(circle_at_50%_0%,rgba(106,0,255,0.28),transparent_34%),#080812] px-5 py-20 md:py-28">
         <div className="relative mx-auto max-w-6xl">
           {canEdit && <ArcaneFieldButton field="pillarsTitle" label="Modifier le titre de la section des bienfaits" />}
-          <p className="text-center font-cinzel text-xs uppercase tracking-[0.34em] text-[#00D9D9]">Activation</p>
-          <h2 className="mx-auto mt-4 max-w-4xl text-center font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
+          <p className="text-center ff-label text-xs uppercase tracking-[0.34em] text-[#00D9D9]">Activation</p>
+          <h2 className="mx-auto mt-4 max-w-4xl text-center ff-titre text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
             {content.pillarsTitle}
           </h2>
           <div className="relative mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -226,10 +239,10 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
                 key={`${benefit}-${index}`}
                 className="group relative overflow-hidden rounded-sm border border-[#D4AF37]/25 bg-[#101431]/80 p-6 shadow-[0_0_24px_rgba(45,27,105,0.32)]"
               >
-                <span className="font-cinzel-decorative text-5xl text-[#D4AF37]/28">
+                <span className="ff-titre text-5xl text-[#D4AF37]/28">
                   {(index + 1).toString().padStart(2, '0')}
                 </span>
-                <p className="mt-5 font-cinzel text-sm uppercase tracking-[0.16em] text-[#E6C87A]">
+                <p className="mt-5 ff-label text-sm uppercase tracking-[0.16em] text-[#E6C87A]">
                   {benefit}
                 </p>
                 <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#FF00B8] to-transparent opacity-60" />
@@ -243,7 +256,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         <div className="mx-auto max-w-6xl">
           <div className="relative inline-block">
             {canEdit && <ArcaneFieldButton field="processTitle" label="Modifier le titre de la section des étapes" />}
-            <h2 className="font-cinzel-decorative text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
+            <h2 className="ff-titre text-4xl font-bold uppercase text-gradient-gold md:text-6xl">
               {content.processTitle}
             </h2>
           </div>
@@ -251,11 +264,11 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
             {canEdit && <ArcaneFieldButton field="steps" label="Modifier les étapes du déroulement" />}
             {content.steps.map((step) => (
               <div key={step.number} className="border-l border-[#D4AF37]/40 pl-5">
-                <span className="font-cinzel text-sm tracking-[0.25em] text-[#FF4FD8]">{step.number}</span>
-                <h3 className="mt-4 font-cinzel text-lg uppercase tracking-[0.12em] text-[#E6C87A]">
+                <span className="ff-label text-sm tracking-[0.25em] text-[#FF4FD8]">{step.number}</span>
+                <h3 className="mt-4 ff-label text-lg uppercase tracking-[0.12em] text-[#E6C87A]">
                   {step.title}
                 </h3>
-                <p className="mt-4 font-cormorant text-lg leading-relaxed text-parchemin-vieilli/75">
+                <p className="mt-4 ff-corps text-lg leading-relaxed text-parchemin-vieilli/75">
                   {step.text}
                 </p>
               </div>
@@ -292,10 +305,10 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
             <div className="relative text-center">
               {canEdit && <ArcaneFieldButton field="faqTitle" label="Modifier le titre de la section FAQ" />}
-              <p className="font-cinzel text-xs uppercase tracking-[0.5em] text-[#00D9D9] drop-shadow-[0_0_12px_rgba(0,217,217,0.75)]">
+              <p className="ff-label text-xs uppercase tracking-[0.5em] text-[#00D9D9] drop-shadow-[0_0_12px_rgba(0,217,217,0.75)]">
                 Questions fréquemment posées
               </p>
-              <h2 className="mx-auto mt-4 max-w-4xl font-cinzel-decorative text-5xl font-black uppercase leading-none tracking-[0.08em] text-[#F8B7FF] drop-shadow-[0_0_22px_rgba(255,79,216,0.65)] md:text-7xl">
+              <h2 className="mx-auto mt-4 max-w-4xl ff-titre text-5xl font-black uppercase leading-none tracking-[0.08em] text-[#F8B7FF] drop-shadow-[0_0_22px_rgba(255,79,216,0.65)] md:text-7xl">
                 {content.title}
               </h2>
               <div className="mx-auto mt-5 flex max-w-3xl items-center gap-4">
@@ -303,7 +316,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
                 <span className="h-3 w-3 rotate-45 border border-[#FF4FD8] shadow-[0_0_14px_rgba(255,79,216,0.9)]" />
                 <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[#D4AF37]/70 to-[#D4AF37]/20" />
               </div>
-              <p className="mt-4 font-cinzel text-xs uppercase tracking-[0.28em] text-[#E6C87A]/85">
+              <p className="mt-4 ff-label text-xs uppercase tracking-[0.28em] text-[#E6C87A]/85">
                 {content.faqTitle}
               </p>
             </div>
@@ -333,16 +346,16 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
                             className="relative h-14 w-14 object-contain drop-shadow-[0_0_12px_rgba(212,175,55,0.65)]"
                           />
                         ) : (
-                          <span aria-hidden className="relative font-cinzel-decorative text-4xl text-[#E6C87A] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)]">
+                          <span aria-hidden className="relative ff-titre text-4xl text-[#E6C87A] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)]">
                             {content.pillarRunes[index % content.pillarRunes.length]}
                           </span>
                         )}
                       </div>
                       <div>
-                        <h3 className="font-cinzel text-sm uppercase tracking-[0.16em] text-[#00D9D9] drop-shadow-[0_0_10px_rgba(0,217,217,0.5)] md:text-base">
+                        <h3 className="ff-label text-sm uppercase tracking-[0.16em] text-[#00D9D9] drop-shadow-[0_0_10px_rgba(0,217,217,0.5)] md:text-base">
                           {faq.question}
                         </h3>
-                        <p className="mt-3 font-cormorant text-xl leading-relaxed text-parchemin-vieilli/82 md:text-2xl">
+                        <p className="mt-3 ff-corps text-xl leading-relaxed text-parchemin-vieilli/82 md:text-2xl">
                           {faq.answer}
                         </p>
                       </div>
@@ -358,13 +371,13 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         <div className="absolute inset-x-10 top-12 h-px bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
         <div className="relative mx-auto max-w-5xl">
           {canEdit && <ArcaneFieldButton field="finalTitle" label="Modifier le titre de l'appel final" />}
-          <h2 className="font-cinzel-decorative text-4xl font-black uppercase leading-tight text-gradient-gold md:text-7xl">
+          <h2 className="ff-titre text-4xl font-black uppercase leading-tight text-gradient-gold md:text-7xl">
             {content.finalTitle}
           </h2>
         </div>
         <div className="relative mx-auto mt-8 max-w-3xl">
           {canEdit && <ArcaneFieldButton field="finalText" label="Modifier le texte de l'appel final" />}
-          <p className="font-cormorant text-2xl italic leading-relaxed text-parchemin-vieilli/85">
+          <p className="ff-corps text-2xl italic leading-relaxed text-parchemin-vieilli/85">
             {content.finalText}
           </p>
         </div>
@@ -419,6 +432,9 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       }}
       targets={[
         { field: 'name', label: 'Titre principal du service', value: offering.name },
+        { field: 'titleFont', label: 'Police des grands titres', value: content.titleFont },
+        { field: 'labelFont', label: 'Police des sous-titres et labels', value: content.labelFont },
+        { field: 'bodyFont', label: 'Police des paragraphes', value: content.bodyFont },
         { field: 'eyebrow', label: 'Petit texte au-dessus du titre', value: content.eyebrow },
         { field: 'subtitle', label: 'Sous-titre (sous le grand titre)', value: content.subtitle },
         { field: 'intro', label: "Texte d'ouverture (paragraphe sous le titre + méta description)", value: content.intro },

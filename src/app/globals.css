@@ -171,6 +171,22 @@ a, button, [role="button"], input[type="submit"], select, label[for], summary {
 }
 
 /* ============================================
+   Polices pilotables par l'admin (variables CSS).
+   Repli = police par défaut actuelle → rendu identique sans override.
+   ============================================ */
+.ff-titre {
+  font-family: var(--ff-titre, 'Cinzel Decorative', serif);
+}
+
+.ff-label {
+  font-family: var(--ff-label, 'Cinzel', serif);
+}
+
+.ff-corps {
+  font-family: var(--ff-corps, 'Cormorant Garamond', serif);
+}
+
+/* ============================================
    Gold Gradient Text
    ============================================ */
 .text-gradient-gold {
