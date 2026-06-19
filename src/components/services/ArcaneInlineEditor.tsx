@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadImage, listImages } from '@/lib/supabase';
 import { analyzeSeo, scoreLabel, type SeoCheckStatus } from '@/lib/seo-analysis';
+import { FONTS, FONT_KEYS, FONT_FIELDS } from '@/lib/service-landing';
 
 type ColumnField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
 type LandingTextField =
@@ -24,7 +25,19 @@ type LandingTextField =
   | 'backgroundUrl'
   | 'characterUrl'
   | 'faqImageUrl';
-type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs' | 'pillarRunes' | 'pillarIcons' | 'benefits';
+type FontField = 'titleFont' | 'labelFont' | 'bodyFont';
+type EditableField =
+  | ColumnField
+  | LandingTextField
+  | FontField
+  | 'steps'
+  | 'faqs'
+  | 'pillarRunes'
+  | 'pillarIcons'
+  | 'benefits';
+
+/** Champs qui pointent vers une police → sélecteur visuel FontPicker. */
+const FONT_FIELD_SET: ReadonlySet<EditableField> = new Set(FONT_FIELDS);
 
 /** Champs qui pointent vers une image → sélecteur visuel + médiathèque. */
 const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
@@ -527,6 +540,41 @@ function PairListEditor({
   );
 }
 
+/**
+ * Sélecteur de police : un bouton par police du projet, chacun rendu DANS sa
+ * propre police (aperçu visuel direct). La valeur retenue (`draft`) est la clé.
+ */
+function FontPicker({
+  draft,
+  setDraft,
+}: {
+  draft: string;
+  setDraft: (value: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+      {FONT_KEYS.map((key) => {
+        const active = draft === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setDraft(key)}
+            style={{ fontFamily: FONTS[key].css }}
+            className={`rounded-sm border px-4 py-4 text-left text-2xl leading-tight transition ${
+              active
+                ? 'border-[#E6C87A] bg-[#D4AF37]/15 text-[#E6C87A]'
+                : 'border-[#9A6CFF]/40 text-parchemin/80 hover:border-[#00D9D9] hover:text-[#00D9D9]'
+            }`}
+          >
+            {FONTS[key].label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Contexte qui expose l'ouverture du pupitre d'édition aux boutons ✦ disséminés dans la page. */
 const ArcaneEditorContext = createContext<((field: EditableField) => void) | null>(null);
 
@@ -928,7 +976,9 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
               </p>
             </div>
 
-            {activeTarget.field === 'pillarIcons' ? (
+            {FONT_FIELD_SET.has(activeTarget.field) ? (
+              <FontPicker draft={draft} setDraft={setDraft} />
+            ) : activeTarget.field === 'pillarIcons' ? (
               <PillarIconsEditor
                 draft={draft}
                 setDraft={setDraft}
