@@ -97,21 +97,36 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         {/* Panneau des piliers (verre) */}
         <div className="relative z-10 ml-auto w-full max-w-md rounded-2xl border border-[#D4AF37]/30 bg-[#0A1028]/55 p-6 shadow-[0_0_40px_rgba(106,0,255,0.3)] backdrop-blur-md md:p-7">
           {canEdit && <ArcaneFieldButton field="features" label="Modifier les piliers" />}
-          {canEdit && <ArcaneFieldButton field="pillarRunes" label="Modifier les runes des piliers" position="-right-3 top-8" />}
+          {canEdit && <ArcaneFieldButton field="pillarIcons" label="Modifier les icônes des piliers" position="-right-3 top-8" />}
           <ul className="flex flex-col">
-            {offering.features.map((feature, index) => (
+            {offering.features.map((feature, index) => {
+              const icon = content.pillarIcons[index]?.trim();
+              return (
               <li
                 key={`${feature}-${index}`}
                 className="flex items-center gap-4 border-b border-[#D4AF37]/12 py-3 last:border-b-0"
               >
-                <span aria-hidden className="w-7 shrink-0 text-center font-cinzel-decorative text-2xl text-[#E6C87A] drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
-                  {content.pillarRunes[index % content.pillarRunes.length]}
-                </span>
+                {icon ? (
+                  <Image
+                    src={icon}
+                    alt=""
+                    aria-hidden
+                    width={28}
+                    height={28}
+                    unoptimized
+                    className="h-7 w-7 shrink-0 object-contain drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]"
+                  />
+                ) : (
+                  <span aria-hidden className="w-7 shrink-0 text-center font-cinzel-decorative text-2xl text-[#E6C87A] drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                    {content.pillarRunes[index % content.pillarRunes.length]}
+                  </span>
+                )}
                 <span className="font-cinzel text-sm uppercase tracking-[0.12em] text-parchemin/90">
                   {feature}
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       </div>
@@ -324,10 +339,11 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           helper: 'URL publique d\'un PNG/WebP TRANSPARENT (sujet détouré). Recommandé : ~1400 × 1600 px (portrait).',
         },
         {
-          field: 'pillarRunes',
-          label: 'Runes devant les piliers',
-          value: content.pillarRunes,
-          helper: 'Une rune par ligne, alignée aux piliers (1ʳᵉ rune = 1ᵉʳ pilier). Si vide, des runes par défaut défilent.',
+          field: 'pillarIcons',
+          label: 'Icônes devant les piliers',
+          value: offering.features.map((_, i) => content.pillarIcons[i] ?? ''),
+          items: offering.features,
+          helper: 'Une icône par pilier (image transparente, idéalement WebP/PNG ~128 px). Laisse vide pour afficher une rune par défaut.',
         },
         { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
         { field: 'longDescription', label: 'Texte du sanctuaire', value: offering.longDescription },

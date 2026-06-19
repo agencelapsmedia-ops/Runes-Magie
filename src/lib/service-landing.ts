@@ -25,12 +25,25 @@ export interface ServiceLandingContent {
   characterUrl: string | null;
   faqImageUrl: string | null;
   pillarRunes: string[];
+  /** Icônes images (URL) affichées devant chaque pilier, alignées sur `features`. Prioritaires sur `pillarRunes`. */
+  pillarIcons: string[];
   steps: Array<{ number: string; title: string; text: string }>;
   faqs: Array<{ question: string; answer: string }>;
 }
 
 /** Runes vikings dorées utilisées par défaut devant les piliers (cycle). */
 export const DEFAULT_PILLAR_RUNES = ['ᚱ', 'ᚨ', 'ᛟ', 'ᚦ', 'ᛜ', 'ᛉ', 'ᚹ', 'ᛊ', 'ᚲ', 'ᛇ'];
+
+/** Icônes-symboles dorées par défaut du Soin Rituel (une par pilier, dans l'ordre des `features`). */
+export const SOIN_RITUEL_PILLAR_ICONS = [
+  '/images/services/arcane/icons/1.webp',
+  '/images/services/arcane/icons/2.webp',
+  '/images/services/arcane/icons/3.webp',
+  '/images/services/arcane/icons/4.webp',
+  '/images/services/arcane/icons/5.webp',
+  '/images/services/arcane/icons/6.webp',
+  '/images/services/arcane/icons/7.webp',
+];
 
 /**
  * Textes personnalisables depuis l'admin, stockés dans `Offering.landingContent`
@@ -53,6 +66,7 @@ export interface ServiceLandingOverrides {
   characterUrl?: string;
   faqImageUrl?: string;
   pillarRunes?: string[];
+  pillarIcons?: string[];
   steps?: Array<{ number: string; title: string; text: string }>;
   faqs?: Array<{ question: string; answer: string }>;
 }
@@ -76,7 +90,7 @@ export const LANDING_TEXT_FIELDS = [
 ] as const;
 
 /** Champs listes structurées surchargeables. */
-export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes'] as const;
+export const LANDING_LIST_FIELDS = ['steps', 'faqs', 'pillarRunes', 'pillarIcons'] as const;
 
 export type LandingTextField = (typeof LANDING_TEXT_FIELDS)[number];
 
@@ -106,6 +120,13 @@ export function parseLandingOverrides(raw: unknown): ServiceLandingOverrides {
   if (Array.isArray(source.pillarRunes)) {
     const runes = source.pillarRunes.map((r) => String(r ?? '').trim()).filter(Boolean);
     if (runes.length) out.pillarRunes = runes;
+  }
+
+  if (Array.isArray(source.pillarIcons)) {
+    // On conserve les chaînes vides pour garder l'alignement icône ↔ pilier,
+    // mais on n'enregistre l'override que si au moins une icône est définie.
+    const icons = source.pillarIcons.map((i) => String(i ?? '').trim());
+    if (icons.some(Boolean)) out.pillarIcons = icons;
   }
 
   if (Array.isArray(source.faqs)) {
@@ -144,6 +165,7 @@ function applyOverrides(
     characterUrl: overrides.characterUrl ?? base.characterUrl,
     faqImageUrl: overrides.faqImageUrl ?? base.faqImageUrl,
     pillarRunes: overrides.pillarRunes?.length ? overrides.pillarRunes : base.pillarRunes,
+    pillarIcons: overrides.pillarIcons?.length ? overrides.pillarIcons : base.pillarIcons,
     steps: overrides.steps?.length ? overrides.steps : base.steps,
     faqs: overrides.faqs?.length ? overrides.faqs : base.faqs,
   };
@@ -235,6 +257,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
       characterUrl: '/images/services/arcane/soin-rituel-personnage.webp',
       faqImageUrl: '/images/services/arcane/soin-rituel-faq.jpg',
       pillarRunes: DEFAULT_PILLAR_RUNES,
+      pillarIcons: SOIN_RITUEL_PILLAR_ICONS,
       steps: SOIN_RITUEL_STEPS,
       faqs: [
         {
@@ -277,6 +300,7 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     characterUrl: null,
     faqImageUrl: null,
     pillarRunes: DEFAULT_PILLAR_RUNES,
+    pillarIcons: [],
     steps: buildGenericSteps(offering),
     faqs: [
       {

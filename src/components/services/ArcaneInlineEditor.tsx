@@ -21,7 +21,7 @@ type LandingTextField =
   | 'backgroundUrl'
   | 'characterUrl'
   | 'faqImageUrl';
-type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs' | 'pillarRunes';
+type EditableField = ColumnField | LandingTextField | 'steps' | 'faqs' | 'pillarRunes' | 'pillarIcons';
 
 /** Champs qui pointent vers une image → sélecteur visuel + médiathèque. */
 const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
@@ -45,6 +45,8 @@ interface EditTarget {
   label: string;
   value: string | string[];
   helper?: string;
+  /** Libellés (ex. noms des piliers) pour les éditeurs ligne-à-ligne comme `pillarIcons`. */
+  items?: string[];
 }
 
 interface ArcaneEditorProviderProps {
@@ -69,6 +71,13 @@ function buildPayload(field: EditableField, draft: string): Record<string, unkno
   }
   if (field === 'pillarRunes') {
     return { pillarRunes: LINES(draft) };
+  }
+  if (field === 'pillarIcons') {
+    // Une URL par ligne, alignée aux piliers : on garde les lignes vides (icône absente),
+    // mais on retire les lignes vides finales pour éviter les entrées superflues.
+    const icons = draft.split('\n').map((line) => line.trim());
+    while (icons.length && !icons[icons.length - 1]) icons.pop();
+    return { pillarIcons: icons };
   }
   if (field === 'steps') {
     return {
@@ -241,6 +250,162 @@ function ImageFieldEditor({
   );
 }
 
+/**
+ * Éditeur des icônes des piliers : une ligne par pilier (libellé), chacune avec
+ * sa propre icône (aperçu + téléverser + médiathèque partagée). La valeur retenue
+ * est l'ensemble des URLs jointes par retour-ligne (alignées sur les piliers).
+ */
+function PillarIconsEditor({
+  draft,
+  setDraft,
+  items,
+  helper,
+}: {
+  draft: string;
+  setDraft: (value: string) => void;
+  items: string[];
+  helper?: string;
+}) {
+  const icons = useMemo(() => {
+    const lines = draft.length ? draft.split('\n') : [];
+    return items.map((_, i) => (lines[i] ?? '').trim());
+  }, [draft, items]);
+
+  const [media, setMedia] = useState<string[] | null>(null);
+  const [pickerRow, setPickerRow] = useState<number | null>(null);
+  const [uploadingRow, setUploadingRow] = useState<number | null>(null);
+  const [err, setErr] = useState('');
+
+  function setIcon(index: number, url: string) {
+    const next = items.map((_, i) => (i === index ? url : icons[i] ?? ''));
+    setDraft(next.join('\n'));
+  }
+
+  function openPicker(index: number) {
+    setErr('');
+    setPickerRow(index);
+    if (!media) {
+      listImages()
+        .then(setMedia)
+        .catch(() => setErr('Médiathèque indisponible.'));
+    }
+  }
+
+  async function onFile(index: number, file: File | undefined) {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      setErr('Format accepté : JPG, PNG, WebP ou GIF.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr('Image trop lourde (maximum 5 Mo).');
+      return;
+    }
+    setErr('');
+    setUploadingRow(index);
+    try {
+      const url = await uploadImage(file, 'services/arcane/icons');
+      setIcon(index, url);
+      setMedia((m) => (m ? [url, ...m] : m));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Échec du téléversement.');
+    } finally {
+      setUploadingRow(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+      {items.map((label, index) => (
+        <div
+          key={`${label}-${index}`}
+          className="rounded-sm border border-[#D4AF37]/25 bg-black/25 p-3"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-sm border border-[#D4AF37]/35 bg-black/40">
+              {icons[index] ? (
+                <Image src={icons[index]} alt="" fill unoptimized className="object-contain p-1" sizes="48px" />
+              ) : (
+                <span className="flex h-full items-center justify-center font-cinzel-decorative text-lg text-[#E6C87A]/50">
+                  ✦
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-cinzel text-[0.7rem] uppercase tracking-[0.12em] text-parchemin/90">
+                {label || `Pilier ${index + 1}`}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <label className="cursor-pointer rounded-sm border border-[#9A6CFF]/40 px-2 py-1 font-cinzel text-[0.6rem] uppercase tracking-[0.14em] text-parchemin/70 transition hover:border-[#00D9D9] hover:text-[#00D9D9]">
+                  {uploadingRow === index ? '…' : '📤 Téléverser'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      onFile(index, e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => openPicker(pickerRow === index ? -1 : index)}
+                  className="rounded-sm border border-[#9A6CFF]/40 px-2 py-1 font-cinzel text-[0.6rem] uppercase tracking-[0.14em] text-parchemin/70 transition hover:border-[#00D9D9] hover:text-[#00D9D9]"
+                >
+                  🖼️ Médiathèque
+                </button>
+                {icons[index] && (
+                  <button
+                    type="button"
+                    onClick={() => setIcon(index, '')}
+                    className="rounded-sm border border-[#FF4FD8]/40 px-2 py-1 font-cinzel text-[0.6rem] uppercase tracking-[0.14em] text-[#FF4FD8]/80 transition hover:border-[#FF4FD8]"
+                  >
+                    Retirer
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {pickerRow === index && (
+            <div className="mt-3 max-h-48 overflow-y-auto rounded-sm border border-[#D4AF37]/25 bg-black/30 p-2">
+              {!media && <p className="p-2 font-philosopher text-sm text-parchemin/60">Chargement…</p>}
+              {media && media.length === 0 && (
+                <p className="p-2 font-philosopher text-sm text-parchemin/60">Aucune image trouvée.</p>
+              )}
+              {media && media.length > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {media.map((url) => (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => {
+                        setIcon(index, url);
+                        setPickerRow(null);
+                      }}
+                      className={`relative aspect-square overflow-hidden rounded-sm border transition ${
+                        icons[index] === url
+                          ? 'border-[#E6C87A] ring-2 ring-[#FF4FD8]'
+                          : 'border-transparent hover:border-[#00D9D9]'
+                      }`}
+                    >
+                      <Image src={url} alt="" fill unoptimized className="object-contain p-1" sizes="80px" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {helper && <p className="mt-1 font-philosopher text-sm text-parchemin-vieilli/55">{helper}</p>}
+      {err && <p className="font-philosopher text-sm text-[#FF4FD8]">{err}</p>}
+    </div>
+  );
+}
+
 /** Contexte qui expose l'ouverture du pupitre d'édition aux boutons ✦ disséminés dans la page. */
 const ArcaneEditorContext = createContext<((field: EditableField) => void) | null>(null);
 
@@ -362,7 +527,14 @@ export default function ArcaneEditorProvider({ offeringId, targets, children }: 
               </p>
             </div>
 
-            {IMAGE_FIELDS.has(activeTarget.field) ? (
+            {activeTarget.field === 'pillarIcons' ? (
+              <PillarIconsEditor
+                draft={draft}
+                setDraft={setDraft}
+                items={activeTarget.items ?? []}
+                helper={activeTarget.helper}
+              />
+            ) : IMAGE_FIELDS.has(activeTarget.field) ? (
               <ImageFieldEditor draft={draft} setDraft={setDraft} helper={activeTarget.helper} />
             ) : (
               <>

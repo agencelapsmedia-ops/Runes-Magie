@@ -37,6 +37,9 @@ assert.match(content.backgroundUrl ?? '', /soin-rituel-fond/);
 assert.match(content.characterUrl ?? '', /soin-rituel-personnage/);
 assert.match(content.faqImageUrl ?? '', /soin-rituel-faq/);
 assert.ok(content.pillarRunes.length > 0);
+// Soin Rituel : icônes-symboles dorées par défaut devant les piliers.
+assert.ok(content.pillarIcons.length > 0);
+assert.match(content.pillarIcons[0], /\/images\/services\/arcane\/icons\//);
 
 const metadata = buildServiceLandingMetadata(soinRituel);
 assert.equal(metadata.title, 'Le Soin Rituel avec Noctura | La Voie des Arcanes');
@@ -88,6 +91,8 @@ assert.match(genContent.faqImageAlt, /Guidance Runique/);
 assert.equal(genContent.backgroundUrl, null);
 assert.equal(genContent.characterUrl, null);
 assert.equal(genContent.faqImageUrl, null);
+// Service générique : pas d'icônes par défaut (le client en ajoutera depuis l'admin).
+assert.deepEqual(genContent.pillarIcons, []);
 
 // --- Cas overrides : textes personnalisés depuis l'admin ---
 const personnalise: OfferingView = {
@@ -99,6 +104,7 @@ const personnalise: OfferingView = {
     backgroundUrl: '/images/services/mon-fond.jpg',
     characterUrl: '/images/services/mon-perso.webp',
     pillarRunes: ['ᚠ', 'ᚢ'],
+    pillarIcons: ['/img/a.webp', '/img/b.webp'],
     steps: [
       { number: '01', title: 'Étape A', text: 'Texte A' },
       { number: '02', title: 'Étape B', text: 'Texte B' },
@@ -119,6 +125,7 @@ assert.equal(persoContent.faqs[0].question, 'Q1 ?');
 assert.equal(persoContent.backgroundUrl, '/images/services/mon-fond.jpg');
 assert.equal(persoContent.characterUrl, '/images/services/mon-perso.webp');
 assert.deepEqual(persoContent.pillarRunes, ['ᚠ', 'ᚢ']);
+assert.deepEqual(persoContent.pillarIcons, ['/img/a.webp', '/img/b.webp']);
 // Les champs non surchargés gardent le défaut.
 assert.match(persoContent.processTitle, /déroulement/);
 
@@ -133,5 +140,12 @@ assert.equal(parsed.eyebrow, undefined);
 assert.equal(parsed.faqTitle, 'Titre FAQ');
 assert.equal(parsed.steps?.length, 1);
 assert.equal(parsed.faqs, undefined);
+
+// pillarIcons : on garde les vides pour l'alignement si au moins une icône existe…
+const parsedIcons = parseLandingOverrides({ pillarIcons: ['/x.webp', '', ' /y.webp '] });
+assert.deepEqual(parsedIcons.pillarIcons, ['/x.webp', '', '/y.webp']);
+// …mais on ignore une liste entièrement vide.
+const parsedEmptyIcons = parseLandingOverrides({ pillarIcons: ['', '  '] });
+assert.equal(parsedEmptyIcons.pillarIcons, undefined);
 
 console.log('service-landing tests passed');
