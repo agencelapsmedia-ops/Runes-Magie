@@ -75,15 +75,10 @@ export default function OfferingCard({ offering }: { offering: OfferingView }) {
         </div>
       </Link>
 
-      {/* Actions : « En savoir plus » → fiche détail, « Réserver » → page de réservation */}
-      <div className="mt-6 flex flex-col gap-3">
-        <Button href={offering.bookingHref} variant="or" size="md" className="w-full">
-          Réserver
-        </Button>
-        <Button href={offering.detailHref} variant="secondary" size="md" className="w-full">
-          En savoir plus
-        </Button>
-      </div>
+      {/* Bouton doré « En savoir plus » → fiche détail */}
+      <Button href={offering.detailHref} variant="or" size="md" className="mt-6 w-full">
+        En savoir plus
+      </Button>
     </div>
   );
 }
