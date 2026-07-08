@@ -319,7 +319,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
               {content.processTitle}
             </h2>
           </div>
-          <div className="relative mt-12 grid gap-5 md:grid-cols-4">
+          <div className="relative mt-12 grid gap-5 md:grid-cols-4 lg:grid-cols-5">
             {canEdit && <ArcaneFieldButton field="steps" label="Modifier les étapes du déroulement" />}
             {content.steps.map((step) => (
               <div key={step.number} className="border-l border-[#D4AF37]/40 pl-5">
