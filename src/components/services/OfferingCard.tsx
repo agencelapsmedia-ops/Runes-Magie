@@ -53,7 +53,7 @@ export default function OfferingCard({ offering }: { offering: OfferingView }) {
         </h2>
         <p className="font-philosopher text-xs text-parchemin/50 mb-4">avec {offering.practitionerName}</p>
 
-        <p className="text-parchemin-vieilli/80 leading-relaxed mb-6 font-cormorant text-lg">
+        <p className="whitespace-pre-line text-parchemin-vieilli/80 leading-relaxed mb-6 font-cormorant text-lg">
           {offering.description}
         </p>
 

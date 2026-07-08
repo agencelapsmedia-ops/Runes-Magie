@@ -122,7 +122,7 @@ export default async function ServicesPage() {
                         {o.name}
                       </h3>
 
-                      <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.95rem', lineHeight: 1.5, margin: 0, flex: 1 }}>
+                      <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.95rem', lineHeight: 1.5, margin: 0, flex: 1, whiteSpace: 'pre-line' }}>
                         {o.description}
                       </p>
 

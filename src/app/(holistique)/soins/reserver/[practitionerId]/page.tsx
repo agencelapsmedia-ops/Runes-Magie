@@ -694,7 +694,7 @@ export default function ReservationPage({
                 <h3 style={{ fontFamily: 'var(--font-cinzel-decorative)', color: 'var(--or-clair)', fontSize: '1.3rem', margin: '0 0 6px' }}>
                   {offering.name}
                 </h3>
-                <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.95rem', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-line' }}>
                   {offering.description}
                 </p>
               </div>

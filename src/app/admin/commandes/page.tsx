@@ -284,7 +284,7 @@ export default function CommandesPage() {
                   <p className="text-sm font-medium text-gray-900">
                     {selectedOrder.deliveryMethod === 'pickup' ? 'Ramassage en boutique' : 'Livraison'}
                   </p>
-                  {selectedOrder.shippingAddress && <p className="text-sm text-gray-600">{selectedOrder.shippingAddress}</p>}
+                  {selectedOrder.shippingAddress && <p className="text-sm text-gray-600 whitespace-pre-line">{selectedOrder.shippingAddress}</p>}
                   <p className="text-sm text-gray-500 mt-1">
                     Type: {selectedOrder.type === 'stripe' ? 'Paiement Stripe' : 'Demande courriel'}
                   </p>
@@ -295,7 +295,7 @@ export default function CommandesPage() {
               {selectedOrder.customerMessage && (
                 <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
                   <p className="text-xs text-amber-600 uppercase tracking-wider mb-1">Message du client</p>
-                  <p className="text-sm text-gray-700 italic">&ldquo;{selectedOrder.customerMessage}&rdquo;</p>
+                  <p className="text-sm text-gray-700 italic whitespace-pre-line">&ldquo;{selectedOrder.customerMessage}&rdquo;</p>
                 </div>
               )}
 

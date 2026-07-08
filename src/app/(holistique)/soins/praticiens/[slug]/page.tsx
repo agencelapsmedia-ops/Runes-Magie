@@ -92,7 +92,7 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
                 {practitioner.yearsExperience} ans d&apos;expérience
               </span>
             </div>
-            <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin)', lineHeight: 1.8, marginBottom: '24px', maxWidth: '600px' }}>
+            <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin)', lineHeight: 1.8, marginBottom: '24px', maxWidth: '600px', whiteSpace: 'pre-line' }}>
               {practitioner.bio}
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
@@ -137,7 +137,7 @@ export default async function PractitionerProfilePage({ params }: { params: Prom
                     </span>
                   </div>
                   <h3 style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-clair)', fontSize: '0.95rem', margin: 0, lineHeight: 1.3 }}>{o.name}</h3>
-                  <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.9rem', lineHeight: 1.5, margin: 0, flex: 1 }}>
+                  <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.7, fontSize: '0.9rem', lineHeight: 1.5, margin: 0, flex: 1, whiteSpace: 'pre-line' }}>
                     {o.description}
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', fontSize: '0.7rem' }}>

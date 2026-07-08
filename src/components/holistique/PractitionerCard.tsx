@@ -147,7 +147,7 @@ export default function PractitionerCard({
 
         {/* Bio (courte) */}
         {bio && (
-          <p className="font-cormorant text-sm text-parchemin/60 line-clamp-2 italic leading-relaxed">
+          <p className="font-cormorant text-sm text-parchemin/60 line-clamp-2 whitespace-pre-line italic leading-relaxed">
             {bio}
           </p>
         )}

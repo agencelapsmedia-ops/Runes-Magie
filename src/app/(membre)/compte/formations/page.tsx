@@ -83,7 +83,7 @@ export default async function FormationsPage() {
                   )}
                 </div>
                 {course.description && (
-                  <span className="mt-2 line-clamp-2 font-cormorant text-base text-parchemin/50">
+                  <span className="mt-2 line-clamp-2 whitespace-pre-line font-cormorant text-base text-parchemin/50">
                     {course.description}
                   </span>
                 )}

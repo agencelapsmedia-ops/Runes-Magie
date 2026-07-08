@@ -212,7 +212,7 @@ export default function ChangeCard({
                     {label}
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div style={{ background: '#FEE2E2', padding: '8px 12px', borderRadius: '4px', fontSize: '0.85rem', color: '#7F1D1D' }}>
+                    <div style={{ background: '#FEE2E2', padding: '8px 12px', borderRadius: '4px', fontSize: '0.85rem', color: '#7F1D1D', whiteSpace: 'pre-line' }}>
                       <strong style={{ fontSize: '0.65rem', display: 'block', marginBottom: '2px' }}>AVANT</strong>
                       {field === 'photoUrl' && oldValue ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -221,7 +221,7 @@ export default function ChangeCard({
                         formatValue(oldValue)
                       )}
                     </div>
-                    <div style={{ background: '#D1FAE5', padding: '8px 12px', borderRadius: '4px', fontSize: '0.85rem', color: '#064E3B' }}>
+                    <div style={{ background: '#D1FAE5', padding: '8px 12px', borderRadius: '4px', fontSize: '0.85rem', color: '#064E3B', whiteSpace: 'pre-line' }}>
                       <strong style={{ fontSize: '0.65rem', display: 'block', marginBottom: '2px' }}>APRÈS</strong>
                       {field === 'photoUrl' && newValue ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -283,7 +283,7 @@ export default function ChangeCard({
           <p style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.7rem', color: '#6B3FA0', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
             Note admin
           </p>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#1F2937' }}>{change.adminNote}</p>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#1F2937', whiteSpace: 'pre-line' }}>{change.adminNote}</p>
         </div>
       )}
 
