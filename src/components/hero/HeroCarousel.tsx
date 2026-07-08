@@ -85,11 +85,11 @@ export default function HeroCarousel() {
           </h1>
 
           {/* Bloc aligné à gauche dans le hero, contenu centré sur la largeur de l'ornement */}
-          <div className="mt-5 flex w-[460px] max-w-full flex-col items-center text-center">
+          <div className="mt-5 flex w-[560px] max-w-full flex-col items-center text-center">
             <OrnementDore className="w-full" />
             <p
-              className="my-1 font-cinzel uppercase text-gradient-gold tracking-[0.32em]"
-              style={{ fontSize: '1.3rem', textIndent: '0.32em' }}
+              className="my-2 font-cinzel font-bold uppercase text-gradient-gold tracking-[0.28em]"
+              style={{ fontSize: 'clamp(1.5rem, 2.1vw, 1.85rem)', textIndent: '0.28em' }}
             >
               La voie des arcanes
             </p>
@@ -132,8 +132,8 @@ export default function HeroCarousel() {
         <div className="flex w-full max-w-sm flex-col items-center text-center">
           <OrnementDore className="w-full" />
           <p
-            className="my-0.5 font-cinzel uppercase text-gradient-gold tracking-[0.28em] text-base"
-            style={{ textIndent: '0.28em' }}
+            className="my-1 font-cinzel font-bold uppercase text-gradient-gold tracking-[0.26em] text-xl"
+            style={{ textIndent: '0.26em' }}
           >
             La voie des arcanes
           </p>
