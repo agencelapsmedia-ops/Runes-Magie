@@ -53,9 +53,13 @@ function toView(o: OfferingRow): OfferingView {
     `${o.durationMinutes} min` + (o.capacity > 1 ? ` · ${o.capacity} places` : '');
   const lastName = o.practitioner.user.lastName;
   const practitionerName = `${o.practitioner.user.firstName}${lastName ? ' ' + lastName : ''}`;
-  const detailHref = (SEANCES_TYPES as readonly string[]).includes(o.type)
-    ? `/seances/${o.slug}`
-    : `/ecole/${o.slug}`;
+  // /ecole/[slug] n'accepte QUE les types COURS/ATELIER (route stricte) ; tout le
+  // reste (soins, consultations, guidance, cérémonies, tirages…) pointe vers /seances,
+  // dont la page détail est permissive. Évite les 404 sur les liens (ex. sliders accueil)
+  // pour les services qui ne sont ni cours ni séance « stricte ».
+  const detailHref = (ECOLE_TYPES as readonly string[]).includes(o.type)
+    ? `/ecole/${o.slug}`
+    : `/seances/${o.slug}`;
 
   return {
     id: o.id,
