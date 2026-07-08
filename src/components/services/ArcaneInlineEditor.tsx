@@ -69,6 +69,7 @@ const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
   'faqs',
   'pillarRunes',
   'intro',
+  'recognitionIntro',
   'longDescription',
   'sanctuaryText',
   'recognitionFinalText',
@@ -124,6 +125,16 @@ function splitPair(line: string): [string, string] {
   return [first.trim(), rest.join('||').trim()];
 }
 
+/**
+ * Séparateur d'entrées des éditeurs « paire » (FAQ, étapes) : un caractère de contrôle
+ * (Record Separator) que personne ne tape au clavier. Ainsi un retour-ligne saisi DANS
+ * une réponse/un texte n'est plus confondu avec la séparation entre deux entrées. Il ne
+ * vit que dans le brouillon transitoire : jamais affiché, jamais stocké (retiré au save).
+ */
+const ROW_SEP = '\u001e';
+const splitRows = (draft: string) =>
+  draft.split(ROW_SEP).map((row) => row.trim()).filter(Boolean);
+
 /** Construit le corps de la requête PATCH selon le type de champ. */
 function buildPayload(field: EditableField, draft: string): Record<string, unknown> {
   if (field === 'features') {
@@ -147,7 +158,7 @@ function buildPayload(field: EditableField, draft: string): Record<string, unkno
   }
   if (field === 'steps') {
     return {
-      steps: LINES(draft).map((line, index) => {
+      steps: splitRows(draft).map((line, index) => {
         const [title, text] = splitPair(line);
         return { number: String(index + 1).padStart(2, '0'), title, text };
       }),
@@ -155,7 +166,7 @@ function buildPayload(field: EditableField, draft: string): Record<string, unkno
   }
   if (field === 'faqs') {
     return {
-      faqs: LINES(draft).map((line) => {
+      faqs: splitRows(draft).map((line) => {
         const [question, answer] = splitPair(line);
         return { question, answer };
       }),
@@ -474,8 +485,10 @@ function PillarIconsEditor({
 
 /**
  * Éditeur de listes « paire » (étapes, FAQ) : chaque entrée est scindée en deux
- * champs distincts (titre + texte) plutôt qu'une ligne « A || B ». La valeur
- * retenue reste « Titre || Texte » jointe par retour-ligne (compatible buildPayload).
+ * champs distincts (titre + texte) plutôt qu'une ligne « A || B ». La valeur retenue
+ * reste « Titre || Texte », mais les entrées sont jointes par ROW_SEP (et NON par un
+ * retour-ligne) : ainsi un saut de ligne saisi dans le texte reste du contenu au lieu
+ * de créer une fausse entrée. Compatible avec buildPayload, qui redécoupe via splitRows().
  */
 function PairListEditor({
   draft,
@@ -493,12 +506,12 @@ function PairListEditor({
   helper?: string;
 }) {
   const rows = useMemo<[string, string][]>(
-    () => (draft.length ? draft.split('\n').map((line) => splitPair(line)) : []),
+    () => (draft.length ? draft.split(ROW_SEP).map((line) => splitPair(line)) : []),
     [draft],
   );
 
   const commit = (next: [string, string][]) =>
-    setDraft(next.map(([a, b]) => `${a} || ${b}`).join('\n'));
+    setDraft(next.map(([a, b]) => `${a} || ${b}`).join(ROW_SEP));
 
   const update = (index: number, slot: 0 | 1, value: string) => {
     const next = rows.map((row) => [...row] as [string, string]);
@@ -920,7 +933,10 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
       const target = targets.find((item) => item.field === field);
       if (!target) return;
       setActiveField(field);
-      setDraft(Array.isArray(target.value) ? target.value.join('\n') : target.value);
+      // FAQ et étapes : les entrées sont jointes par le Record Separator pour qu'un
+      // retour-ligne dans une réponse/un texte reste du contenu, pas une nouvelle entrée.
+      const sep = field === 'faqs' || field === 'steps' ? ROW_SEP : '\n';
+      setDraft(Array.isArray(target.value) ? target.value.join(sep) : target.value);
       setError('');
     },
     [targets],
@@ -1012,7 +1028,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
                 firstLabel="Titre de l'étape"
                 secondLabel="Texte de l'étape"
                 addLabel="Ajouter une étape"
-                helper="La numérotation (01, 02…) est automatique."
+                helper="La numérotation (01, 02…) est automatique. Astuce : dans le texte, appuie sur Entrée pour créer un nouveau paragraphe."
               />
             ) : activeTarget.field === 'faqs' ? (
               <PairListEditor
@@ -1021,6 +1037,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
                 firstLabel="Question"
                 secondLabel="Réponse"
                 addLabel="Ajouter une question"
+                helper="Astuce : dans la réponse, appuie sur Entrée pour créer un nouveau paragraphe."
               />
             ) : IMAGE_FIELDS.has(activeTarget.field) ? (
               <ImageFieldEditor draft={draft} setDraft={setDraft} helper={activeTarget.helper} />

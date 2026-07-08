@@ -45,7 +45,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       </div>
       <div className="relative mt-6 max-w-xl">
         {canEdit && <ArcaneFieldButton field="intro" label="Modifier le texte d'ouverture" />}
-        <p className="ff-corps text-xl italic leading-relaxed text-parchemin-vieilli/90 md:text-2xl">
+        <p className="whitespace-pre-line ff-corps text-xl italic leading-relaxed text-parchemin-vieilli/90 md:text-2xl">
           {content.intro}
         </p>
       </div>
@@ -229,7 +229,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
             </div>
             <div className="relative mt-5">
               {canEdit && <ArcaneFieldButton field="recognitionIntro" label="Modifier le texte d'introduction reconnaissance" />}
-              <p className="ff-corps text-xl font-semibold leading-snug text-parchemin-vieilli/85 md:text-2xl">
+              <p className="whitespace-pre-line ff-corps text-xl font-semibold leading-snug text-parchemin-vieilli/85 md:text-2xl">
                 {content.recognitionIntro}
               </p>
             </div>
@@ -277,7 +277,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           </div>
           <div className="relative rounded-sm border border-[#D4AF37]/35 bg-[#0A1028]/72 p-7 shadow-[0_0_40px_rgba(106,0,255,0.22)] md:p-10">
             {canEdit && <ArcaneFieldButton field="sanctuaryText" label="Modifier le texte du sanctuaire" />}
-            <p className="ff-corps text-2xl italic leading-relaxed text-parchemin-vieilli/90">
+            <p className="whitespace-pre-line ff-corps text-2xl italic leading-relaxed text-parchemin-vieilli/90">
               {content.sanctuaryText}
             </p>
           </div>
@@ -327,7 +327,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
                 <h3 className="mt-4 ff-label text-lg uppercase tracking-[0.12em] text-[#E6C87A]">
                   {step.title}
                 </h3>
-                <p className="mt-4 ff-corps text-lg leading-relaxed text-parchemin-vieilli/75">
+                <p className="mt-4 whitespace-pre-line ff-corps text-lg leading-relaxed text-parchemin-vieilli/75">
                   {step.text}
                 </p>
               </div>
@@ -407,7 +407,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
                       <h3 className="ff-label text-sm uppercase tracking-[0.16em] text-[#00D9D9] drop-shadow-[0_0_10px_rgba(0,217,217,0.5)] md:text-base">
                         {faq.question}
                       </h3>
-                      <p className="mt-2 ff-corps text-lg leading-relaxed text-parchemin-vieilli/82 md:text-xl">
+                      <p className="mt-2 whitespace-pre-line ff-corps text-lg leading-relaxed text-parchemin-vieilli/82 md:text-xl">
                         {faq.answer}
                       </p>
                     </div>
@@ -428,7 +428,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         </div>
         <div className="relative mx-auto mt-8 max-w-3xl">
           {canEdit && <ArcaneFieldButton field="finalText" label="Modifier le texte de l'appel final" />}
-          <p className="ff-corps text-2xl italic leading-relaxed text-parchemin-vieilli/85">
+          <p className="whitespace-pre-line ff-corps text-2xl italic leading-relaxed text-parchemin-vieilli/85">
             {content.finalText}
           </p>
         </div>
@@ -445,8 +445,11 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
   if (!canEdit) return body;
 
   const autoTitle = `${offering.name} avec ${offering.practitionerName} | La Voie des Arcanes`;
+  // Sur une seule ligne : un intro multi-paragraphes ne doit pas injecter de saut de ligne
+  // dans la méta-description (aperçu SEO).
+  const introOneLine = content.intro.replace(/\s+/g, ' ').trim();
   const autoDescription =
-    content.intro.length > 155 ? `${content.intro.slice(0, 152)}...` : content.intro;
+    introOneLine.length > 155 ? `${introOneLine.slice(0, 152)}...` : introOneLine;
   const seoBodyText = [
     content.subtitle,
     content.intro,
@@ -557,14 +560,14 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           field: 'steps',
           label: 'Étapes du déroulement',
           value: content.steps.map((step) => `${step.title} || ${step.text}`),
-          helper: 'Une étape par ligne, au format : Titre || Description. La numérotation (01, 02…) est automatique.',
+          helper: 'Chaque étape a un titre et un texte. La numérotation (01, 02…) est automatique.',
         },
         { field: 'faqTitle', label: 'Titre de la section FAQ', value: content.faqTitle },
         {
           field: 'faqs',
           label: 'Questions fréquentes',
           value: content.faqs.map((faq) => `${faq.question} || ${faq.answer}`),
-          helper: 'Une question par ligne, au format : Question || Réponse.',
+          helper: 'Chaque entrée a une question et une réponse.',
         },
         {
           field: 'faqImageUrl',

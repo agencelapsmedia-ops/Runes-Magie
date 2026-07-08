@@ -524,9 +524,11 @@ export function buildServiceLandingMetadata(offering: OfferingView): Metadata {
   // Meta-titre : valeur personnalisée (panneau SEO) sinon titre auto.
   const autoTitle = `${offering.name} avec ${offering.practitionerName} | La Voie des Arcanes`;
   const title = content.metaTitle.trim() || autoTitle;
-  // Meta-description : valeur personnalisée sinon extrait de l'intro.
+  // Meta-description : valeur personnalisée sinon extrait de l'intro, aplati sur une
+  // seule ligne (l'intro peut désormais contenir des sauts de ligne / paragraphes).
+  const introOneLine = content.intro.replace(/\s+/g, ' ').trim();
   const autoDescription =
-    content.intro.length > 155 ? `${content.intro.slice(0, 152)}...` : content.intro;
+    introOneLine.length > 155 ? `${introOneLine.slice(0, 152)}...` : introOneLine;
   const description = content.metaDescription.trim() || autoDescription;
   const url = `${SITE_URL}${offering.detailHref}`;
   // Image sociale : ogImage personnalisée sinon image héro.

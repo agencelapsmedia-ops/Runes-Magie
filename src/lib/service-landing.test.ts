@@ -201,6 +201,28 @@ assert.equal(crumb.itemListElement.length, 3);
 assert.equal(crumb.itemListElement[1].name, 'Séances');
 assert.equal(crumb.itemListElement[2].name, 'Le Soin Rituel');
 
+// --- Sauts de ligne : conservés dans le contenu, aplatis dans la méta-description ---
+const multiligne: OfferingView = {
+  ...soinRituel,
+  landing: {
+    intro: 'Première ligne.\nDeuxième ligne.',
+    faqs: [{ question: 'Q ?', answer: 'Para 1.\n\nPara 2.' }],
+    steps: [{ number: '01', title: 'Étape', text: 'Ligne A.\nLigne B.' }],
+  },
+};
+// Les retours-ligne internes survivent au parsing (contrat de stockage).
+const multiParsed = parseLandingOverrides(multiligne.landing);
+assert.equal(multiParsed.intro, 'Première ligne.\nDeuxième ligne.');
+assert.equal(multiParsed.faqs?.[0].answer, 'Para 1.\n\nPara 2.');
+assert.equal(multiParsed.steps?.[0].text, 'Ligne A.\nLigne B.');
+const multiContent = buildServiceLandingContent(multiligne);
+assert.equal(multiContent.intro, 'Première ligne.\nDeuxième ligne.');
+assert.equal(multiContent.faqs[0].answer, 'Para 1.\n\nPara 2.');
+// La méta-description auto est aplatie sur une seule ligne (aucun '\n').
+const multiMeta = buildServiceLandingMetadata(multiligne);
+assert.equal(multiMeta.description, 'Première ligne. Deuxième ligne.');
+assert.doesNotMatch(String(multiMeta.description), /\n/);
+
 // --- Polices : valeurs par défaut ---
 assert.equal(content.titleFont, 'cinzel-decorative');
 assert.equal(content.labelFont, 'cinzel');
