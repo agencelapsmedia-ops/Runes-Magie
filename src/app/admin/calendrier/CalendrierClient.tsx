@@ -8,6 +8,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import type { EventClickArg } from '@fullcalendar/core';
+import type { DateClickArg } from '@fullcalendar/interaction';
 import ManualAppointmentButton from '@/components/holistique/ManualAppointmentButton';
 
 export interface RdvSerialise {
@@ -137,6 +138,21 @@ export default function CalendrierClient({
     [rdvs, filtrePraticienne, afficherAnnules, couleurPar],
   );
 
+  // Clic sur une plage VIDE du calendrier → ouvre le modal de création avec la
+  // date/heure pré-remplie. En vue mois (journée entière), on propose 9 h.
+  const [prefill, setPrefill] = useState<{ startsAt: string; nonce: number } | null>(null);
+
+  function toLocalInput(d: Date): string {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  function onDateClick(arg: DateClickArg) {
+    const d = new Date(arg.date);
+    if (arg.allDay) d.setHours(9, 0, 0, 0); // vue mois : pas d'heure cliquée → 9 h par défaut
+    setPrefill({ startsAt: toLocalInput(d), nonce: Date.now() });
+  }
+
   function onEventClick(arg: EventClickArg) {
     const rdv = rdvParId.get(arg.event.id);
     if (rdv) {
@@ -179,6 +195,7 @@ export default function CalendrierClient({
           practitioners={practitionerOptions}
           variant="light"
           label="+ Nouveau rendez-vous"
+          prefill={prefill}
         />
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>
@@ -229,6 +246,7 @@ export default function CalendrierClient({
           }}
           events={events}
           eventClick={onEventClick}
+          dateClick={onDateClick}
           slotMinTime="07:00:00"
           slotMaxTime="22:00:00"
           allDaySlot={false}
@@ -460,6 +478,10 @@ export default function CalendrierClient({
           text-transform: capitalize;
         }
         .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { color: #374151; text-decoration: none; }
+        /* Heures de la colonne de gauche : plus foncées et lisibles */
+        .fc .fc-timegrid-slot-label-cushion, .fc .fc-timegrid-axis-cushion { color: #1F2937; font-weight: 600; font-size: 0.8rem; }
+        /* Curseur : les plages vides sont cliquables (création rapide) */
+        .fc .fc-timegrid-slot, .fc .fc-daygrid-day-frame { cursor: pointer; }
         .fc .fc-day-today { background: rgba(107, 63, 160, 0.06) !important; }
         .fc-event { cursor: pointer; font-size: 0.76rem; }
         .fc-event.rdv-annule .fc-event-title, .fc-event.rdv-annule .fc-event-time { text-decoration: line-through; }

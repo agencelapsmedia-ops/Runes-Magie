@@ -28,6 +28,12 @@ interface Props {
   variant?: 'dark' | 'light';
   /** Libellé du bouton déclencheur (défaut : « + Ajouter un rendez-vous »). */
   label?: string;
+  /**
+   * Ouverture pilotée de l'extérieur (ex. clic sur une plage du calendrier) :
+   * ouvre le modal avec la date/heure pré-remplie. `nonce` change à chaque clic
+   * pour permettre de rouvrir sur la même plage.
+   */
+  prefill?: { startsAt: string; nonce: number } | null;
 }
 
 export default function ManualAppointmentButton({
@@ -35,6 +41,7 @@ export default function ManualAppointmentButton({
   lockedPractitionerId,
   variant = 'dark',
   label: triggerLabel = '+ Ajouter un rendez-vous',
+  prefill = null,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -83,6 +90,15 @@ export default function ManualAppointmentButton({
     }, 300);
     return () => clearTimeout(t);
   }, [clientSearch]);
+
+  // Clic sur une plage du calendrier → ouvre le modal avec la date/heure pré-remplie.
+  useEffect(() => {
+    if (prefill?.startsAt) {
+      setStartsAt(prefill.startsAt);
+      setOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill?.nonce]);
 
   function pickClient(c: ClientHit) {
     setFirstName(c.firstName);
