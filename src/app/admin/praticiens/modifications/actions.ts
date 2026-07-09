@@ -104,10 +104,11 @@ export async function requestAvailabilityChange(payload: AvailabilityPayload): P
  */
 export async function approveChange(changeId: string, adminNote?: string): Promise<void> {
   const session = await auth();
-  if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
+  const u = session?.user as { id?: string; role?: string; isOwner?: boolean } | undefined;
+  if (!u || (u.role !== 'ADMIN' && u.isOwner !== true)) {
     throw new Error('Réservé aux admins.');
   }
-  const adminId = (session.user as { id?: string }).id ?? null;
+  const adminId = u.id ?? null;
 
   const change = await prisma.pendingPractitionerChange.findUnique({
     where: { id: changeId },
@@ -186,10 +187,11 @@ export async function approveChange(changeId: string, adminNote?: string): Promi
 
 export async function rejectChange(changeId: string, adminNote: string): Promise<void> {
   const session = await auth();
-  if (!session?.user || (session.user as { role?: string }).role !== 'ADMIN') {
+  const u = session?.user as { id?: string; role?: string; isOwner?: boolean } | undefined;
+  if (!u || (u.role !== 'ADMIN' && u.isOwner !== true)) {
     throw new Error('Réservé aux admins.');
   }
-  const adminId = (session.user as { id?: string }).id ?? null;
+  const adminId = u.id ?? null;
 
   const change = await prisma.pendingPractitionerChange.findUnique({
     where: { id: changeId },

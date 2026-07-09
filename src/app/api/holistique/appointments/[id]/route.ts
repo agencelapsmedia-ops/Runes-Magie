@@ -85,8 +85,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const appointment = await prisma.holisticAppointment.findUnique({ where: { id } });
   if (!appointment) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
 
-  // Auth : admin OU praticienne propriétaire
-  const isAdmin = user.role === 'ADMIN';
+  // Auth : admin (ou praticienne propriétaire de la business) OU praticienne du RDV
+  const isAdmin = user.role === 'ADMIN' || user.isOwner === true;
   const isOwner = user.role === 'PRACTITIONER' && user.practitionerId === appointment.practitionerId;
   if (!isAdmin && !isOwner) {
     return NextResponse.json({ error: 'Action réservée à la praticienne ou à un admin' }, { status: 403 });

@@ -35,8 +35,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { practitionerId, client, offeringId, startsAt, mode, paymentMode, notes } = body ?? {};
 
-    // Auth : admin (n'importe quelle praticienne) OU praticienne (elle-même uniquement)
-    const isAdmin = user.role === 'ADMIN';
+    // Auth : admin ou propriétaire (n'importe quelle praticienne) OU praticienne (elle-même uniquement)
+    const isAdmin = user.role === 'ADMIN' || user.isOwner === true;
     const isOwner = user.role === 'PRACTITIONER' && user.practitionerId === practitionerId;
     if (!isAdmin && !isOwner) {
       return NextResponse.json({ error: 'Action réservée à la praticienne ou à un admin' }, { status: 403 });

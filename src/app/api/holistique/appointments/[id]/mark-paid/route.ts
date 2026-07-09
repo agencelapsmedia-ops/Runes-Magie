@@ -10,7 +10,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const session = await holisticSession();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user = session?.user as any;
-  if (user?.role !== 'ADMIN') {
+  // Admin OU praticienne propriétaire (isOwner) — mêmes droits d'administration.
+  if (user?.role !== 'ADMIN' && user?.isOwner !== true) {
     return NextResponse.json({ error: 'Action réservée à un admin' }, { status: 403 });
   }
 

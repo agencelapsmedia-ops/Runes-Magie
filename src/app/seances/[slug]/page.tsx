@@ -29,6 +29,9 @@ export default async function SeanceDetailPage({
 
   const session = await auth();
   const role = session?.user && 'role' in session.user ? session.user.role : null;
+  // La praticienne propriétaire (isOwner) a les mêmes droits d'édition que l'admin.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isOwner = (session?.user as any)?.isOwner === true;
 
-  return <ServiceLandingTemplate offering={offering} canEdit={role === 'ADMIN'} />;
+  return <ServiceLandingTemplate offering={offering} canEdit={role === 'ADMIN' || isOwner} />;
 }

@@ -32,7 +32,8 @@ async function loadAppointmentWithAccess(appointmentId: string) {
 
   const isClient = appointment.clientId === sessionUserId;
   const isPractitioner = appointment.practitioner.userId === sessionUserId;
-  const isAdmin = sessionRole === 'ADMIN';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isAdmin = sessionRole === 'ADMIN' || (session.user as any).isOwner === true;
   if (!isClient && !isPractitioner && !isAdmin) {
     return {
       error: NextResponse.json({ error: 'Tu ne peux pas accéder à cette salle.' }, { status: 403 }),
