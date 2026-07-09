@@ -7,6 +7,7 @@ import {
   type AgendaItem,
 } from '@/lib/holistic-booking-email';
 import { isInternalEmail } from '@/lib/holistic-clients';
+import { releaseExpiredInteracHolds } from '@/lib/holistic-interac-release';
 
 /**
  * GET /api/cron/holistic-reminders
@@ -135,5 +136,15 @@ export async function GET(req: Request) {
     console.error('[cron agenda praticienne] échec', err);
   }
 
-  return NextResponse.json({ sent3d, sent24h, sentAgenda, failed });
+  // Filet quotidien : libère les RDV Interac impayés > 30 min (le ménage paresseux
+  // de la page de réservation fait la même chose en continu).
+  let interacReleased = 0;
+  try {
+    interacReleased = await releaseExpiredInteracHolds();
+  } catch (err) {
+    failed++;
+    console.error('[cron interac-release] échec', err);
+  }
+
+  return NextResponse.json({ sent3d, sent24h, sentAgenda, interacReleased, failed });
 }

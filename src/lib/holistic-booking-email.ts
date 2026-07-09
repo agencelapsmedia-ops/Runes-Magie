@@ -473,6 +473,40 @@ export async function sendInteracReceivedToClient(data: BookingEmailData): Promi
   }
 }
 
+/** Courriel au CLIENT : réservation Interac annulée, virement non reçu à temps. */
+export async function sendInteracExpiredToClient(data: BookingEmailData): Promise<void> {
+  const dateLabel = formatMontrealDateTime(data.startsAt);
+  const bookingUrl = `${APP_URL}/soins`;
+  const html = emailShell(`
+    <h2 style="color:#C9A84C;font-size:22px;margin:0 0 16px;">Réservation annulée — virement non reçu</h2>
+    <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">
+      Bonjour ${data.clientFirstName}, nous n'avons pas reçu ton virement Interac dans le délai prévu (30 minutes).
+      Ta réservation a donc été annulée et le créneau remis en disponibilité :
+    </p>
+    <div style="background:rgba(107,63,160,0.15);border:1px solid rgba(107,63,160,0.3);border-radius:6px;padding:20px;margin:20px 0;">
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Service :</strong> ${data.serviceName}</p>
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Praticien·ne :</strong> ${data.practitionerFirstName} ${data.practitionerLastName}</p>
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Date qui était prévue :</strong> ${dateLabel}</p>
+    </div>
+    <p style="color:rgba(245,240,232,0.7);font-size:14px;line-height:1.6;">
+      Tu peux reprendre rendez-vous en quelques clics — et si tu as déjà envoyé ton virement,
+      écris-nous vite à <a href="mailto:info@runesetmagie.ca" style="color:#2EC4B6;">info@runesetmagie.ca</a>, on arrangera ça.
+    </p>
+    <div style="text-align:center;margin:24px 0 8px;">
+      <a href="${bookingUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#4A2D7A,#2D1B4E);color:#C9A84C;text-decoration:none;border-radius:4px;font-size:14px;letter-spacing:0.05em;">Reprendre rendez-vous</a>
+    </div>
+  `);
+  if (!resend) {
+    console.log('[Email holistique] Interac expiré client (Resend non configuré) :', data.clientEmail);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to: data.clientEmail, subject: `Réservation annulée (virement non reçu) — ${data.serviceName}`, html });
+  } catch (err) {
+    console.error('[Email holistique] Échec envoi Interac expiré client', err);
+  }
+}
+
 /** Un rendez-vous du récap quotidien envoyé à la praticienne. */
 export interface AgendaItem {
   when: Date;

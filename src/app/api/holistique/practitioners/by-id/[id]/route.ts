@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { getBusyPeriods } from '@/lib/google-calendar';
+import { releaseExpiredInteracHolds } from '@/lib/holistic-interac-release';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,6 +35,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const staleIds = stale.map((s) => s.id);
     await prisma.holisticPayment.deleteMany({ where: { appointmentId: { in: staleIds } } });
     await prisma.holisticAppointment.deleteMany({ where: { id: { in: staleIds } } });
+  }
+
+  // Ménage paresseux Interac : les RDV Interac impayés depuis > 30 min sont annulés
+  // (créneau libéré + courriel à la cliente). Best-effort, ne bloque jamais la page.
+  try {
+    await releaseExpiredInteracHolds();
+  } catch (err) {
+    console.error('[by-id] libération Interac échouée (non-bloquant)', err);
   }
 
   const bookedAppointments = await prisma.holisticAppointment.findMany({
