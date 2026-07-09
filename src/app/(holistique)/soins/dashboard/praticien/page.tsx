@@ -371,6 +371,27 @@ export default async function PraticienDashboardPage() {
               {link.label}
             </Link>
           ))}
+          {/* Propriétaire : retour direct au back-office admin (même connexion) */}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {(session.user as any).isOwner && (
+            <Link
+              href="/admin"
+              style={{
+                fontFamily: 'var(--font-cinzel)',
+                fontSize: '0.78rem',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--or-ancien)',
+                textDecoration: 'none',
+                padding: '8px 16px',
+                border: '1px solid rgba(201, 168, 76, 0.45)',
+                borderRadius: '4px',
+                background: 'rgba(201, 168, 76, 0.12)',
+              }}
+            >
+              ✦ Administration
+            </Link>
+          )}
         </nav>
 
         {/* Bandeau Stripe Connect (toujours affiché — soit ✓ vert, soit CTA configuration) */}
