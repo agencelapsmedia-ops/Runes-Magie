@@ -319,6 +319,35 @@ export async function sendRescheduleToClient(data: BookingEmailData): Promise<vo
   }
 }
 
+/** Courriel à la PRATICIENNE : un RDV de son agenda a été déplacé. */
+export async function sendRescheduleToPractitioner(data: BookingEmailData): Promise<void> {
+  const dateLabel = formatMontrealDateTime(data.startsAt);
+  const dashboardUrl = `${APP_URL}/soins/dashboard/praticien`;
+  const html = emailShell(`
+    <h2 style="color:#2EC4B6;font-size:22px;margin:0 0 16px;">Rendez-vous déplacé 🔄</h2>
+    <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">
+      Bonjour ${data.practitionerFirstName}, un rendez-vous de ton agenda a été reprogrammé.
+    </p>
+    <div style="background:rgba(107,63,160,0.15);border:1px solid rgba(107,63,160,0.3);border-radius:6px;padding:20px;margin:20px 0;">
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Client·e :</strong> ${data.clientFirstName}</p>
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Service :</strong> ${data.serviceName}</p>
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Nouvelle date et heure :</strong> ${dateLabel}</p>
+    </div>
+    <div style="text-align:center;margin:24px 0 8px;">
+      <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#4A2D7A,#2D1B4E);color:#C9A84C;text-decoration:none;border-radius:4px;font-size:14px;">Voir mon tableau de bord</a>
+    </div>
+  `, 'Runes &amp; Magie — Notification automatique');
+  if (!resend) {
+    console.log('[Email holistique] Déplacement praticienne (Resend non configuré) :', data.practitionerEmail);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to: data.practitionerEmail, subject: `RDV déplacé — ${data.clientFirstName} le ${dateLabel}`, html });
+  } catch (err) {
+    console.error('[Email holistique] Échec envoi déplacement praticienne', err);
+  }
+}
+
 /** Courriel au CLIENT : son RDV a été annulé. */
 export async function sendCancellationToClient(data: BookingEmailData): Promise<void> {
   const dateLabel = formatMontrealDateTime(data.startsAt);
@@ -408,6 +437,91 @@ export async function sendReminderToClient(data: BookingEmailData, lead: '3d' | 
     await resend.emails.send({ from: FROM, to: data.clientEmail, subject: `Rappel : ta séance ${when} — ${data.serviceName}`, html });
   } catch (err) {
     console.error('[Email holistique] Échec envoi rappel client', err);
+  }
+}
+
+/** Courriel au CLIENT : virement Interac reçu → RDV confirmé. */
+export async function sendInteracReceivedToClient(data: BookingEmailData): Promise<void> {
+  const dateLabel = formatMontrealDateTime(data.startsAt);
+  const dashboardUrl = `${APP_URL}/soins/dashboard/client`;
+  const html = emailShell(`
+    <h2 style="color:#C9A84C;font-size:22px;margin:0 0 16px;">Paiement reçu — ton rendez-vous est confirmé ✓</h2>
+    <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">
+      Bonjour ${data.clientFirstName}, nous avons bien reçu ton virement Interac. Ta séance est confirmée :
+    </p>
+    <div style="background:rgba(107,63,160,0.15);border:1px solid rgba(107,63,160,0.3);border-radius:6px;padding:20px;margin:20px 0;">
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Service :</strong> ${data.serviceName}</p>
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Praticien·ne :</strong> ${data.practitionerFirstName} ${data.practitionerLastName}</p>
+      <p style="margin:4px 0;color:#E8DCC8;"><strong>Date et heure :</strong> ${dateLabel}</p>
+      ${locationHtml(data)}
+    </div>
+    <div style="text-align:center;margin:24px 0 8px;">
+      <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#4A2D7A,#2D1B4E);color:#C9A84C;text-decoration:none;border-radius:4px;font-size:14px;letter-spacing:0.05em;">Voir mes RDV</a>
+    </div>
+    <p style="color:rgba(245,240,232,0.5);font-size:13px;line-height:1.6;margin:24px 0 0;padding-top:20px;border-top:1px solid rgba(74,45,122,0.3);">
+      Une question ? Écris-nous à <a href="mailto:info@runesetmagie.ca" style="color:#2EC4B6;">info@runesetmagie.ca</a>.
+    </p>
+  `);
+  if (!resend) {
+    console.log('[Email holistique] Interac reçu client (Resend non configuré) :', data.clientEmail);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to: data.clientEmail, subject: `Paiement reçu — ton RDV est confirmé — ${data.serviceName}`, html });
+  } catch (err) {
+    console.error('[Email holistique] Échec envoi Interac reçu client', err);
+  }
+}
+
+/** Un rendez-vous du récap quotidien envoyé à la praticienne. */
+export interface AgendaItem {
+  when: Date;
+  clientName: string;
+  durationMin: number;
+}
+
+/** Courriel à la PRATICIENNE : récap de ses rendez-vous de demain (1 courriel/jour). */
+export async function sendDailyAgendaToPractitioner(
+  practitionerEmail: string,
+  practitionerFirstName: string,
+  items: AgendaItem[],
+): Promise<void> {
+  if (!items.length) return;
+  const rows = items
+    .map(
+      (i) => `
+      <p style="margin:6px 0;color:#E8DCC8;">
+        <strong>${formatMontrealDateTime(i.when)}</strong> — ${i.clientName} (${i.durationMin} min)
+      </p>`,
+    )
+    .join('');
+  const dashboardUrl = `${APP_URL}/soins/dashboard/praticien`;
+  const plural = items.length > 1 ? 's' : '';
+  const html = emailShell(`
+    <h2 style="color:#2EC4B6;font-size:22px;margin:0 0 16px;">Tes rendez-vous de demain ✨</h2>
+    <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">
+      Bonjour ${practitionerFirstName}, tu as ${items.length} rendez-vous${plural} demain :
+    </p>
+    <div style="background:rgba(107,63,160,0.15);border:1px solid rgba(107,63,160,0.3);border-radius:6px;padding:20px;margin:20px 0;">
+      ${rows}
+    </div>
+    <div style="text-align:center;margin:24px 0 8px;">
+      <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#4A2D7A,#2D1B4E);color:#C9A84C;text-decoration:none;border-radius:4px;font-size:14px;">Voir mon tableau de bord</a>
+    </div>
+  `, 'Runes &amp; Magie — Rappel automatique');
+  if (!resend) {
+    console.log('[Email holistique] Agenda praticienne (Resend non configuré) :', practitionerEmail);
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: practitionerEmail,
+      subject: `Rappel : ${items.length} rendez-vous${plural} demain`,
+      html,
+    });
+  } catch (err) {
+    console.error('[Email holistique] Échec envoi agenda praticienne', err);
   }
 }
 

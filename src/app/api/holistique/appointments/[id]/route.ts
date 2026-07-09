@@ -11,6 +11,7 @@ import {
   sendCancellationToClient,
   sendCancellationToPractitioner,
   sendRescheduleToClient,
+  sendRescheduleToPractitioner,
 } from '@/lib/holistic-booking-email';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -140,9 +141,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
   try {
     const emailData = await buildBookingEmailData(id);
-    if (emailData) await sendRescheduleToClient(emailData);
+    if (emailData) {
+      await Promise.allSettled([
+        sendRescheduleToClient(emailData),
+        sendRescheduleToPractitioner(emailData),
+      ]);
+    }
   } catch (err) {
-    console.error('[deplacement] courriel client échoué (non-bloquant)', { appointmentId: id, err });
+    console.error('[deplacement] courriels échoués (non-bloquant)', { appointmentId: id, err });
   }
   try {
     await updateBookingTimesV2({ appointmentId: id, oldStartsAt, newStartsAt, newEndsAt });

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { buildBookingEmailData, sendReminderToClient } from '@/lib/holistic-booking-email';
+import {
+  buildBookingEmailData,
+  sendReminderToClient,
+  sendDailyAgendaToPractitioner,
+  type AgendaItem,
+} from '@/lib/holistic-booking-email';
 import { isInternalEmail } from '@/lib/holistic-clients';
 
 /**
@@ -92,5 +97,43 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ sent3d, sent24h, failed });
+  // Récap quotidien PRATICIENNE : un courriel par praticienne listant ses RDV de
+  // « demain » (même fenêtre 12–36h que le rappel client). Un seul passage/jour
+  // → pas de flag de dédoublonnage nécessaire. Best-effort.
+  let sentAgenda = 0;
+  try {
+    const tomorrow = await prisma.holisticAppointment.findMany({
+      where: { status: 'CONFIRMED', startsAt: { gt: lo24h, lte: hi24h } },
+      include: {
+        client: { select: { firstName: true, lastName: true } },
+        practitioner: { include: { user: { select: { firstName: true, email: true } } } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+    const byPractitioner = new Map<string, { email: string; firstName: string; items: AgendaItem[] }>();
+    for (const a of tomorrow) {
+      const key = a.practitionerId;
+      const entry = byPractitioner.get(key) ?? {
+        email: a.practitioner.user.email,
+        firstName: a.practitioner.user.firstName,
+        items: [],
+      };
+      entry.items.push({
+        when: a.startsAt,
+        clientName: `${a.client.firstName} ${a.client.lastName}`.trim(),
+        durationMin: Math.round((a.endsAt.getTime() - a.startsAt.getTime()) / 60000),
+      });
+      byPractitioner.set(key, entry);
+    }
+    for (const p of byPractitioner.values()) {
+      if (isInternalEmail(p.email)) continue;
+      await sendDailyAgendaToPractitioner(p.email, p.firstName, p.items);
+      sentAgenda++;
+    }
+  } catch (err) {
+    failed++;
+    console.error('[cron agenda praticienne] échec', err);
+  }
+
+  return NextResponse.json({ sent3d, sent24h, sentAgenda, failed });
 }

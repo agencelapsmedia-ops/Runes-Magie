@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
+import { buildBookingEmailData, sendInteracReceivedToClient } from '@/lib/holistic-booking-email';
+import { isInternalEmail } from '@/lib/holistic-clients';
 
 /**
  * POST /api/holistique/appointments/[id]/mark-paid
@@ -30,6 +32,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     data: { status: 'PAID', paidAt: new Date() },
   });
   await prisma.holisticAppointment.update({ where: { id }, data: { depositPaidAt: new Date() } });
+
+  // Confirmation au client : virement reçu → RDV confirmé (best-effort, non-bloquant).
+  try {
+    const emailData = await buildBookingEmailData(id);
+    if (emailData && !isInternalEmail(emailData.clientEmail)) {
+      await sendInteracReceivedToClient(emailData);
+    }
+  } catch (err) {
+    console.error('[mark-paid] courriel Interac reçu échoué (non-bloquant)', { appointmentId: id, err });
+  }
 
   return NextResponse.json({ ok: true });
 }
