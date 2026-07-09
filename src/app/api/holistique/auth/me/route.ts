@@ -26,6 +26,7 @@ export async function GET() {
         role: (session.user as { role?: string }).role,
         practitionerId: (session.user as { practitionerId?: string }).practitionerId,
         practitionerStatus: (session.user as { practitionerStatus?: string }).practitionerStatus,
+        isOwner: (session.user as { isOwner?: boolean }).isOwner === true,
       },
     },
     { headers: NO_STORE },

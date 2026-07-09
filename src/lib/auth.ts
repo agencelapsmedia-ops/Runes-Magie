@@ -26,6 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: admin.email,
             name: admin.name,
             role: "ADMIN",
+            isOwner: false,
           };
         }
 
@@ -46,6 +47,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: holistic.role, // CLIENT | PRACTITIONER | ADMIN
           practitionerId: holistic.practitioner?.id ?? null,
           practitionerStatus: holistic.practitioner?.status ?? null,
+          // La praticienne propriétaire (isOwner) obtient aussi l'accès admin,
+          // sans changer son rôle PRACTITIONER (son espace praticienne reste intact).
+          isOwner: holistic.practitioner?.isOwner ?? false,
         };
       },
     }),
@@ -61,6 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = u.role;
         token.practitionerId = u.practitionerId ?? null;
         token.practitionerStatus = u.practitionerStatus ?? null;
+        token.isOwner = u.isOwner ?? false;
       }
       return token;
     },
@@ -72,6 +77,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         s.role = token.role;
         s.practitionerId = token.practitionerId;
         s.practitionerStatus = token.practitionerStatus;
+        s.isOwner = token.isOwner ?? false;
       }
       return session;
     },

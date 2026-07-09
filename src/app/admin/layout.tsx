@@ -32,14 +32,17 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       return;
     }
     // Bloquer les non-ADMIN qui auraient pu se loguer via le handler unifié
-    // (depuis la fusion, /api/auth/* accepte aussi les HolisticUser)
+    // (depuis la fusion, /api/auth/* accepte aussi les HolisticUser).
+    // Exception : la praticienne propriétaire (isOwner) a aussi accès à l'admin.
     if (
       status === 'authenticated' &&
       pathname !== '/admin/login' &&
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (session?.user as any)?.role &&
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (session?.user as any).role !== 'ADMIN'
+      (session?.user as any).role !== 'ADMIN' &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (session?.user as any)?.isOwner !== true
     ) {
       router.push('/soins/dashboard/client');
     }
@@ -102,6 +105,16 @@ function AdminShell({ children }: { children: React.ReactNode }) {
             <p className="text-sm font-cinzel font-medium text-parchemin mb-1 truncate">
               {session.user.name}
             </p>
+          )}
+          {/* Praticienne propriétaire : accès direct à son espace, sans re-connexion */}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {(session?.user as any)?.practitionerId && (
+            <Link
+              href="/soins/dashboard/praticien"
+              className="block text-xs text-turquoise-cristal hover:text-or-ancien transition-colors mb-1"
+            >
+              Mon espace praticienne &rarr;
+            </Link>
           )}
           <Link
             href="/"

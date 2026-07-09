@@ -8,6 +8,7 @@ interface SessionUser {
   email?: string;
   name?: string;
   role?: string;
+  isOwner?: boolean;
 }
 
 export default function UserNav() {
@@ -95,6 +96,33 @@ export default function UserNav() {
         <span className="hidden sm:inline">{dashboardLabel}</span>
         <span className="sm:hidden">Mon compte</span>
       </Link>
+
+      {/* Propriétaire : accès direct à l'administration, sans re-connexion */}
+      {user.isOwner && (
+        <Link
+          href="/admin"
+          title="Administration"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            background: 'rgba(201, 168, 76, 0.1)',
+            border: '1px solid rgba(201, 168, 76, 0.4)',
+            borderRadius: '4px',
+            color: 'var(--or-ancien)',
+            fontFamily: 'var(--font-cinzel)',
+            fontSize: '0.72rem',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem' }}>✦</span>
+          <span className="hidden sm:inline">Administration</span>
+        </Link>
+      )}
 
       <button
         type="button"

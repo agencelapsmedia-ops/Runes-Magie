@@ -27,7 +27,11 @@ export async function requireAdmin() {
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (session.user as any).role;
-  if (role !== "ADMIN") {
+  // La praticienne propriétaire (isOwner) a aussi les droits admin, même si son
+  // rôle reste PRACTITIONER (une seule connexion pour gérer les deux espaces).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isOwner = (session.user as any).isOwner === true;
+  if (role !== "ADMIN" && !isOwner) {
     return NextResponse.json(
       { error: "Accès refusé — réservé à l'administration." },
       { status: 403 },
