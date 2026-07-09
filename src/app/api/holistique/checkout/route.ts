@@ -31,6 +31,16 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
   const { practitionerId, startsAt, endsAt, notes, offeringId, mode } = await req.json();
+
+  // Barrière serveur : impossible de réserver un créneau déjà passé (l'affichage
+  // les masque déjà, ceci garantit le refus même depuis une page restée ouverte).
+  const startsAtDate = new Date(startsAt);
+  if (!startsAt || Number.isNaN(startsAtDate.getTime()) || startsAtDate.getTime() <= Date.now()) {
+    return NextResponse.json(
+      { error: 'Ce créneau est déjà passé — choisis une plage à venir.' },
+      { status: 400 },
+    );
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clientId = (session.user as any).id;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

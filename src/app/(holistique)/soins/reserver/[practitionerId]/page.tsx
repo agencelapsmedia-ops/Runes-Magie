@@ -263,6 +263,9 @@ export default function ReservationPage({
       slotStart.setHours(h, m, 0, 0);
       const slotEnd = new Date(slotStart.getTime() + sessionDuration * 60 * 1000);
 
+      // Créneau déjà passé (aujourd'hui, heure écoulée) → jamais proposé.
+      if (slotStart.getTime() <= Date.now()) continue;
+
       // Occupé dans Google Agenda → créneau retiré.
       const googleBlocked = gBusy.some((g) => {
         const gStart = new Date(g.startsAt).getTime();
