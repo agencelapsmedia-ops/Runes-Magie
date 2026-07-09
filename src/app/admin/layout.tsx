@@ -5,21 +5,41 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
-const navItems = [
-  { label: 'Dashboard', href: '/admin', icon: 'ᛊ' },
-  { label: 'Site web', href: '/admin/site', icon: 'ᛟ' },
-  { label: 'Clients', href: '/admin/clients', icon: 'ᛗ' },
-  { label: 'Commandes', href: '/admin/commandes', icon: 'ᚲ' },
-  { label: 'Inventaire', href: '/admin/produits/grid', icon: 'ᚤ' },
-  { label: 'Catégories', href: '/admin/categories', icon: 'ᛚ' },
-  { label: 'Clover', href: '/admin/clover', icon: 'ᚷ' },
-  { label: 'Praticiens', href: '/admin/praticiens', icon: 'ᚻ' },
-  { label: 'Services & Soins', href: '/admin/offerings', icon: 'ᚹ' },
-  { label: 'Formations', href: '/admin/formations', icon: 'ᛪ' },
-  { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚷ' },
-  { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
-  { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛒ' },
-  { label: 'Revenus Holistique', href: '/admin/revenus-holistique', icon: 'ᚴ' },
+// Menu regroupé par domaine : chaque section a un petit titre, les outils du
+// même univers (boutique / soins & cours / site) sont rassemblés ensemble.
+const navSections: { title: string | null; items: { label: string; href: string; icon: string }[] }[] = [
+  {
+    title: null,
+    items: [{ label: 'Dashboard', href: '/admin', icon: 'ᛊ' }],
+  },
+  {
+    title: 'Boutique',
+    items: [
+      { label: 'Commandes', href: '/admin/commandes', icon: 'ᚲ' },
+      { label: 'Inventaire', href: '/admin/produits/grid', icon: 'ᚤ' },
+      { label: 'Catégories', href: '/admin/categories', icon: 'ᛚ' },
+      { label: 'Clover', href: '/admin/clover', icon: 'ᚷ' },
+    ],
+  },
+  {
+    title: 'Soins & Cours',
+    items: [
+      { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛒ' },
+      { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
+      { label: 'Praticiens', href: '/admin/praticiens', icon: 'ᚻ' },
+      { label: 'Services & Soins', href: '/admin/offerings', icon: 'ᚹ' },
+      { label: 'Formations', href: '/admin/formations', icon: 'ᛪ' },
+      { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚦ' },
+      { label: 'Revenus', href: '/admin/revenus-holistique', icon: 'ᚴ' },
+    ],
+  },
+  {
+    title: 'Site & Clients',
+    items: [
+      { label: 'Site web', href: '/admin/site', icon: 'ᛟ' },
+      { label: 'Clients', href: '/admin/clients', icon: 'ᛗ' },
+    ],
+  },
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -88,27 +108,36 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               Mon espace praticienne
             </Link>
           )}
-          {navItems.map((item) => {
-            const isActive =
-              item.href === '/admin'
-                ? pathname === '/admin'
-                : pathname.startsWith(item.href);
+          {navSections.map((section) => (
+            <div key={section.title ?? 'principal'}>
+              {section.title && (
+                <p className="mt-4 mb-1 px-3 text-[0.62rem] font-cinzel uppercase tracking-[0.18em] text-or-ancien/50 select-none">
+                  {section.title}
+                </p>
+              )}
+              {section.items.map((item) => {
+                const isActive =
+                  item.href === '/admin'
+                    ? pathname === '/admin'
+                    : pathname.startsWith(item.href);
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-violet-royal/40 text-or-ancien border border-or-ancien/20 shadow-[0_0_10px_rgba(201,168,76,0.1)]'
-                    : 'text-parchemin-vieilli/70 hover:bg-violet-royal/20 hover:text-parchemin border border-transparent'
-                }`}
-              >
-                <span className={`text-lg select-none ${isActive ? 'text-or-ancien' : 'text-turquoise-cristal/60'}`}>{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-violet-royal/40 text-or-ancien border border-or-ancien/20 shadow-[0_0_10px_rgba(201,168,76,0.1)]'
+                        : 'text-parchemin-vieilli/70 hover:bg-violet-royal/20 hover:text-parchemin border border-transparent'
+                    }`}
+                  >
+                    <span className={`text-lg select-none ${isActive ? 'text-or-ancien' : 'text-turquoise-cristal/60'}`}>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Footer */}
