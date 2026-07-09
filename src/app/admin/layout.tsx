@@ -18,6 +18,7 @@ const navItems = [
   { label: 'Formations', href: '/admin/formations', icon: 'ᛪ' },
   { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚷ' },
   { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
+  { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛒ' },
   { label: 'Revenus Holistique', href: '/admin/revenus-holistique', icon: 'ᚴ' },
 ];
 
