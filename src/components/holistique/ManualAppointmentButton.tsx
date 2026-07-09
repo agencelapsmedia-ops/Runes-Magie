@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface OfferingOption {
@@ -14,14 +14,28 @@ interface PractitionerOption {
   name: string;
   offerings: OfferingOption[];
 }
+interface ClientHit {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+}
 interface Props {
   practitioners: PractitionerOption[];
   /** Si fourni, la praticienne est imposée (cas dashboard praticienne) — pas de sélecteur. */
   lockedPractitionerId?: string;
   variant?: 'dark' | 'light';
+  /** Libellé du bouton déclencheur (défaut : « + Ajouter un rendez-vous »). */
+  label?: string;
 }
 
-export default function ManualAppointmentButton({ practitioners, lockedPractitionerId, variant = 'dark' }: Props) {
+export default function ManualAppointmentButton({
+  practitioners,
+  lockedPractitionerId,
+  variant = 'dark',
+  label: triggerLabel = '+ Ajouter un rendez-vous',
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -45,9 +59,44 @@ export default function ManualAppointmentButton({ practitioners, lockedPractitio
   );
   const hasEmail = email.trim().length > 0;
 
+  // Recherche de client existant (admin/propriétaire uniquement — la route est
+  // gardée par requireAdmin) : pré-remplit la fiche, la dédup serveur par courriel
+  // fait le reste. Debounce 300 ms.
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientHits, setClientHits] = useState<ClientHit[]>([]);
+  useEffect(() => {
+    const q = clientSearch.trim();
+    if (q.length < 2) {
+      setClientHits([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/clients/search?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const j = await res.json();
+          setClientHits(j.clients ?? []);
+        }
+      } catch {
+        // silencieux : la recherche est un confort, pas un blocage
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [clientSearch]);
+
+  function pickClient(c: ClientHit) {
+    setFirstName(c.firstName);
+    setLastName(c.lastName);
+    setPhone(c.phone ?? '');
+    setEmail(c.email ?? '');
+    setClientSearch('');
+    setClientHits([]);
+  }
+
   function reset() {
     setOfferingId(''); setFirstName(''); setLastName(''); setPhone(''); setEmail('');
     setStartsAt(''); setMode('IN_PERSON'); setPaymentMode('CASH'); setNotes('');
+    setClientSearch(''); setClientHits([]);
     setError(null); setInfo(null);
   }
 
@@ -104,7 +153,7 @@ export default function ManualAppointmentButton({ practitioners, lockedPractitio
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} style={triggerStyle}>+ Ajouter un rendez-vous</button>
+      <button type="button" onClick={() => setOpen(true)} style={triggerStyle}>{triggerLabel}</button>
 
       {open && (
         <div
@@ -135,6 +184,37 @@ export default function ManualAppointmentButton({ practitioners, lockedPractitio
                   ))}
                 </select>
               </label>
+
+              {variant === 'light' && (
+                <div style={{ marginBottom: '4px' }}>
+                  <label style={label}>Rechercher un client existant (nom, courriel ou téléphone)
+                    <input
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      placeholder="Ex. Sara, sara@…, 514…"
+                      style={field}
+                    />
+                  </label>
+                  {clientHits.length > 0 && (
+                    <div style={{ border: '1px solid #C4B5FD', borderRadius: '6px', background: '#fff', marginTop: '-4px', marginBottom: '10px', overflow: 'hidden' }}>
+                      {clientHits.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => pickClient(c)}
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: '#fff', border: 'none', borderBottom: '1px solid #F3F4F6', cursor: 'pointer', fontSize: '0.85rem', color: '#1F2937' }}
+                        >
+                          <strong>{c.firstName} {c.lastName}</strong>
+                          <span style={{ color: '#6B7280' }}> — {c.email || 'sans courriel'}{c.phone ? ` · ${c.phone}` : ''}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.72rem', color: '#9CA3AF', margin: '0 0 10px', fontWeight: 400 }}>
+                    Nouveau client ? Remplis simplement les champs ci-dessous.
+                  </p>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <label style={{ ...label, flex: 1 }}>Prénom

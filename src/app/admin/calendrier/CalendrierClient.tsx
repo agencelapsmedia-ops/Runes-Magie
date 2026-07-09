@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import type { EventClickArg } from '@fullcalendar/core';
+import ManualAppointmentButton from '@/components/holistique/ManualAppointmentButton';
 
 export interface RdvSerialise {
   id: string;
@@ -20,11 +22,18 @@ export interface RdvSerialise {
   clientPhone: string | null;
   notes: string | null;
   paymentMode: string | null;
+  paymentStatus: string | null; // PENDING | PAID | REFUNDED | FAILED
 }
 
 export interface PraticienneInfo {
   id: string;
   name: string;
+}
+
+export interface PractitionerOption {
+  id: string;
+  name: string;
+  offerings: { id: string; name: string; durationMinutes: number; price: number }[];
 }
 
 /** Une couleur stable par praticienne (cycle si plus de couleurs que de praticiennes). */
@@ -56,13 +65,46 @@ function dureeMinutes(rdv: RdvSerialise): number {
 export default function CalendrierClient({
   rdvs,
   praticiennes,
+  practitionerOptions,
 }: {
   rdvs: RdvSerialise[];
   praticiennes: PraticienneInfo[];
+  practitionerOptions: PractitionerOption[];
 }) {
+  const router = useRouter();
   const [filtrePraticienne, setFiltrePraticienne] = useState<string>('toutes');
   const [afficherAnnules, setAfficherAnnules] = useState(false);
   const [rdvOuvert, setRdvOuvert] = useState<RdvSerialise | null>(null);
+
+  // Actions de la fiche RDV (annuler / déplacer / marquer payé / renvoyer lien)
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [showMove, setShowMove] = useState(false);
+  const [moveTo, setMoveTo] = useState('');
+
+  /** Exécute une action serveur ; ferme la fiche + rafraîchit si demandé. */
+  async function runAction(request: () => Promise<Response>, opts: { closeOnSuccess?: boolean; successMsg?: string }) {
+    setActionBusy(true);
+    setActionMsg(null);
+    try {
+      const res = await request();
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setActionMsg(j.error ?? "Échec de l'action.");
+        return;
+      }
+      router.refresh();
+      if (opts.closeOnSuccess) {
+        setRdvOuvert(null);
+      } else if (opts.successMsg) {
+        setActionMsg(opts.successMsg);
+      }
+    } catch {
+      setActionMsg('Impossible de joindre le serveur.');
+    } finally {
+      setActionBusy(false);
+    }
+  }
 
   // Couleur stable par praticienne (ordre de la liste des praticiennes approuvées).
   const couleurPar = useMemo(() => {
@@ -97,7 +139,12 @@ export default function CalendrierClient({
 
   function onEventClick(arg: EventClickArg) {
     const rdv = rdvParId.get(arg.event.id);
-    if (rdv) setRdvOuvert(rdv);
+    if (rdv) {
+      setRdvOuvert(rdv);
+      setActionMsg(null);
+      setShowMove(false);
+      setMoveTo('');
+    }
   }
 
   const statut = rdvOuvert ? STATUT_LABELS[rdvOuvert.status] ?? STATUT_LABELS.PENDING : null;
@@ -128,6 +175,12 @@ export default function CalendrierClient({
           marginBottom: '16px',
         }}
       >
+        <ManualAppointmentButton
+          practitioners={practitionerOptions}
+          variant="light"
+          label="+ Nouveau rendez-vous"
+        />
+
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>
           Praticienne :
           <select
@@ -213,8 +266,25 @@ export default function CalendrierClient({
               <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.15rem', fontWeight: 700, color: '#2D1B4E', margin: 0 }}>
                 {rdvOuvert.clientName}
               </h2>
-              <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 600, background: statut.bg, color: statut.fg, whiteSpace: 'nowrap' }}>
-                {statut.label}
+              <span style={{ display: 'inline-flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 600, background: statut.bg, color: statut.fg, whiteSpace: 'nowrap' }}>
+                  {statut.label}
+                </span>
+                {rdvOuvert.paymentStatus && (
+                  <span
+                    style={{
+                      padding: '3px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      background: rdvOuvert.paymentStatus === 'PAID' ? '#D1FAE5' : '#FEF3C7',
+                      color: rdvOuvert.paymentStatus === 'PAID' ? '#065F46' : '#92400E',
+                    }}
+                  >
+                    {rdvOuvert.paymentStatus === 'PAID' ? 'Payé' : 'Paiement en attente'}
+                  </span>
+                )}
               </span>
             </div>
 
@@ -249,6 +319,105 @@ export default function CalendrierClient({
                 </p>
               )}
             </div>
+
+            {/* Actions selon l'état du RDV */}
+            {actionMsg && (
+              <p style={{ margin: '14px 0 0', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem', background: actionMsg.includes('✓') ? '#D1FAE5' : '#FEE2E2', color: actionMsg.includes('✓') ? '#065F46' : '#991B1B' }}>
+                {actionMsg}
+              </p>
+            )}
+            {(rdvOuvert.status === 'CONFIRMED' || rdvOuvert.status === 'PENDING') && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #E5E7EB' }}>
+                {rdvOuvert.status === 'CONFIRMED' && (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() => setShowMove((v) => !v)}
+                    style={{ padding: '7px 14px', background: '#FFFFFF', color: '#6B3FA0', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Déplacer
+                  </button>
+                )}
+                {rdvOuvert.paymentMode === 'INTERAC' && rdvOuvert.paymentStatus !== 'PAID' && (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() =>
+                      runAction(
+                        () => fetch(`/api/holistique/appointments/${rdvOuvert.id}/mark-paid`, { method: 'POST' }),
+                        { successMsg: 'Virement marqué reçu — courriel de confirmation envoyé ✓' },
+                      )
+                    }
+                    style={{ padding: '7px 14px', background: '#FFFFFF', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Marquer virement reçu
+                  </button>
+                )}
+                {rdvOuvert.paymentMode === 'STRIPE_LINK' && rdvOuvert.paymentStatus !== 'PAID' && rdvOuvert.status === 'CONFIRMED' && (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() =>
+                      runAction(
+                        () => fetch(`/api/holistique/appointments/${rdvOuvert.id}/resend-payment-link`, { method: 'POST' }),
+                        { successMsg: 'Nouveau lien de paiement envoyé par courriel ✓' },
+                      )
+                    }
+                    style={{ padding: '7px 14px', background: '#FFFFFF', color: '#1D4ED8', border: '1px solid #93C5FD', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Renvoyer le lien de paiement
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => {
+                    if (window.confirm(`Annuler le rendez-vous de ${rdvOuvert.clientName} ? La cliente et la praticienne seront avisées par courriel.`)) {
+                      runAction(
+                        () =>
+                          fetch(`/api/holistique/appointments/${rdvOuvert.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: 'CANCELLED' }),
+                          }),
+                        { closeOnSuccess: true },
+                      );
+                    }
+                  }}
+                  style={{ padding: '7px 14px', background: '#FFFFFF', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Annuler le RDV
+                </button>
+              </div>
+            )}
+            {showMove && rdvOuvert.status === 'CONFIRMED' && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px' }}>
+                <input
+                  type="datetime-local"
+                  value={moveTo}
+                  onChange={(e) => setMoveTo(e.target.value)}
+                  style={{ flex: 1, padding: '8px 10px', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.85rem', color: '#1F2937' }}
+                />
+                <button
+                  type="button"
+                  disabled={actionBusy || !moveTo}
+                  onClick={() =>
+                    runAction(
+                      () =>
+                        fetch(`/api/holistique/appointments/${rdvOuvert.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ startsAt: new Date(moveTo).toISOString() }),
+                        }),
+                      { closeOnSuccess: true },
+                    )
+                  }
+                  style={{ padding: '8px 14px', background: '#6B3FA0', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', opacity: actionBusy || !moveTo ? 0.6 : 1 }}
+                >
+                  Confirmer
+                </button>
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '18px' }}>
               <a

@@ -16,12 +16,22 @@ export default async function CalendrierAdminPage() {
       include: {
         client: { select: { firstName: true, lastName: true, email: true, phone: true } },
         practitioner: { include: { user: { select: { firstName: true, lastName: true } } } },
+        payment: { select: { status: true } },
       },
       orderBy: { startsAt: 'asc' },
     }),
     prisma.practitioner.findMany({
       where: { status: 'APPROVED' },
-      include: { user: { select: { firstName: true, lastName: true } } },
+      include: {
+        user: { select: { firstName: true, lastName: true } },
+        // Offerings actives : alimente le modal « + Nouveau rendez-vous »
+        // (même forme que /admin/consultations).
+        offerings: {
+          where: { isActive: true },
+          select: { id: true, name: true, durationMinutes: true, price: true },
+          orderBy: { name: 'asc' },
+        },
+      },
       orderBy: { createdAt: 'asc' },
     }),
   ]);
@@ -39,6 +49,7 @@ export default async function CalendrierAdminPage() {
     clientPhone: a.client.phone ?? null,
     notes: a.notes ?? null,
     paymentMode: a.paymentMode ?? null,
+    paymentStatus: a.payment?.status ?? null,
   }));
 
   const praticiennes = practitioners.map((p) => ({
@@ -46,5 +57,12 @@ export default async function CalendrierAdminPage() {
     name: `${p.user.firstName} ${p.user.lastName}`.trim(),
   }));
 
-  return <CalendrierClient rdvs={rdvs} praticiennes={praticiennes} />;
+  // Options du modal de création (praticienne + ses soins actifs).
+  const practitionerOptions = practitioners.map((p) => ({
+    id: p.id,
+    name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+    offerings: p.offerings,
+  }));
+
+  return <CalendrierClient rdvs={rdvs} praticiennes={praticiennes} practitionerOptions={practitionerOptions} />;
 }
