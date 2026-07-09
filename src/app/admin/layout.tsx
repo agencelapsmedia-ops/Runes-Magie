@@ -76,6 +76,17 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {/* Propriétaire : bascule directe vers l'espace praticienne (même connexion) */}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {(session?.user as any)?.isOwner && (
+            <Link
+              href="/soins/dashboard/praticien"
+              className="flex items-center gap-3 px-3 py-2.5 mb-3 rounded-lg text-sm font-semibold bg-or-ancien/15 text-or-ancien border border-or-ancien/40 hover:bg-or-ancien/25 transition-all duration-200"
+            >
+              <span className="text-lg select-none">ᛞ</span>
+              Mon espace praticienne
+            </Link>
+          )}
           {navItems.map((item) => {
             const isActive =
               item.href === '/admin'
@@ -105,16 +116,6 @@ function AdminShell({ children }: { children: React.ReactNode }) {
             <p className="text-sm font-cinzel font-medium text-parchemin mb-1 truncate">
               {session.user.name}
             </p>
-          )}
-          {/* Praticienne propriétaire : accès direct à son espace, sans re-connexion */}
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(session?.user as any)?.practitionerId && (
-            <Link
-              href="/soins/dashboard/praticien"
-              className="block text-xs text-turquoise-cristal hover:text-or-ancien transition-colors mb-1"
-            >
-              Mon espace praticienne &rarr;
-            </Link>
           )}
           <Link
             href="/"
