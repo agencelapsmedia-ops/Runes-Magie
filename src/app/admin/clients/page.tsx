@@ -105,6 +105,23 @@ export default async function ClientsAdminPage({
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <a
+            href="/admin/conversations"
+            style={{
+              padding: '8px 14px',
+              background: '#FFFFFF',
+              color: '#6B3FA0',
+              border: '1px solid #C4B5FD',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              fontFamily: 'var(--font-cinzel, serif)',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ᛜ Conversations du chat
+          </a>
           {tab === 'infolettre' && <AddSubscriberButton />}
           <a
             href={`/api/admin/clients/export?type=${tab}`}

@@ -6,6 +6,7 @@ import StarryBackground from "@/components/effects/StarryBackground";
 import FloatingRunes from "@/components/effects/FloatingRunes";
 import { CartProvider } from "@/components/cart/CartProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
+import NocturaChat from "@/components/chat/NocturaChat";
 import {
   SITE_URL,
   SITE_LOGO_URL,
@@ -103,6 +104,7 @@ export default function RootLayout({
           <FloatingRunes />
           <Navbar />
           <CartDrawer />
+          <NocturaChat />
           <main className="relative z-10 flex-1 min-h-screen pt-18 lg:pt-20">
             {children}
           </main>

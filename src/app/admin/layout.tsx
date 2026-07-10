@@ -25,7 +25,7 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
       '/admin/offerings', '/admin/formations', '/admin/revenus-holistique',
     ],
   },
-  { label: 'CRM / Clients', href: '/admin/clients', icon: 'ᛗ', match: ['/admin/clients'] },
+  { label: 'CRM / Clients', href: '/admin/clients', icon: 'ᛗ', match: ['/admin/clients', '/admin/conversations'] },
   { label: 'Site', href: '/admin/site', icon: 'ᛟ', match: ['/admin/site'] },
 ];
 

@@ -28,6 +28,16 @@ export const BOUTIQUE_LOCATION = `${BOUTIQUE_NAME}, ${BOUTIQUE_ADDRESS}`;
  */
 export const INTERNAL_EMAIL_DOMAIN = 'interne.invalid';
 
+/** Téléphone de la boutique (affichage + liens tel:). */
+export const BOUTIQUE_PHONE = '(514) 348-7705';
+export const BOUTIQUE_PHONE_TEL = 'tel:5143487705';
+
+/**
+ * Lien Messenger de la page Facebook (m.me/...) — bouton « Parler à un membre
+ * de l'équipe » du chat Noctura. Laisser vide pour masquer le bouton Messenger.
+ */
+export const MESSENGER_URL = '';
+
 /** Virement Interac — paramètres affichés dans le courriel « infos de virement ». */
 export const INTERAC_EMAIL = 'comptabilite@runesetmagie.ca';
 export const INTERAC_MESSAGE = 'Inscrivez votre nom dans la description du virement.';

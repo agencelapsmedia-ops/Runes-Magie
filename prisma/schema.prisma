@@ -86,6 +86,33 @@ model BookingSetting {
 // logique se fait via Category.slug ↔ Product.category.
 // ════════════════════════════════════════════════════════════════
 
+// ─── Chat Noctura (guide virtuel du site public) ────────────────────────────
+model ChatConversation {
+  id             String        @id @default(cuid())
+  visitorName    String?
+  visitorEmail   String?
+  visitorPhone   String?
+  holisticUserId String? // si la visiteuse était connectée
+  lastTopic      String? // mémoire simple : dernier slug de carte présenté (phase 6)
+  status         String        @default("OPEN") // OPEN | CLOSED
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  messages       ChatMessage[]
+
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // user | assistant
+  content        String
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
 model Category {
   id               String    @id @default(cuid())
   slug             String    @unique
