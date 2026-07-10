@@ -406,11 +406,20 @@ export async function sendCancellationToPractitioner(data: BookingEmailData): Pr
   }
 }
 
-/** Courriel de rappel au CLIENT (3 jours ou 24h avant). */
+/** Deux dates tombent-elles le même jour, heure du Québec ? (libellé des rappels) */
+function isSameDayMontreal(a: Date, b: Date): boolean {
+  const fmt = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Toronto', year: 'numeric', month: '2-digit', day: '2-digit' });
+  return fmt.format(a) === fmt.format(b);
+}
+
+/** Courriel de rappel au CLIENT (3 jours ou ~24h avant). */
 export async function sendReminderToClient(data: BookingEmailData, lead: '3d' | '24h'): Promise<void> {
   const dateLabel = formatMontrealDateTime(data.startsAt);
   const dashboardUrl = `${APP_URL}/soins/dashboard/client`;
-  const when = lead === '3d' ? 'dans 3 jours' : 'demain';
+  // Le rappel « veille » peut partir le jour même (rattrapage d'un passage manqué) :
+  // le libellé s'adapte pour rester exact.
+  const when =
+    lead === '3d' ? 'dans 3 jours' : isSameDayMontreal(data.startsAt, new Date()) ? "aujourd'hui" : 'demain';
   const html = emailShell(`
     <h2 style="color:#C9A84C;font-size:22px;margin:0 0 16px;">Rappel : ta séance ${when} ✨</h2>
     <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">

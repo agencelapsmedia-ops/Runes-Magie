@@ -16,11 +16,12 @@ import { releaseExpiredInteracHolds } from '@/lib/holistic-interac-release';
  * Dédoublonné par `reminder3dSentAt` / `reminder24hSentAt`.
  * Auth : header x-cron-secret OU authorization: Bearer == process.env.CRON_SECRET.
  *
- * Cron QUOTIDIEN (vercel.json, plan Vercel gratuit = 1 passage/jour). Chaque
- * fenêtre ci-dessous fait exactement 24h de large : comme les passages sont
- * espacés de 24h, chaque RDV traverse chaque fenêtre lors d'un seul passage →
- * un rappel et un seul, envoyé la veille (« demain » reste exact). Les flags
- * `reminder*SentAt` servent de garde-fou supplémentaire.
+ * Cron QUOTIDIEN (vercel.json, plan Vercel gratuit = 1 passage/jour).
+ * Fenêtres LARGES avec rattrapage : si un passage échoue (cron raté, erreur),
+ * le rappel part au passage suivant au lieu d'être perdu — ce sont les flags
+ * `reminder3dSentAt` / `reminder24hSentAt` qui garantissent l'unicité, pas la
+ * largeur des fenêtres. Les deux fenêtres ne se chevauchent pas (bornées à 36h) :
+ * un RDV reçoit d'abord le rappel « 3 jours », puis le rappel « demain ».
  */
 
 async function isAuthorized(req: Request): Promise<boolean> {
@@ -35,9 +36,9 @@ export async function GET(req: Request) {
 
   const now = new Date();
   const h = (n: number) => new Date(now.getTime() + n * 60 * 60 * 1000);
-  // Fenêtres de 24h de large, calées pour un passage quotidien :
-  const lo3d = h(60), hi3d = h(84);   // « dans 3 jours » : RDV à 60–84h (~3 jours)
-  const lo24h = h(12), hi24h = h(36); // « demain »       : RDV à 12–36h (~1 jour, envoyé la veille)
+  // Fenêtres larges (rattrapage inclus), sans chevauchement entre elles :
+  const lo3d = h(36), hi3d = h(84);  // « dans 3 jours » : RDV à 36–84h (rattrape un passage manqué)
+  const lo24h = h(2), hi24h = h(36); // « demain/aujourd'hui » : RDV à 2–36h (libellé adapté à l'envoi)
 
   let sent3d = 0;
   let sent24h = 0;
@@ -99,12 +100,12 @@ export async function GET(req: Request) {
   }
 
   // Récap quotidien PRATICIENNE : un courriel par praticienne listant ses RDV de
-  // « demain » (même fenêtre 12–36h que le rappel client). Un seul passage/jour
-  // → pas de flag de dédoublonnage nécessaire. Best-effort.
+  // « demain » (fenêtre 12–36h dédiée — indépendante du rattrapage client pour que
+  // le mot « demain » reste exact). Un seul passage/jour → pas de flag nécessaire.
   let sentAgenda = 0;
   try {
     const tomorrow = await prisma.holisticAppointment.findMany({
-      where: { status: 'CONFIRMED', startsAt: { gt: lo24h, lte: hi24h } },
+      where: { status: 'CONFIRMED', startsAt: { gt: h(12), lte: h(36) } },
       include: {
         client: { select: { firstName: true, lastName: true } },
         practitioner: { include: { user: { select: { firstName: true, email: true } } } },

@@ -5,6 +5,7 @@ import { markBookingPaidV2 } from '@/lib/holistic-v2-sync';
 import { createDailyRoomForAppointment } from '@/lib/daily-co';
 import { createCalendarEventForAppointment } from '@/lib/google-calendar';
 import {
+  buildBookingEmailData,
   sendBookingConfirmationToClient,
   sendBookingNotificationToPractitioner,
 } from '@/lib/holistic-booking-email';
@@ -70,7 +71,6 @@ export async function POST(req: Request) {
 
     // Création auto de la salle vidéo Daily.co si le RDV est virtuel
     // (best-effort — si échec, la salle sera créée à la demande quand quelqu'un visite /soins/consultation/[id])
-    let dailyRoomUrl: string | null = null;
     try {
       const apptForVideo = await prisma.holisticAppointment.findUnique({
         where: { id: appointmentId },
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       });
       const isVirtual = apptForVideo?.notes?.toLowerCase().includes('virtuel');
       if (apptForVideo && isVirtual) {
-        dailyRoomUrl = await createDailyRoomForAppointment({
+        await createDailyRoomForAppointment({
           appointmentId,
           endsAt: apptForVideo.endsAt,
         });
@@ -87,45 +87,12 @@ export async function POST(req: Request) {
       console.error('[webhook] daily room creation failed (non-blocking)', err);
     }
 
-    // Envoie les emails de confirmation au client et à la praticienne (best-effort)
+    // Envoie les emails de confirmation au client et à la praticienne (best-effort).
+    // Source unique : buildBookingEmailData (la salle Daily créée ci-dessus est déjà
+    // persistée sur le RDV, donc récupérée automatiquement).
     try {
-      const fullAppt = await prisma.holisticAppointment.findUnique({
-        where: { id: appointmentId },
-        include: {
-          client: { select: { firstName: true, email: true } },
-          practitioner: {
-            include: { user: { select: { firstName: true, lastName: true, email: true } } },
-          },
-        },
-      });
-      if (fullAppt) {
-        const isVirtual = (fullAppt.notes ?? '').toLowerCase().includes('virtuel');
-        // Le nom du service est dans les notes au format « Service : ... »
-        const serviceMatch = (fullAppt.notes ?? '').match(/Service\s*:\s*([^\n]+)/);
-        const serviceName = serviceMatch ? serviceMatch[1].trim() : 'Consultation';
-        const cleanNotes = (fullAppt.notes ?? '')
-          .replace(/Service\s*:[^\n]*\n?/g, '')
-          .replace(/Mode\s*:[^\n]*\n?/g, '')
-          .trim();
-
-        const emailData = {
-          appointmentId: fullAppt.id,
-          clientFirstName: fullAppt.client.firstName,
-          clientEmail: fullAppt.client.email,
-          practitionerFirstName: fullAppt.practitioner.user.firstName,
-          practitionerLastName: fullAppt.practitioner.user.lastName,
-          practitionerEmail: fullAppt.practitioner.user.email,
-          serviceName,
-          startsAt: fullAppt.startsAt,
-          endsAt: fullAppt.endsAt,
-          mode: (isVirtual ? 'VIRTUAL' : 'IN_PERSON') as 'VIRTUAL' | 'IN_PERSON',
-          notes: cleanNotes || null,
-          depositAmount: fullAppt.depositAmount ?? 0,
-          remainingAmount: fullAppt.remainingAmount ?? 0,
-          totalAmount: fullAppt.totalAmount ?? 0,
-          dailyRoomUrl,
-        };
-
+      const emailData = await buildBookingEmailData(appointmentId);
+      if (emailData) {
         // Envoi en parallèle (best-effort, n'attend pas la fin pour répondre OK à Stripe)
         await Promise.allSettled([
           sendBookingConfirmationToClient(emailData),
