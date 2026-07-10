@@ -3,6 +3,14 @@ import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
 import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2-sync';
+import { createDailyRoomForAppointment } from '@/lib/daily-co';
+import { createCalendarEventForAppointment } from '@/lib/google-calendar';
+import { isInternalEmail } from '@/lib/holistic-clients';
+import {
+  buildBookingEmailData,
+  sendInteracInstructionsToClient,
+  sendBookingNotificationToPractitioner,
+} from '@/lib/holistic-booking-email';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
@@ -30,7 +38,9 @@ export async function POST(req: Request) {
   const session = await holisticSession();
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-  const { practitionerId, startsAt, endsAt, notes, offeringId, mode } = await req.json();
+  const { practitionerId, startsAt, endsAt, notes, offeringId, mode, paymentMethod } = await req.json();
+  // Méthode de paiement choisie par la cliente : 'CARD' (défaut, Stripe) ou 'INTERAC'.
+  const useInterac = paymentMethod === 'INTERAC';
 
   // Barrière serveur : impossible de réserver un créneau déjà passé (l'affichage
   // les masque déjà, ceci garantit le refus même depuis une page restée ouverte).
@@ -152,6 +162,63 @@ export async function POST(req: Request) {
   const amountCommission = amountTotal * commissionRate;
   const amountPractitioner = amountTotal - amountCommission;
 
+  // ─── Parcours VIREMENT INTERAC ───────────────────────────────────────────
+  // La cliente choisit de payer par virement (montant complet). Le RDV est
+  // confirmé tout de suite (créneau bloqué), le paiement reste « en attente »
+  // jusqu'à ce que l'admin marque le virement reçu. Pas de Stripe.
+  if (useInterac) {
+    const interacAppt = await prisma.holisticAppointment.create({
+      data: {
+        clientId,
+        practitionerId,
+        startsAt: new Date(startsAt),
+        endsAt: new Date(endsAt),
+        notes: enrichedNotes,
+        status: 'CONFIRMED',
+        paymentMode: 'INTERAC',
+        totalAmount: amountTotal,
+        depositAmount: amountTotal,
+        remainingAmount: 0,
+      },
+    });
+    await prisma.holisticPayment.create({
+      data: { appointmentId: interacAppt.id, amountTotal, amountCommission, amountPractitioner, status: 'PENDING' },
+    });
+    // Miroir V2 (best-effort)
+    try {
+      const booking = await mirrorAppointmentToBooking({ appointment: interacAppt, noStripeFlow: true });
+      if (booking) {
+        await mirrorPaymentToV2({
+          bookingId: booking.id, amountTotal, amountCommission, amountPractitioner,
+          commissionPct: commissionRate * 100, status: 'PENDING',
+        });
+      }
+    } catch (err) {
+      console.error('[checkout interac] miroir V2 échoué (non-bloquant)', err);
+    }
+    // Salle Daily si virtuel + événement Google (best-effort)
+    if (mode === 'VIRTUAL') {
+      try { await createDailyRoomForAppointment({ appointmentId: interacAppt.id, endsAt: new Date(endsAt) }); }
+      catch (err) { console.error('[checkout interac] Daily échoué', err); }
+    }
+    try { await createCalendarEventForAppointment(interacAppt.id); }
+    catch (err) { console.error('[checkout interac] Google Agenda échoué', err); }
+    // Courriels : instructions Interac à la cliente + notification praticienne
+    try {
+      const data = await buildBookingEmailData(interacAppt.id);
+      if (data) {
+        if (!isInternalEmail(data.clientEmail)) await sendInteracInstructionsToClient(data);
+        await sendBookingNotificationToPractitioner(data);
+      }
+    } catch (err) {
+      console.error('[checkout interac] courriels échoués (non-bloquant)', err);
+    }
+    return NextResponse.json({
+      url: `${getReturnBase(req)}/soins/reservation-confirmee?appointment=${interacAppt.id}&interac=1`,
+    });
+  }
+
+  // ─── Parcours CARTE (Stripe) ─────────────────────────────────────────────
   // Créer le rdv avec les infos acompte/solde
   const appointment = await prisma.holisticAppointment.create({
     data: {

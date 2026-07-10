@@ -24,9 +24,10 @@ function formatDateTime(date: Date): string {
 export default async function ReservationConfirmeePage({
   searchParams,
 }: {
-  searchParams: Promise<{ appointment?: string }>;
+  searchParams: Promise<{ appointment?: string; interac?: string }>;
 }) {
-  const { appointment: appointmentId } = await searchParams;
+  const { appointment: appointmentId, interac } = await searchParams;
+  const isInterac = interac === '1';
 
   let practitionerName = '';
   let serviceName = '';
@@ -147,6 +148,27 @@ export default async function ReservationConfirmeePage({
           </p>
         )}
 
+        {isInterac && (
+          <div
+            style={{
+              background: 'rgba(201, 168, 76, 0.1)',
+              border: '1px solid rgba(201, 168, 76, 0.35)',
+              borderRadius: '6px',
+              padding: '16px 18px',
+              marginBottom: '24px',
+              textAlign: 'left',
+            }}
+          >
+            <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '0.85rem', margin: '0 0 6px' }}>
+              🏦 Paiement par virement Interac
+            </p>
+            <p style={{ fontFamily: 'var(--font-cormorant)', color: 'rgba(232, 220, 190, 0.75)', fontSize: '1rem', lineHeight: 1.6, margin: 0 }}>
+              Ta place est réservée&nbsp;! Pour la confirmer définitivement, effectue ton virement Interac —
+              les instructions (destinataire, montant, réponse secrète) t&apos;ont été envoyées par courriel.
+            </p>
+          </div>
+        )}
+
         <p
           style={{
             fontFamily: 'var(--font-cormorant)',
@@ -156,8 +178,8 @@ export default async function ReservationConfirmeePage({
             marginBottom: '32px',
           }}
         >
-          Un courriel de confirmation t&apos;a été envoyé. Tu retrouveras tous les détails
-          dans ton espace.
+          Un courriel {isInterac ? 'avec les instructions de paiement' : 'de confirmation'} t&apos;a été envoyé.
+          Tu retrouveras tous les détails dans ton espace.
         </p>
 
         <Link

@@ -297,7 +297,7 @@ export default function ReservationPage({
     setSlotRemaining(remaining);
   }
 
-  async function handleConfirmAndPay() {
+  async function handleConfirmAndPay(paymentMethod: 'CARD' | 'INTERAC' = 'CARD') {
     if (!selectedDate || !selectedSlot || !practitioner) return;
 
     // Vérif d'abord : doit être connecté en tant que client
@@ -326,6 +326,7 @@ export default function ReservationPage({
           notes: notes.trim() || undefined,
           offeringId: offering?.id ?? undefined,
           mode: selectedMode,
+          paymentMethod,
         }),
       });
 
@@ -1180,31 +1181,58 @@ export default function ReservationPage({
                 }}
               />
             ) : (
-              <button
-                type="button"
-                disabled={booking}
-                onClick={handleConfirmAndPay}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  fontFamily: 'var(--font-cinzel)',
-                  fontSize: '0.85rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.18em',
-                  background: booking
-                    ? 'rgba(201, 168, 76, 0.3)'
-                    : 'linear-gradient(135deg, var(--or-ancien), #b8941f)',
-                  color: 'var(--noir-nuit)',
-                  border: '1px solid rgba(201, 168, 76, 0.5)',
-                  borderRadius: '2px',
-                  cursor: booking ? 'not-allowed' : 'pointer',
-                  opacity: booking ? 0.7 : 1,
-                  transition: 'all 0.3s',
-                  boxShadow: booking ? 'none' : '0 4px 20px rgba(201, 168, 76, 0.15)',
-                }}
-              >
-                {booking ? 'Traitement en cours...' : 'Confirmer et Payer'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  type="button"
+                  disabled={booking}
+                  onClick={() => handleConfirmAndPay('CARD')}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    fontFamily: 'var(--font-cinzel)',
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.18em',
+                    background: booking
+                      ? 'rgba(201, 168, 76, 0.3)'
+                      : 'linear-gradient(135deg, var(--or-ancien), #b8941f)',
+                    color: 'var(--noir-nuit)',
+                    border: '1px solid rgba(201, 168, 76, 0.5)',
+                    borderRadius: '2px',
+                    cursor: booking ? 'not-allowed' : 'pointer',
+                    opacity: booking ? 0.7 : 1,
+                    transition: 'all 0.3s',
+                    boxShadow: booking ? 'none' : '0 4px 20px rgba(201, 168, 76, 0.15)',
+                  }}
+                >
+                  {booking ? 'Traitement en cours...' : '💳 Confirmer et payer par carte'}
+                </button>
+                <button
+                  type="button"
+                  disabled={booking}
+                  onClick={() => handleConfirmAndPay('INTERAC')}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    fontFamily: 'var(--font-cinzel)',
+                    fontSize: '0.8rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.14em',
+                    background: 'transparent',
+                    color: 'var(--or-ancien)',
+                    border: '1px solid rgba(201, 168, 76, 0.5)',
+                    borderRadius: '2px',
+                    cursor: booking ? 'not-allowed' : 'pointer',
+                    opacity: booking ? 0.7 : 1,
+                    transition: 'all 0.3s',
+                  }}
+                >
+                  🏦 Réserver et payer par virement Interac
+                </button>
+                <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'rgba(232,220,190,0.5)', fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>
+                  Par Interac : ta place est réservée, les instructions de virement te sont envoyées par courriel.
+                </p>
+              </div>
             )}
           </div>
         )}
