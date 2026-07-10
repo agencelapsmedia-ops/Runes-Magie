@@ -46,10 +46,11 @@ export default async function PraticiensAdminPage({
   const newPassword = params.newPassword;
   const newEmail = params.newEmail;
 
-  const [pending, approved, rejected] = await Promise.all([
+  const [pending, approved, rejected, pendingChangesCount] = await Promise.all([
     getPractitioners('PENDING'),
     getPractitioners('APPROVED'),
     getPractitioners('REJECTED'),
+    prisma.pendingPractitionerChange.count({ where: { status: 'PENDING' } }),
   ]);
 
   const lists: Record<string, Awaited<ReturnType<typeof getPractitioners>>> = {
@@ -78,25 +79,46 @@ export default async function PraticiensAdminPage({
             Gérez les demandes d&apos;inscription et les fiches des praticiens
           </p>
         </div>
-        <a
-          href="/admin/praticiens/nouveau"
-          style={{
-            padding: '10px 20px',
-            background: '#6B3FA0',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            textDecoration: 'none',
-            fontFamily: 'var(--font-cinzel, serif)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          + Nouveau praticien
-        </a>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <a
+            href="/admin/praticiens/modifications"
+            style={{
+              padding: '10px 18px',
+              background: pendingChangesCount > 0 ? '#FEF3C7' : '#FFFFFF',
+              color: pendingChangesCount > 0 ? '#92400E' : '#6B3FA0',
+              border: `1px solid ${pendingChangesCount > 0 ? '#FCD34D' : '#C4B5FD'}`,
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              fontFamily: 'var(--font-cinzel, serif)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            Demandes de modification{pendingChangesCount > 0 ? ` (${pendingChangesCount})` : ''}
+          </a>
+          <a
+            href="/admin/praticiens/nouveau"
+            style={{
+              padding: '10px 20px',
+              background: '#6B3FA0',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              fontFamily: 'var(--font-cinzel, serif)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            + Nouveau praticien
+          </a>
+        </div>
       </div>
 
       {/* Bandeau mot de passe généré (affiché une seule fois après création) */}

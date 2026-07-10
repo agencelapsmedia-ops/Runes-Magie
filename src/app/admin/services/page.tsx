@@ -53,11 +53,11 @@ export default async function ServicesHubPage() {
     },
     {
       rune: 'ᚻ',
-      label: 'Praticiens',
+      label: 'Praticiennes',
       href: '/admin/praticiens',
-      desc: 'Profils, approbations et statuts.',
-      badge: pendingPractitioners > 0 ? `${pendingPractitioners} en attente` : 'À jour',
-      tone: pendingPractitioners > 0 ? ('alert' as const) : ('muted' as const),
+      desc: 'Fiches, nouvelles inscriptions et demandes de modification de profil.',
+      badge: pendingPractitioners + pendingChanges > 0 ? `${pendingPractitioners + pendingChanges} à approuver` : 'À jour',
+      tone: pendingPractitioners + pendingChanges > 0 ? ('alert' as const) : ('muted' as const),
     },
     {
       rune: 'ᛪ',
@@ -66,14 +66,6 @@ export default async function ServicesHubPage() {
       desc: 'Cours et formations en ligne pour les membres.',
       badge: 'Cours',
       tone: 'muted' as const,
-    },
-    {
-      rune: 'ᚦ',
-      label: 'Modifications',
-      href: '/admin/praticiens/modifications',
-      desc: 'Demandes de modification de profil des praticiennes.',
-      badge: pendingChanges > 0 ? `${pendingChanges} en attente` : 'À jour',
-      tone: pendingChanges > 0 ? ('alert' as const) : ('muted' as const),
     },
     {
       rune: 'ᚴ',

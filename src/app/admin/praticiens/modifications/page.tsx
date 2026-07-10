@@ -77,6 +77,12 @@ export default async function ModificationsAdminPage({
     <div style={{ fontFamily: 'sans-serif' }}>
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
+        <a
+          href="/admin/praticiens"
+          style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B3FA0', textDecoration: 'none', display: 'inline-block', marginBottom: '10px' }}
+        >
+          ← Praticiennes
+        </a>
         <h1
           style={{
             fontFamily: 'var(--font-cinzel, serif)',
