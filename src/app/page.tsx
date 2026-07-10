@@ -25,8 +25,20 @@ export const revalidate = 300;
 // « afficher sur l'accueil » (gérées dans Gestion site web → Catégories de services).
 
 export default async function HomePage() {
+  // Catégories masquées (isActive=false) → leurs produits sont exclus de l'accueil,
+  // comme sur la boutique. Synchronisé sur la même source.
+  const inactiveCategories = await prisma.category.findMany({
+    where: { isActive: false },
+    select: { slug: true },
+  });
+  const inactiveSlugs = inactiveCategories.map((c) => c.slug);
+
   const featuredProducts = await prisma.product.findMany({
-    where: { featured: true, inStock: true },
+    where: {
+      featured: true,
+      inStock: true,
+      ...(inactiveSlugs.length ? { category: { notIn: inactiveSlugs } } : {}),
+    },
     orderBy: { category: 'asc' },
     take: 8,
   });
