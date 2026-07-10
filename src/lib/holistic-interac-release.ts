@@ -22,7 +22,19 @@ import { isInternalEmail } from '@/lib/holistic-clients';
 
 const INTERAC_HOLD_MINUTES = 30;
 
+/**
+ * ⚠️ DÉSACTIVÉ le 2026-07-10 après incident : la règle a annulé rétroactivement
+ * le RDV de Sara H. (créé le 19 juin, virement jamais « marqué reçu » dans le
+ * système). Le flux réel de la cliente (virement reçu hors système, marquage
+ * manuel différé) rend l'annulation automatique à 30 min trop dangereuse.
+ * Réactivable en mettant INTERAC_AUTO_RELEASE=on dans les variables d'env,
+ * une fois la règle repensée (délai plus long, exclusion des RDV existants,
+ * courriel d'avertissement avant annulation…).
+ */
+const ENABLED = process.env.INTERAC_AUTO_RELEASE === 'on';
+
 export async function releaseExpiredInteracHolds(): Promise<number> {
+  if (!ENABLED) return 0;
   const now = new Date();
   const cutoff = new Date(now.getTime() - INTERAC_HOLD_MINUTES * 60 * 1000);
 
