@@ -11,33 +11,44 @@ const TONE: Record<string, string> = {
 };
 
 export default async function ServicesHubPage() {
-  const [offeringsCount, pendingPractitioners, pendingChanges, revenue, categoriesCount] = await Promise.all([
-    prisma.offering.count(),
-    prisma.practitioner.count({ where: { status: 'PENDING' } }),
-    prisma.pendingPractitionerChange.count({ where: { status: 'PENDING' } }),
-    prisma.holisticPayment.aggregate({
-      _sum: { amountTotal: true },
-      where: { status: 'PAID' },
-    }),
-    prisma.serviceCategory.count(),
-  ]);
+  const now = new Date();
+  const [offeringsCount, pendingPractitioners, pendingChanges, revenue, categoriesCount, upcomingCount, toCollectCount] =
+    await Promise.all([
+      prisma.offering.count(),
+      prisma.practitioner.count({ where: { status: 'PENDING' } }),
+      prisma.pendingPractitionerChange.count({ where: { status: 'PENDING' } }),
+      prisma.holisticPayment.aggregate({ _sum: { amountTotal: true }, where: { status: 'PAID' } }),
+      prisma.serviceCategory.count(),
+      prisma.holisticAppointment.count({ where: { status: 'CONFIRMED', startsAt: { gte: now } } }),
+      prisma.holisticAppointment.count({
+        where: { status: 'CONFIRMED', paymentMode: { in: ['INTERAC', 'STRIPE_LINK'] }, payment: { status: 'PENDING' } },
+      }),
+    ]);
   const totalRevenue = revenue._sum.amountTotal ?? 0;
 
   const cards = [
+    {
+      rune: 'ᛒ',
+      label: 'Calendrier',
+      href: '/admin/calendrier',
+      desc: 'Tous les rendez-vous — vues mois, semaine et jour.',
+      badge: `${upcomingCount} à venir`,
+      tone: 'teal' as const,
+    },
+    {
+      rune: 'ᛜ',
+      label: 'Consultations',
+      href: '/admin/consultations',
+      desc: 'Liste des rendez-vous, statuts et paiements.',
+      badge: toCollectCount > 0 ? `${toCollectCount} à encaisser` : 'À jour',
+      tone: toCollectCount > 0 ? ('alert' as const) : ('muted' as const),
+    },
     {
       rune: 'ᚹ',
       label: 'Services & Soins',
       href: '/admin/offerings',
       desc: 'Soins, séances, cours et formations.',
       badge: `${offeringsCount} service${offeringsCount > 1 ? 's' : ''}`,
-      tone: 'gold' as const,
-    },
-    {
-      rune: 'ᛒ',
-      label: 'Catégories de services',
-      href: '/admin/services/categories',
-      desc: 'Catégories et sous-catégories — onglets de Services & Soins.',
-      badge: `${categoriesCount} catégorie${categoriesCount > 1 ? 's' : ''}`,
       tone: 'gold' as const,
     },
     {
@@ -49,20 +60,36 @@ export default async function ServicesHubPage() {
       tone: pendingPractitioners > 0 ? ('alert' as const) : ('muted' as const),
     },
     {
-      rune: 'ᚷ',
-      label: 'Approbation des modifications',
+      rune: 'ᛪ',
+      label: 'Formations',
+      href: '/admin/formations',
+      desc: 'Cours et formations en ligne pour les membres.',
+      badge: 'Cours',
+      tone: 'muted' as const,
+    },
+    {
+      rune: 'ᚦ',
+      label: 'Modifications',
       href: '/admin/praticiens/modifications',
-      desc: 'Demandes de modification de profil.',
+      desc: 'Demandes de modification de profil des praticiennes.',
       badge: pendingChanges > 0 ? `${pendingChanges} en attente` : 'À jour',
       tone: pendingChanges > 0 ? ('alert' as const) : ('muted' as const),
     },
     {
       rune: 'ᚴ',
-      label: 'Revenus holistiques',
+      label: 'Revenus',
       href: '/admin/revenus-holistique',
       desc: 'Paiements, commissions et versements.',
       badge: `${totalRevenue.toFixed(2)} $`,
       tone: 'teal' as const,
+    },
+    {
+      rune: 'ᛃ',
+      label: 'Catégories de services',
+      href: '/admin/services/categories',
+      desc: 'Catégories et sous-catégories — onglets de Services & Soins.',
+      badge: `${categoriesCount} catégorie${categoriesCount > 1 ? 's' : ''}`,
+      tone: 'gold' as const,
     },
   ];
 
@@ -76,9 +103,9 @@ export default async function ServicesHubPage() {
         >
           ← Tableau de bord
         </Link>
-        <h1 className="font-cinzel-decorative text-3xl text-violet-profond mt-2 mb-1">Services</h1>
+        <h1 className="font-cinzel-decorative text-3xl text-violet-profond mt-2 mb-1">Soins &amp; Cours</h1>
         <p className="font-cormorant italic text-lg text-gray-500">
-          Gestion holistique — soins, praticiens et revenus
+          Rendez-vous, services, praticiennes, formations et revenus
         </p>
       </div>
 

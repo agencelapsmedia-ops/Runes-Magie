@@ -11,8 +11,9 @@ const TONE: Record<string, string> = {
 };
 
 export default async function BoutiqueHubPage() {
-  const [productCount, inStockCount, categoryCount, syncedCategories, pendingQueue] =
+  const [orderCount, productCount, inStockCount, categoryCount, syncedCategories, pendingQueue] =
     await Promise.all([
+      prisma.order.count(),
       prisma.product.count(),
       prisma.product.count({ where: { inStock: true } }),
       prisma.category.count(),
@@ -21,6 +22,14 @@ export default async function BoutiqueHubPage() {
     ]);
 
   const cards = [
+    {
+      rune: 'ᚲ',
+      label: 'Commandes',
+      href: '/admin/commandes',
+      desc: 'Commandes de la boutique, statuts et suivi.',
+      badge: `${orderCount} commande${orderCount > 1 ? 's' : ''}`,
+      tone: 'gold' as const,
+    },
     {
       rune: 'ᚤ',
       label: 'Inventaire',

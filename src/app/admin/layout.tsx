@@ -5,41 +5,28 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
-// Menu regroupé par domaine : chaque section a un petit titre, les outils du
-// même univers (boutique / soins & cours / site) sont rassemblés ensemble.
-const navSections: { title: string | null; items: { label: string; href: string; icon: string }[] }[] = [
+// Menu épuré : 5 entrées de haut niveau. Chacune ouvre une PAGE HUB qui regroupe
+// ses outils en cartes (plus de sous-liste dans le menu). `match` = préfixes de
+// routes appartenant à la catégorie, pour surligner l'entrée même sur une page-outil.
+const navItems: { label: string; href: string; icon: string; exact?: boolean; match: string[] }[] = [
+  { label: 'Dashboard', href: '/admin', icon: 'ᛊ', exact: true, match: [] },
   {
-    title: null,
-    items: [{ label: 'Dashboard', href: '/admin', icon: 'ᛊ' }],
+    label: 'Boutique',
+    href: '/admin/boutique',
+    icon: 'ᚤ',
+    match: ['/admin/boutique', '/admin/commandes', '/admin/produits', '/admin/categories', '/admin/clover'],
   },
   {
-    title: 'Boutique',
-    items: [
-      { label: 'Commandes', href: '/admin/commandes', icon: 'ᚲ' },
-      { label: 'Inventaire', href: '/admin/produits/grid', icon: 'ᚤ' },
-      { label: 'Catégories', href: '/admin/categories', icon: 'ᛚ' },
-      { label: 'Clover', href: '/admin/clover', icon: 'ᚷ' },
+    label: 'Soins & Cours',
+    href: '/admin/services',
+    icon: 'ᚹ',
+    match: [
+      '/admin/services', '/admin/calendrier', '/admin/consultations', '/admin/praticiens',
+      '/admin/offerings', '/admin/formations', '/admin/revenus-holistique',
     ],
   },
-  {
-    title: 'Soins & Cours',
-    items: [
-      { label: 'Calendrier', href: '/admin/calendrier', icon: 'ᛒ' },
-      { label: 'Consultations', href: '/admin/consultations', icon: 'ᛜ' },
-      { label: 'Praticiens', href: '/admin/praticiens', icon: 'ᚻ' },
-      { label: 'Services & Soins', href: '/admin/offerings', icon: 'ᚹ' },
-      { label: 'Formations', href: '/admin/formations', icon: 'ᛪ' },
-      { label: 'Modifications', href: '/admin/praticiens/modifications', icon: 'ᚦ' },
-      { label: 'Revenus', href: '/admin/revenus-holistique', icon: 'ᚴ' },
-    ],
-  },
-  {
-    title: 'Site & Clients',
-    items: [
-      { label: 'Site web', href: '/admin/site', icon: 'ᛟ' },
-      { label: 'Clients', href: '/admin/clients', icon: 'ᛗ' },
-    ],
-  },
+  { label: 'CRM / Clients', href: '/admin/clients', icon: 'ᛗ', match: ['/admin/clients'] },
+  { label: 'Site', href: '/admin/site', icon: 'ᛟ', match: ['/admin/site'] },
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {
@@ -108,18 +95,11 @@ function AdminShell({ children }: { children: React.ReactNode }) {
               Mon espace praticienne
             </Link>
           )}
-          {navSections.map((section) => (
-            <div key={section.title ?? 'principal'}>
-              {section.title && (
-                <p className="mt-4 mb-1 px-3 text-[0.62rem] font-cinzel uppercase tracking-[0.18em] text-or-ancien/50 select-none">
-                  {section.title}
-                </p>
-              )}
-              {section.items.map((item) => {
-                const isActive =
-                  item.href === '/admin'
-                    ? pathname === '/admin'
-                    : pathname.startsWith(item.href);
+          {navItems.map((item) => {
+                const isActive = item.exact
+                  ? pathname === item.href
+                  : pathname === item.href ||
+                    item.match.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
                 return (
                   <Link
@@ -136,8 +116,6 @@ function AdminShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
-            </div>
-          ))}
         </nav>
 
         {/* Footer */}

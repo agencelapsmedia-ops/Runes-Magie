@@ -33,9 +33,9 @@ export default function SiteHubPage() {
         >
           ← Tableau de bord
         </Link>
-        <h1 className="font-cinzel-decorative text-3xl text-violet-profond mt-2 mb-1">Gestion site web</h1>
+        <h1 className="font-cinzel-decorative text-3xl text-violet-profond mt-2 mb-1">Site</h1>
         <p className="font-cormorant italic text-lg text-gray-500">
-          Navigation et structure du site public
+          Navigation, sliders et structure du site public
         </p>
       </div>
 

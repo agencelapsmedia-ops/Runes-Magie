@@ -3,10 +3,10 @@
 import Link from 'next/link';
 
 const modules = [
-  { rune: 'ᚹ', label: 'Services', href: '/admin/services', desc: 'Soins, praticiens, modifications et revenus.', sub: 'Hub holistique' },
-  { rune: 'ᛗ', label: 'Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.', sub: 'CRM & infolettre' },
-  { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Inventaire, catégories et caisse Clover (POS).', sub: 'Hub e-commerce' },
-  { rune: 'ᛟ', label: 'Gestion site web', href: '/admin/site', desc: 'Menu de navigation et structure du site public.', sub: 'Navigation & pages' },
+  { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Commandes, inventaire, catégories et caisse Clover.', sub: 'Hub e-commerce' },
+  { rune: 'ᚹ', label: 'Soins & Cours', href: '/admin/services', desc: 'Calendrier, services, praticiennes, formations et revenus.', sub: 'Hub holistique' },
+  { rune: 'ᛗ', label: 'CRM / Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.', sub: 'CRM & infolettre' },
+  { rune: 'ᛟ', label: 'Site', href: '/admin/site', desc: 'Menu de navigation, sliders et structure du site public.', sub: 'Navigation & pages' },
 ];
 
 // Étoiles décoratives — positions déterministes (stables SSR/CSR, pas de Math.random au rendu)
