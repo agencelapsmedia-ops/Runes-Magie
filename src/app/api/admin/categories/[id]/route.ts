@@ -52,6 +52,7 @@ export async function PUT(
     if (typeof body.name === 'string' && body.name.trim()) data.name = body.name.trim();
     if (typeof body.description === 'string') data.description = body.description;
     if (typeof body.displayOrder === 'number') data.displayOrder = body.displayOrder;
+    if (typeof body.isActive === 'boolean') data.isActive = body.isActive;
     if (typeof body.slug === 'string' && body.slug.trim()) {
       const newSlug = slugify(body.slug);
       const existing = await prisma.category.findUnique({ where: { slug: newSlug } });

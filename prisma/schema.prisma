@@ -91,6 +91,7 @@ model Category {
   slug             String    @unique
   name             String
   description      String    @default("")
+  isActive         Boolean   @default(true) // false = catégorie masquée de la boutique publique
   cloverCategoryId String?   @unique
   displayOrder     Int       @default(0)
   cloverSyncedAt   DateTime?

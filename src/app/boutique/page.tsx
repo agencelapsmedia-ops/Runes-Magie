@@ -32,6 +32,14 @@ export default function BoutiquePage() {
       });
   }, []);
 
+  // Catégories réellement affichées : seulement celles ayant au moins un produit
+  // visible. Une catégorie désactivée côté admin voit ses produits exclus par
+  // /api/public/products → son bouton disparaît automatiquement ici.
+  const visibleCategories = useMemo(() => {
+    const present = new Set(products.map((p) => p.category));
+    return categories.filter((cat) => present.has(cat.id));
+  }, [products]);
+
   // Get subcategories for the active category
   const subcategories = activeCategory !== 'all' ? categorySubcategories[activeCategory] : [];
 
@@ -160,7 +168,7 @@ export default function BoutiquePage() {
           >
             Tout
           </button>
-          {categories.map((cat) => (
+          {visibleCategories.map((cat) => (
             <button
               key={cat.id}
               type="button"

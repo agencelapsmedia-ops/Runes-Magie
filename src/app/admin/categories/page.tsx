@@ -7,6 +7,7 @@ interface Category {
   slug: string;
   name: string;
   description: string;
+  isActive: boolean;
   cloverCategoryId: string | null;
   displayOrder: number;
   cloverSyncedAt: string | null;
@@ -95,6 +96,27 @@ export default function CategoriesAdminPage() {
         throw new Error(err.error || 'Erreur sauvegarde');
       }
       cancelEdit();
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function toggleActive(cat: Category) {
+    setSavingId(cat.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/categories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !cat.isActive }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Erreur');
+      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur');
@@ -244,7 +266,7 @@ export default function CategoriesAdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                {['', 'Ordre', 'Nom', 'Slug', 'Description', 'Clover', 'Actions'].map((h) => (
+                {['', 'Ordre', 'Nom', 'Slug', 'Description', 'Visible', 'Clover', 'Actions'].map((h) => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
@@ -304,6 +326,30 @@ export default function CategoriesAdminPage() {
                       ) : (
                         <span style={{ color: '#6B7280', fontSize: '0.85rem' }}>{cat.description || '—'}</span>
                       )}
+                    </td>
+                    <td style={tdStyle}>
+                      <button
+                        type="button"
+                        onClick={() => toggleActive(cat)}
+                        disabled={isSaving}
+                        title={cat.isActive ? 'Cliquer pour masquer de la boutique' : 'Cliquer pour afficher dans la boutique'}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 12px',
+                          borderRadius: '9999px',
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          cursor: isSaving ? 'default' : 'pointer',
+                          fontFamily: 'var(--font-cinzel, serif)',
+                          background: cat.isActive ? '#D1FAE5' : '#F3F4F6',
+                          color: cat.isActive ? '#065F46' : '#6B7280',
+                          border: `1px solid ${cat.isActive ? '#6EE7B7' : '#D1D5DB'}`,
+                        }}
+                      >
+                        {cat.isActive ? '● Affichée' : '○ Masquée'}
+                      </button>
                     </td>
                     <td style={tdStyle}>
                       {cat.cloverCategoryId ? (
