@@ -36,6 +36,12 @@ export default async function CalendrierAdminPage() {
     }),
   ]);
 
+  // Le nom du soin est stocké dans les notes au format « Service : … ».
+  const serviceFromNotes = (notes: string | null): string => {
+    const m = (notes ?? '').match(/Service\s*:\s*([^\n]+)/);
+    return m ? m[1].trim() : 'Consultation';
+  };
+
   // Objets 100 % sérialisables pour le client component (Dates → ISO).
   const rdvs = appointments.map((a) => ({
     id: a.id,
@@ -48,6 +54,7 @@ export default async function CalendrierAdminPage() {
     clientEmail: a.client.email,
     clientPhone: a.client.phone ?? null,
     notes: a.notes ?? null,
+    serviceName: serviceFromNotes(a.notes),
     paymentMode: a.paymentMode ?? null,
     paymentStatus: a.payment?.status ?? null,
   }));

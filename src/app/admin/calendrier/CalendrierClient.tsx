@@ -7,7 +7,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
-import type { EventClickArg } from '@fullcalendar/core';
+import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
 import type { DateClickArg } from '@fullcalendar/interaction';
 import ManualAppointmentButton from '@/components/holistique/ManualAppointmentButton';
 
@@ -22,6 +22,7 @@ export interface RdvSerialise {
   clientEmail: string;
   clientPhone: string | null;
   notes: string | null;
+  serviceName: string;
   paymentMode: string | null;
   paymentStatus: string | null; // PENDING | PAID | REFUNDED | FAILED
 }
@@ -61,6 +62,20 @@ function formatDateComplete(iso: string): string {
 
 function dureeMinutes(rdv: RdvSerialise): number {
   return Math.round((new Date(rdv.endsAt).getTime() - new Date(rdv.startsAt).getTime()) / 60000);
+}
+
+/** Contenu d'un bloc de RDV : heure, cliente, soin, état du paiement. */
+function renderEvent(arg: EventContentArg) {
+  const { soin, payTag } = arg.event.extendedProps as { soin?: string; payTag?: string };
+  const ellipsis: React.CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+  return (
+    <div style={{ overflow: 'hidden', lineHeight: 1.18, padding: '1px 3px' }}>
+      {arg.timeText && <div style={{ fontSize: '0.62rem', opacity: 0.85 }}>{arg.timeText}</div>}
+      <div style={{ fontWeight: 700, fontSize: '0.72rem', ...ellipsis }}>{arg.event.title}</div>
+      {soin && <div style={{ fontSize: '0.66rem', opacity: 0.92, ...ellipsis }}>{soin}</div>}
+      {payTag && <div style={{ fontSize: '0.62rem', fontWeight: 600, marginTop: '1px', ...ellipsis }}>{payTag}</div>}
+    </div>
+  );
 }
 
 export default function CalendrierClient({
@@ -125,14 +140,27 @@ export default function CalendrierClient({
           const couleur = couleurPar.get(r.practitionerId) ?? '#6B3FA0';
           const annule = r.status === 'CANCELLED';
           const enAttente = r.status === 'PENDING';
+          // Étiquette de paiement affichée sur le bloc (rien pour un RDV annulé).
+          let payTag = '';
+          if (!annule) {
+            if (r.paymentStatus === 'PAID') payTag = '✓ Payé';
+            else if (r.paymentMode === 'CASH') payTag = 'Comptant';
+            else if (r.paymentMode) payTag = '⏳ À payer';
+          }
           return {
             id: r.id,
-            title: `${r.clientName} · ${r.practitionerName.split(' ')[0]}`,
+            title: r.clientName,
             start: r.startsAt,
             end: r.endsAt,
             backgroundColor: annule ? '#9CA3AF' : couleur,
             borderColor: annule ? '#6B7280' : couleur,
             classNames: [annule ? 'rdv-annule' : '', enAttente ? 'rdv-attente' : ''].filter(Boolean),
+            extendedProps: {
+              soin: r.serviceName,
+              praticienne: r.practitionerName.split(' ')[0],
+              payTag,
+              paid: r.paymentStatus === 'PAID',
+            },
           };
         }),
     [rdvs, filtrePraticienne, afficherAnnules, couleurPar],
@@ -247,6 +275,7 @@ export default function CalendrierClient({
           events={events}
           eventClick={onEventClick}
           dateClick={onDateClick}
+          eventContent={renderEvent}
           slotMinTime="07:00:00"
           slotMaxTime="22:00:00"
           allDaySlot={false}
