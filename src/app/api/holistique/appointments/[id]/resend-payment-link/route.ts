@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import { createHolisticPaymentLink } from '@/lib/holistic-stripe';
-import { buildBookingEmailData, sendPaymentLinkToClient } from '@/lib/holistic-booking-email';
+import { buildBookingEmailData, sendPaymentChoiceToClient } from '@/lib/holistic-booking-email';
 import { isInternalEmail } from '@/lib/holistic-clients';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
@@ -73,7 +73,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Impossible de générer le lien de paiement' }, { status: 502 });
   }
 
-  await sendPaymentLinkToClient(emailData, paymentLink);
+  await sendPaymentChoiceToClient(emailData, paymentLink);
 
   return NextResponse.json({ ok: true, paymentLink });
 }

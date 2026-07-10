@@ -571,7 +571,7 @@ export async function sendDailyAgendaToPractitioner(
 /** Libellé lisible d'un mode de paiement manuel. */
 function paymentModeLabel(mode: string): string {
   if (mode === 'CASH') return 'Comptant';
-  if (mode === 'STRIPE_LINK') return 'Lien de paiement (carte)';
+  if (mode === 'STRIPE_LINK') return 'En ligne (carte ou Interac)';
   if (mode === 'INTERAC') return 'Virement Interac';
   return mode;
 }
@@ -661,6 +661,52 @@ export async function sendPaymentLinkToClient(data: BookingEmailData, paymentUrl
     await resend.emails.send({ from: FROM, to: data.clientEmail, subject: `Paiement de ton RDV — ${data.serviceName}`, html });
   } catch (err) {
     console.error('[Email holistique] Échec envoi lien de paiement', err);
+  }
+}
+
+/**
+ * Courriel de paiement AU CHOIX : la cliente paie par carte (bouton Stripe) OU
+ * par virement Interac (coordonnées fournies). Un seul courriel, deux options.
+ */
+export async function sendPaymentChoiceToClient(data: BookingEmailData, paymentUrl: string): Promise<void> {
+  const html = emailShell(`
+    <h2 style="color:#C9A84C;font-size:22px;margin:0 0 16px;">Ton rendez-vous est réservé ✨</h2>
+    <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">
+      Bonjour ${data.clientFirstName}, ta séance est réservée. Il reste à régler le paiement —
+      choisis la méthode qui te convient :
+    </p>
+    ${bookingRecapHtml(data)}
+
+    <!-- Option 1 : carte -->
+    <p style="margin:20px 0 8px;color:#C9A84C;font-size:15px;"><strong>Option 1 — Payer par carte</strong></p>
+    <div style="text-align:center;margin:8px 0 20px;">
+      <a href="${paymentUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#4A2D7A,#2D1B4E);color:#C9A84C;text-decoration:none;border-radius:4px;font-size:14px;letter-spacing:0.05em;">Payer ${data.totalAmount.toFixed(2)} $ par carte</a>
+      <p style="color:rgba(245,240,232,0.5);font-size:12px;margin:8px 0 0;">Lien sécurisé valide 24 h.</p>
+    </div>
+
+    <!-- Séparateur -->
+    <p style="text-align:center;color:rgba(245,240,232,0.4);font-size:13px;margin:8px 0;">— ou —</p>
+
+    <!-- Option 2 : Interac -->
+    <p style="margin:16px 0 8px;color:#C9A84C;font-size:15px;"><strong>Option 2 — Virement Interac</strong></p>
+    <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:20px;margin:8px 0;">
+      <p style="margin:4px 0;color:#E8DCC8;font-size:14px;"><strong>Destinataire :</strong> ${INTERAC_EMAIL}</p>
+      <p style="margin:4px 0;color:#E8DCC8;font-size:14px;"><strong>Montant :</strong> ${data.totalAmount.toFixed(2)} $</p>
+      <p style="margin:4px 0;color:#E8DCC8;font-size:14px;"><strong>Description :</strong> ${INTERAC_MESSAGE}</p>
+      <p style="margin:4px 0;color:#E8DCC8;font-size:14px;"><strong>Réponse secrète :</strong> ${INTERAC_ANSWER}</p>
+    </div>
+    <p style="color:rgba(245,240,232,0.5);font-size:13px;line-height:1.6;margin:16px 0 0;">
+      Tu recevras une confirmation dès le paiement reçu, quelle que soit la méthode choisie.
+    </p>
+  `);
+  if (!resend) {
+    console.log('[Email holistique] Paiement au choix (Resend non configuré) :', data.clientEmail);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to: data.clientEmail, subject: `Paiement de ton RDV — ${data.serviceName}`, html });
+  } catch (err) {
+    console.error('[Email holistique] Échec envoi paiement au choix', err);
   }
 }
 

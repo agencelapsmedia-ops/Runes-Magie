@@ -356,19 +356,19 @@ export default function CalendrierClient({
                     Déplacer
                   </button>
                 )}
-                {rdvOuvert.paymentMode === 'INTERAC' && rdvOuvert.paymentStatus !== 'PAID' && (
+                {(rdvOuvert.paymentMode === 'INTERAC' || rdvOuvert.paymentMode === 'STRIPE_LINK') && rdvOuvert.paymentStatus !== 'PAID' && (
                   <button
                     type="button"
                     disabled={actionBusy}
                     onClick={() =>
                       runAction(
                         () => fetch(`/api/holistique/appointments/${rdvOuvert.id}/mark-paid`, { method: 'POST' }),
-                        { successMsg: 'Virement marqué reçu — courriel de confirmation envoyé ✓' },
+                        { successMsg: 'Paiement marqué reçu — courriel de confirmation envoyé ✓' },
                       )
                     }
                     style={{ padding: '7px 14px', background: '#FFFFFF', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
                   >
-                    Marquer virement reçu
+                    Marquer payé
                   </button>
                 )}
                 {rdvOuvert.paymentMode === 'STRIPE_LINK' && rdvOuvert.paymentStatus !== 'PAID' && rdvOuvert.status === 'CONFIRMED' && (
@@ -378,12 +378,12 @@ export default function CalendrierClient({
                     onClick={() =>
                       runAction(
                         () => fetch(`/api/holistique/appointments/${rdvOuvert.id}/resend-payment-link`, { method: 'POST' }),
-                        { successMsg: 'Nouveau lien de paiement envoyé par courriel ✓' },
+                        { successMsg: 'Infos de paiement (carte + Interac) renvoyées par courriel ✓' },
                       )
                     }
                     style={{ padding: '7px 14px', background: '#FFFFFF', color: '#1D4ED8', border: '1px solid #93C5FD', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
                   >
-                    Renvoyer le lien de paiement
+                    Renvoyer les infos de paiement
                   </button>
                 )}
                 <button

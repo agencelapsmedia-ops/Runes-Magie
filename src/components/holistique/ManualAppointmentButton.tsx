@@ -166,6 +166,15 @@ export default function ManualAppointmentButton({
 
   const field: React.CSSProperties = { width: '100%', padding: '9px 11px', marginTop: '4px', borderRadius: '4px', border: '1px solid #C4B5FD', background: '#fff', color: '#1F2937', fontSize: '0.9rem' };
   const label: React.CSSProperties = { display: 'block', fontSize: '0.8rem', color: '#4B5563', marginBottom: '10px', fontWeight: 600 };
+  const payOption = (active: boolean, disabled = false): React.CSSProperties => ({
+    display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start', textAlign: 'left',
+    width: '100%', padding: '11px 14px', borderRadius: '8px',
+    border: `2px solid ${active ? '#6B3FA0' : '#E5E7EB'}`,
+    background: active ? 'rgba(107,63,160,0.08)' : '#fff',
+    color: disabled ? '#9CA3AF' : '#1F2937',
+    cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.55 : 1,
+  });
+  const payHint: React.CSSProperties = { fontSize: '0.75rem', color: '#6B7280' };
 
   return (
     <>
@@ -246,7 +255,16 @@ export default function ManualAppointmentButton({
                   <input value={phone} onChange={(e) => setPhone(e.target.value)} style={field} />
                 </label>
                 <label style={{ ...label, flex: 1 }}>Courriel (optionnel)
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={field} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      // Sans courriel, seul le comptant est possible → on y revient.
+                      if (!e.target.value.trim() && paymentMode !== 'CASH') setPaymentMode('CASH');
+                    }}
+                    style={field}
+                  />
                 </label>
               </div>
 
@@ -262,16 +280,22 @@ export default function ManualAppointmentButton({
               </div>
 
               <div style={label}>Paiement
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px', fontWeight: 400 }}>
-                  <label style={{ fontSize: '0.85rem' }}><input type="radio" checked={paymentMode === 'CASH'} onChange={() => setPaymentMode('CASH')} /> Comptant</label>
-                  <label style={{ fontSize: '0.85rem', opacity: hasEmail ? 1 : 0.4 }}>
-                    <input type="radio" checked={paymentMode === 'STRIPE_LINK'} disabled={!hasEmail} onChange={() => setPaymentMode('STRIPE_LINK')} /> Lien de paiement (carte)
-                  </label>
-                  <label style={{ fontSize: '0.85rem', opacity: hasEmail ? 1 : 0.4 }}>
-                    <input type="radio" checked={paymentMode === 'INTERAC'} disabled={!hasEmail} onChange={() => setPaymentMode('INTERAC')} /> Virement Interac
-                  </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', fontWeight: 400 }}>
+                  <button type="button" onClick={() => setPaymentMode('CASH')} style={payOption(paymentMode === 'CASH')}>
+                    <strong style={{ fontSize: '0.9rem' }}>💵 Comptant</strong>
+                    <span style={payHint}>Payé sur place — marqué payé tout de suite.</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!hasEmail}
+                    onClick={() => hasEmail && setPaymentMode('STRIPE_LINK')}
+                    style={payOption(paymentMode === 'STRIPE_LINK', !hasEmail)}
+                  >
+                    <strong style={{ fontSize: '0.9rem' }}>💳 À payer en ligne</strong>
+                    <span style={payHint}>La cliente reçoit un courriel avec carte ET virement Interac — elle choisit.</span>
+                  </button>
                 </div>
-                {!hasEmail && <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: '6px 0 0', fontWeight: 400 }}>Sans courriel : comptant uniquement.</p>}
+                {!hasEmail && <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: '8px 0 0', fontWeight: 400 }}>Ajoute un courriel pour proposer le paiement en ligne. Sinon : comptant.</p>}
               </div>
 
               <label style={label}>Notes (optionnel)

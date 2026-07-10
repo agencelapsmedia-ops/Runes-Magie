@@ -6,7 +6,8 @@ import { isInternalEmail } from '@/lib/holistic-clients';
 
 /**
  * POST /api/holistique/appointments/[id]/mark-paid
- * Marque un virement Interac comme reçu (admin only). Passe HolisticPayment → PAID.
+ * Marque un paiement manuel (virement Interac, y compris sur un RDV « à payer en
+ * ligne » où la cliente a choisi Interac) comme reçu. Admin/propriétaire. → PAID.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await holisticSession();
@@ -20,8 +21,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const appt = await prisma.holisticAppointment.findUnique({ where: { id }, include: { payment: true } });
   if (!appt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
-  if (appt.paymentMode !== 'INTERAC') {
-    return NextResponse.json({ error: 'Action réservée aux virements Interac' }, { status: 400 });
+  // Accepte l'ancien mode Interac seul ET le nouveau mode « en ligne » (carte ou
+  // Interac) : dans les deux cas, marquer reçu = virement Interac encaissé.
+  if (appt.paymentMode !== 'INTERAC' && appt.paymentMode !== 'STRIPE_LINK') {
+    return NextResponse.json({ error: 'Action réservée aux paiements en attente' }, { status: 400 });
   }
   if (appt.payment?.status === 'PAID') {
     return NextResponse.json({ error: 'Ce paiement est déjà réglé' }, { status: 400 });

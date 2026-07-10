@@ -11,7 +11,7 @@ import {
   buildBookingEmailData,
   sendSetPasswordEmail,
   sendManualCashConfirmationToClient,
-  sendPaymentLinkToClient,
+  sendPaymentChoiceToClient,
   sendInteracInstructionsToClient,
   sendManualNotificationToPractitioner,
 } from '@/lib/holistic-booking-email';
@@ -220,7 +220,9 @@ export async function POST(req: Request) {
             await sendSetPasswordEmail(data, token);
           }
           if (payment === 'CASH' && !created) await sendManualCashConfirmationToClient(data);
-          if (payment === 'STRIPE_LINK' && paymentLink) await sendPaymentLinkToClient(data, paymentLink);
+          // « À payer en ligne » : un seul courriel offrant carte ET Interac au choix.
+          if (payment === 'STRIPE_LINK' && paymentLink) await sendPaymentChoiceToClient(data, paymentLink);
+          // Legacy : ancien mode Interac seul (le formulaire ne l'envoie plus).
           if (payment === 'INTERAC') await sendInteracInstructionsToClient(data);
         }
         // Notif praticienne uniquement si l'admin a créé le RDV pour elle
