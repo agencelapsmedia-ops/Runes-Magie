@@ -129,8 +129,15 @@ export async function POST(req: Request) {
       },
     });
     if (conflictingAppointment) {
+      // Peut être un vrai RDV confirmé OU une réservation en cours de paiement
+      // (retenue 5 min). Le message reflète les deux cas honnêtement.
+      const isHold = conflictingAppointment.status === 'PENDING';
       return NextResponse.json(
-        { error: 'Ce créneau vient d\'être réservé par quelqu\'un d\'autre. Choisis un autre créneau.' },
+        {
+          error: isHold
+            ? 'Quelqu\'un est en train de réserver ce créneau. S\'il ne confirme pas, il redeviendra disponible dans quelques minutes — réessaie un peu plus tard ou choisis un autre créneau.'
+            : 'Ce créneau vient d\'être réservé par quelqu\'un d\'autre. Choisis un autre créneau.',
+        },
         { status: 409 },
       );
     }
