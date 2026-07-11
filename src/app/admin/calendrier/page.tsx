@@ -11,6 +11,20 @@ export const dynamic = 'force-dynamic';
  * puis sérialisée pour le composant client.
  */
 export default async function CalendrierAdminPage() {
+  // Ménage paresseux (même règle que la page de réservation) : les réservations
+  // « en attente de paiement » abandonnées depuis > 30 min (lien Stripe expiré)
+  // sont supprimées — elles ne polluent plus le calendrier de la praticienne.
+  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+  const stale = await prisma.holisticAppointment.findMany({
+    where: { status: 'PENDING', createdAt: { lt: thirtyMinAgo } },
+    select: { id: true },
+  });
+  if (stale.length) {
+    const staleIds = stale.map((s) => s.id);
+    await prisma.holisticPayment.deleteMany({ where: { appointmentId: { in: staleIds } } });
+    await prisma.holisticAppointment.deleteMany({ where: { id: { in: staleIds } } });
+  }
+
   const [appointments, practitioners] = await Promise.all([
     prisma.holisticAppointment.findMany({
       include: {

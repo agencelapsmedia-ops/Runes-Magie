@@ -143,7 +143,8 @@ export default function CalendrierClient({
           // Étiquette de paiement affichée sur le bloc (rien pour un RDV annulé).
           let payTag = '';
           if (!annule) {
-            if (r.paymentStatus === 'PAID') payTag = '✓ Payé';
+            if (enAttente) payTag = '💳 Paiement en cours (non confirmé)';
+            else if (r.paymentStatus === 'PAID') payTag = '✓ Payé';
             else if (r.paymentMode === 'CASH') payTag = 'Comptant';
             else if (r.paymentMode) payTag = '⏳ À payer';
           }
