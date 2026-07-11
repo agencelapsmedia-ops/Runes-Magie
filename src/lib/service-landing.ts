@@ -408,6 +408,13 @@ function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLand
 
   const replaceExact = (value: string) => replacements.get(value) ?? value;
   const safeFaqs = content.faqs.map((faq) => {
+    if (/est-ce que je dois me préparer/i.test(faq.question)) {
+      return {
+        question: faq.question,
+        answer:
+          "Aucune préparation particulière n’est obligatoire. Porte des vêtements confortables et prévois, si possible, un peu de temps calme après la séance.",
+      };
+    }
     if (/combien de temps durent les bienfaits/i.test(faq.question)) {
       return {
         question: 'Combien de temps peut-on ressentir les effets de l’expérience?',
@@ -451,10 +458,31 @@ function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLand
     sanctuaryTitle: /lieu de guérison/i.test(content.sanctuaryTitle)
       ? 'NOTRE TEMPLE EST UN ESPACE DE RECENTRAGE…'
       : content.sanctuaryTitle,
+    sanctuaryText: /l'âme se libère|se réaligne et se transforme/i.test(content.sanctuaryText)
+      ? 'En ce lieu consacré, chaque personne est accueillie avec respect et sans jugement. Le rituel devient un moment symbolique consacré à la détente, à l’écoute et à l’exploration personnelle.'
+      : content.sanctuaryText,
     pillarsTitle: /bienfaits du soin rituel|bienfaits que le rituel procure/i.test(content.pillarsTitle)
       ? 'LES INTENTIONS DE L’EXPÉRIENCE'
       : content.pillarsTitle,
     benefits: content.benefits.map(replaceExact),
+    steps: content.steps.map((step) => {
+      if (/purge le corps énergétique|blessure énergétique/i.test(step.text)) {
+        return {
+          ...step,
+          title: step.title === 'LIBÉRATION' ? 'EXPÉRIENCE RITUELLE' : step.title,
+          text:
+            'Noctura poursuit avec une lecture symbolique et peut proposer quelques points de pression précis. Différents outils sonores, sensoriels et spirituels accompagnent ensuite l’expérience, selon l’intention de la rencontre.',
+        };
+      }
+      if (/blessures purgées|moins vulnérable/i.test(step.text)) {
+        return {
+          ...step,
+          text:
+            'Noctura referme le cercle et guide un retour progressif au calme. Ce moment permet d’intégrer l’expérience et de reprendre le cours de la journée à son rythme.',
+        };
+      }
+      return step;
+    }),
     finalTitle: /ce qui te pèse n'a pas à rester en toi/i.test(content.finalTitle)
       ? 'UN MOMENT POUR RALENTIR ET TE RECENTRER'
       : content.finalTitle,

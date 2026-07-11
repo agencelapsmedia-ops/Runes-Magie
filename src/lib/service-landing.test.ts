@@ -72,11 +72,30 @@ const legacyRiskyContent = buildServiceLandingContent({
     recognitionFinalText: "Si tu te reconnais dans l'un de ces énoncés, ce soin est conçu pour toi.",
     pillarsTitle: 'BIENFAITS DU SOIN RITUEL',
     benefits: ['DÉPARASITAGE', 'RELATIONS AMÉLIORÉES'],
+    steps: [
+      {
+        number: '04',
+        title: 'LIBÉRATION',
+        text: "Noctura purge le corps énergétique selon le type de blessure énergétique.",
+      },
+      {
+        number: '05',
+        title: 'FERMETURE DU CERCLE',
+        text: 'Noctura referme les blessures purgées afin que le corps soit moins vulnérable.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'EST-CE QUE JE DOIS ME PRÉPARER?',
+        answer: 'Prendre un bain avec des fleurs médicinales afin de se purifier.',
+      },
+    ],
     titleFont: 'cinzel',
   },
 });
 const legacyRiskyCopy = JSON.stringify(legacyRiskyContent);
 assert.doesNotMatch(legacyRiskyCopy, /malade sans aucune raison|médecin|déparasitage|relations améliorées/i);
+assert.doesNotMatch(legacyRiskyCopy, /purge le corps|blessures purgées|moins vulnérable|fleurs médicinales/i);
 assert.match(legacyRiskyContent.intro, /ressentis peuvent varier/i);
 assert.equal(legacyRiskyContent.titleFont, 'cinzel');
 
