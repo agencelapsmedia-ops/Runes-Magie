@@ -109,7 +109,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
           {canEdit && <ArcaneFieldButton field="features" label="Modifier la liste du panneau (hero)" />}
           {canEdit && <ArcaneFieldButton field="pillarIcons" label="Modifier les icônes des piliers" position="-right-3 top-8" />}
           <ul className="flex flex-col">
-            {offering.features.map((feature, index) => {
+            {content.benefits.map((feature, index) => {
               const icon = content.pillarIcons[index]?.trim();
               return (
               <li
