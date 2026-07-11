@@ -11,7 +11,7 @@ export default function ChatLauncher({ onOpen }: { onOpen: () => void }) {
   const [src, setSrc] = useState(LAUNCHER_IMG);
 
   return (
-    <div className="fixed bottom-5 right-5 z-[95] group">
+    <div className="fixed bottom-5 right-5 z-40 group">
       {/* Tooltip au survol */}
       <span
         className="pointer-events-none absolute right-full top-1/2 -translate-y-1/2 mr-3 whitespace-nowrap rounded-md border border-or-ancien/40 bg-charbon-mystere/95 px-3 py-1.5 font-cinzel text-xs uppercase tracking-[0.12em] text-or-clair opacity-0 shadow-[0_4px_20px_rgba(0,0,0,0.5)] transition-opacity duration-300 group-hover:opacity-100"
