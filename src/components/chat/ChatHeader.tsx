@@ -17,14 +17,16 @@ export default function ChatHeader({ onClose }: { onClose: () => void }) {
         ᚱᚨᛟ
       </span>
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        onError={() => setSrc(FALLBACK_IMG)}
-        className="h-11 w-11 shrink-0 rounded-full border border-or-ancien/60 object-cover object-top"
-        draggable={false}
-      />
+      <span className="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-or-ancien/60">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt=""
+          onError={() => setSrc(FALLBACK_IMG)}
+          className="h-full w-full scale-[1.08] object-cover"
+          draggable={false}
+        />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="font-cinzel-decorative text-lg leading-tight text-gradient-gold">Noctura</p>
         <p className="font-philosopher text-[0.7rem] italic text-parchemin-vieilli/60 leading-tight">

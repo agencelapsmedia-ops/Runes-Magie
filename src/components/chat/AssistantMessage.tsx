@@ -11,14 +11,16 @@ export default function AssistantMessage({ content }: { content: string }) {
 
   return (
     <div className="flex items-end gap-2 pr-8">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        onError={() => setSrc(FALLBACK_IMG)}
-        className="h-7 w-7 shrink-0 rounded-full border border-or-ancien/50 object-cover object-top"
-        draggable={false}
-      />
+      <span className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-or-ancien/50">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt=""
+          onError={() => setSrc(FALLBACK_IMG)}
+          className="h-full w-full scale-[1.08] object-cover"
+          draggable={false}
+        />
+      </span>
       <div className="min-w-0 flex-1">
         {text && (
           <div

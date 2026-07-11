@@ -26,14 +26,16 @@ export default function ChatLauncher({ onOpen }: { onOpen: () => void }) {
         aria-label="Discuter avec Noctura, la guide de Runes & Magie"
         className="relative block h-[68px] w-[68px] md:h-[84px] md:w-[84px] cursor-pointer rounded-full border-2 border-or-ancien/70 shadow-[0_0_20px_rgba(107,63,160,0.5),0_0_40px_rgba(201,168,76,0.25)] transition-transform duration-300 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-or-ancien motion-safe:animate-glow-pulse"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt=""
-          onError={() => setSrc(FALLBACK_IMG)}
-          className="h-full w-full rounded-full object-cover object-top"
-          draggable={false}
-        />
+        <span className="absolute inset-0 overflow-hidden rounded-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt=""
+            onError={() => setSrc(FALLBACK_IMG)}
+            className="h-full w-full scale-[1.08] object-cover"
+            draggable={false}
+          />
+        </span>
         {/* Bulle ⋯ */}
         <span
           aria-hidden

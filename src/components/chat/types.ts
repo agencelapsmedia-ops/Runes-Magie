@@ -20,9 +20,9 @@ export interface ChatOffering {
   isFormation: boolean;
 }
 
-/** Image du bouton flottant (fournie par la cliente) + repli existant. */
-export const LAUNCHER_IMG = '/images/chat/noctura-launcher.png';
-export const WELCOME_IMG = '/images/chat/noctura-accueil.png';
+/** Montage officiel de Noctura (fourni par la cliente) + repli existant. */
+export const LAUNCHER_IMG = '/images/chat/noctura-launcher.jpg';
+export const WELCOME_IMG = '/images/chat/noctura-accueil.jpg';
 export const FALLBACK_IMG = '/images/services/arcane/soin-rituel-personnage.webp';
 
 /** Sépare le texte d'un message assistant de ses marqueurs [CARTE:slug]. */

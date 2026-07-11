@@ -22,14 +22,16 @@ export default function WelcomeScreen({
 
   return (
     <div className="flex flex-col items-center px-5 py-6 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt="Noctura, guide de Runes & Magie"
-        onError={() => setSrc(FALLBACK_IMG)}
-        className="h-32 w-32 rounded-full border-2 border-or-ancien/60 object-cover object-top shadow-[0_0_30px_rgba(107,63,160,0.45)]"
-        draggable={false}
-      />
+      <span className="block h-40 w-40 overflow-hidden rounded-full border-2 border-or-ancien/60 shadow-[0_0_30px_rgba(107,63,160,0.45)]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt="Noctura, guide de Runes & Magie"
+          onError={() => setSrc(FALLBACK_IMG)}
+          className="h-full w-full scale-[1.08] object-cover"
+          draggable={false}
+        />
+      </span>
 
       <p className="mt-4 font-cinzel-decorative text-xl leading-snug text-gradient-gold">
         ✦ Bienvenue dans le Sanctuaire
