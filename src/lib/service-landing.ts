@@ -372,7 +372,97 @@ function buildGenericSteps(offering: OfferingView): ServiceLandingContent['steps
 
 export function buildServiceLandingContent(offering: OfferingView): ServiceLandingContent {
   const base = buildDefaultLandingContent(offering);
-  return applyOverrides(base, offering.landing ?? {});
+  const content = applyOverrides(base, offering.landing ?? {});
+  return offering.slug === 'soin-rituel' ? sanitizeSoinRituelMetaCopy(content) : content;
+}
+
+/**
+ * Garde les personnalisations visuelles et les textes déjà acceptables, mais
+ * neutralise les formulations du Soin Rituel qui pourraient être comprises
+ * comme un diagnostic personnel, une promesse médicale ou un résultat garanti.
+ */
+function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLandingContent {
+  const replacements = new Map<string, string>([
+    ['DÉPARASITAGE', 'RECENTRAGE'],
+    ['DÉBLOCAGE ÉMOTIONNEL', 'EXPLORATION INTÉRIEURE'],
+    ['PURIFICATION', 'RENOUVELLEMENT SYMBOLIQUE'],
+    ['BANNISSEMENT', 'LÂCHER-PRISE'],
+    ['COUPURE DE LIEN TOXIQUE', 'PRISE DE RECUL'],
+    ['Tu dors mais tu ne récupères pas.', "S'accorder une pause dans un espace calme."],
+    ['Tu vis des émotions qui ne sont pas les tiennes.', 'Explorer ses ressentis dans un cadre symbolique.'],
+    ['Tu absorbes facilement le fardeau des autres.', 'Prendre du recul sur ce qui occupe ses pensées.'],
+    ['Tu te poses sans cesse la question si tu peux faire mieux.', 'Nourrir une réflexion personnelle à son rythme.'],
+    ['Tu ressens un poids immense sur tes épaules en permanence.', "S'offrir un moment de recentrage."],
+    ['Tu es souvent malade sans aucune raison.', 'Vivre une expérience spirituelle personnalisée.'],
+    ['Tu te sens comme si un brouillard voilait ton esprit et ta vision.', 'Explorer une intention ou une période de transition.'],
+    ['Tu te sens au ralenti et déconcentré en général.', 'Prendre un moment pour ralentir et revenir à soi.'],
+    ['Tu cherches encore des réponses après avoir vu un médecin et/ou des spécialistes.', 'Découvrir les runes et les cartes comme outils de réflexion.'],
+    ['DÉTENTE TOTALE', 'MOMENT DE DÉTENTE'],
+    ['RELATIONS AMÉLIORÉES', 'RÉFLEXION SUR SES RELATIONS'],
+    ['COMPRÉHENSION DES BLOCAGES', 'EXPLORATION DE SES REPÈRES'],
+    ['PURGE DE VIEUX SCHÉMAS', 'PRISE DE RECUL SUR SES HABITUDES'],
+    ['VIE PLUS SAINE', 'MOMENT CONSACRÉ À SOI'],
+    ['ESTIME & CONFIANCE EN SOI', 'CONNEXION À SES RESSOURCES'],
+    ['ESPRIT PLUS CLAIR', 'ESPACE DE RÉFLEXION'],
+  ]);
+
+  const replaceExact = (value: string) => replacements.get(value) ?? value;
+  const safeFaqs = content.faqs.map((faq) => {
+    if (/combien de temps durent les bienfaits/i.test(faq.question)) {
+      return {
+        question: 'Combien de temps peut-on ressentir les effets de l’expérience?',
+        answer:
+          "Chaque personne vit l’expérience différemment. Certains ressentent surtout une détente immédiate, tandis que d’autres continuent à réfléchir aux symboles et aux intentions explorés. Aucun résultat précis ni aucune durée ne peuvent être garantis.",
+      };
+    }
+    return { question: replaceExact(faq.question), answer: replaceExact(faq.answer) };
+  });
+
+  if (!safeFaqs.some((faq) => /professionnel de la santé/i.test(faq.answer))) {
+    safeFaqs.push({
+      question: 'Est-ce un traitement médical ou psychologique?',
+      answer:
+        "Non. Le Soin Rituel est une expérience spirituelle de détente et d’exploration personnelle. Il ne remplace pas les conseils, le diagnostic ou les soins d’un professionnel de la santé.",
+    });
+  }
+
+  return {
+    ...content,
+    subtitle:
+      content.subtitle === 'LIBÉRATION, SÉRÉNITÉ, TRANSFORMATION'
+        ? 'RECENTRAGE, SÉRÉNITÉ, EXPLORATION'
+        : content.subtitle,
+    intro: /changement véritable à long terme/i.test(content.intro)
+      ? 'Un soin en profondeur précédé par un rituel inspiré de pratiques spirituelles anciennes. Une expérience de détente riche en sensations, consacrée à l’exploration personnelle. Les ressentis peuvent varier d’une personne à l’autre.'
+      : content.intro,
+    recognitionTitle: /est-ce que tu te reconnais/i.test(content.recognitionTitle)
+      ? 'UN MOMENT POUR SOI'
+      : content.recognitionTitle,
+    recognitionIntro: /hypersensible|empathique|éponge|sauveur/i.test(content.recognitionIntro)
+      ? 'Cette expérience peut accompagner une intention de détente, de réflexion ou de recentrage.'
+      : content.recognitionIntro,
+    recognitionItems: content.recognitionItems.map(replaceExact),
+    recognitionFinalText: /ce soin (est conçu|a été créé) pour toi/i.test(content.recognitionFinalText)
+      ? 'Aucune expérience préalable avec les pratiques spirituelles n’est nécessaire. Il suffit d’arriver avec curiosité et ouverture.'
+      : content.recognitionFinalText,
+    recognitionPortalText: /retrouve|paix intérieure durable/i.test(content.recognitionPortalText)
+      ? 'Accorde-toi un moment pour ralentir, explorer une intention et te reconnecter à tes repères intérieurs.'
+      : content.recognitionPortalText,
+    sanctuaryTitle: /lieu de guérison/i.test(content.sanctuaryTitle)
+      ? 'NOTRE TEMPLE EST UN ESPACE DE RECENTRAGE…'
+      : content.sanctuaryTitle,
+    pillarsTitle: /bienfaits du soin rituel|bienfaits que le rituel procure/i.test(content.pillarsTitle)
+      ? 'LES INTENTIONS DE L’EXPÉRIENCE'
+      : content.pillarsTitle,
+    benefits: content.benefits.map(replaceExact),
+    finalTitle: /ce qui te pèse n'a pas à rester en toi/i.test(content.finalTitle)
+      ? 'UN MOMENT POUR RALENTIR ET TE RECENTRER'
+      : content.finalTitle,
+    finalText: /ton mal est reconnu|dissoudre l'ombre|perdent leur emprise/i.test(content.finalText)
+      ? 'Dans l’ambiance feutrée du Temple, accorde-toi un moment consacré à l’écoute, au symbolisme et à l’exploration personnelle. Chaque expérience est unique et les ressentis peuvent varier.'
+      : content.finalText,
+    faqs: safeFaqs,
+  };
 }
 
 function buildDefaultLandingContent(offering: OfferingView): ServiceLandingContent {
@@ -387,30 +477,30 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
     return {
       eyebrow: 'La Voie des Arcanes présente',
       title: offering.name,
-      subtitle: 'Une libération intérieure guidée par Noctura, prêtresse de La Voie des Arcanes',
+      subtitle: 'Une expérience de recentrage guidée par Noctura, prêtresse de La Voie des Arcanes',
       intro:
-        "Tu franchis le seuil avec ce que ton âme n'arrive plus à porter. Noctura t'accueille, écoute l'invisible, et t'aide à rendre au néant ce qui ne t'appartient plus.",
+        "Tu franchis le seuil pour t'accorder une pause. Noctura t'accueille dans une expérience spirituelle consacrée à la détente, au symbolisme et à l'exploration personnelle.",
       sanctuaryTitle: 'Un seuil où rien en toi ne sera jugé',
       sanctuaryText:
         "Entre les mains de Noctura, les fardeaux ne sont pas jugés: ils sont entendus. Le rituel devient alors un seuil où l'âme se déleste, se réaccorde et retrouve son souffle.",
-      recognitionTitle: 'Est-ce que tu te reconnais ?',
-      recognitionIntro: 'Peut-être portes-tu plus que tu ne devrais porter...',
+      recognitionTitle: 'Un moment pour soi',
+      recognitionIntro: 'Cette expérience peut accompagner une intention de détente, de réflexion ou de recentrage.',
       recognitionItems: [
-        'Tu te sens épuisé même lorsque tu te reposes.',
-        'Tu portes des émotions qui semblent bloquées.',
-        "Tu absorbes facilement l'énergie des autres.",
-        'Tu traverses une période difficile ou un changement important.',
-        "Tu ressens une lourdeur intérieure sans pouvoir l'expliquer.",
-        'Tu cherches simplement un moment pour souffler et revenir à toi.',
+        "S'accorder une pause dans un espace calme.",
+        'Explorer une intention personnelle.',
+        'Découvrir les runes et les cartes comme outils de réflexion.',
+        'Vivre une expérience spirituelle personnalisée.',
+        'Prendre du recul sur son parcours.',
+        'Prendre un moment pour ralentir et revenir à soi.',
       ],
-      recognitionFinalText: "Si tu t'es reconnu dans l'un de ces points, ce soin a été créé pour toi.",
-      recognitionPortalText: 'Ici, tu peux déposer ce qui pèse et retrouver la paix, la clarté et la légèreté.',
-      pillarsTitle: 'Les bienfaits que le rituel procure',
+      recognitionFinalText: "Aucune expérience préalable avec les pratiques spirituelles n'est nécessaire. Il suffit d'arriver avec curiosité et ouverture.",
+      recognitionPortalText: "Accorde-toi un moment pour ralentir, explorer une intention et te reconnecter à tes repères intérieurs.",
+      pillarsTitle: "Les intentions de l'expérience",
       processTitle: 'Le passage du soin',
       faqTitle: 'Questions avant de franchir le seuil',
-      finalTitle: "Ce que tu portes n'a pas à rester en toi",
+      finalTitle: 'Un moment pour ralentir et te recentrer',
       finalText:
-        "Dans le silence du rituel, les fardeaux perdent leur emprise. Ce que tu portais seul est reconnu, transmuté, puis confié aux forces qui savent dissoudre l'ombre.",
+        "Dans l'ambiance feutrée du Temple, accorde-toi un moment consacré à l'écoute, au symbolisme et à l'exploration personnelle. Chaque expérience est unique et les ressentis peuvent varier.",
       ctaLabel: 'Réserver le soin',
       heroImage: serviceImage,
       mobileImage: serviceImage,
@@ -437,7 +527,12 @@ function buildDefaultLandingContent(offering: OfferingView): ServiceLandingConte
         {
           question: 'Est-ce que chaque soin est pareil?',
           answer:
-            "Non. Noctura adapte le rituel à ton énergie, à ce que tu portes et à ce que le moment demande.",
+            "Non. Noctura adapte l'expérience à ton intention et au déroulement de la rencontre.",
+        },
+        {
+          question: 'Est-ce un traitement médical ou psychologique?',
+          answer:
+            "Non. Le Soin Rituel est une expérience spirituelle de détente et d'exploration personnelle. Il ne remplace pas les conseils, le diagnostic ou les soins d'un professionnel de la santé.",
         },
       ],
       metaTitle: '',

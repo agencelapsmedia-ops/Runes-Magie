@@ -33,7 +33,7 @@ const soinRituel: OfferingView = {
 const content = buildServiceLandingContent(soinRituel);
 assert.equal(content.ctaLabel, 'Réserver le soin');
 assert.match(content.subtitle, /Noctura/);
-assert.match(content.intro, /âme n'arrive plus à porter/);
+assert.match(content.intro, /expérience spirituelle/);
 // Soin Rituel : hero immersif activé par défaut (fond + personnage + runes).
 assert.match(content.backgroundUrl ?? '', /soin-rituel-fond/);
 assert.match(content.characterUrl ?? '', /soin-rituel-personnage/);
@@ -44,8 +44,41 @@ assert.ok(content.pillarIcons.length > 0);
 assert.match(content.pillarIcons[0], /\/images\/services\/arcane\/icons\//);
 // Section « bienfaits » : par défaut elle reprend la liste des piliers (features).
 assert.deepEqual(content.benefits, soinRituel.features);
-// Le titre de la section du bas reflète les bienfaits.
-assert.match(content.pillarsTitle, /bienfaits/i);
+// Le titre de la section du bas décrit des intentions, sans promettre de bienfaits.
+assert.match(content.pillarsTitle, /intentions/i);
+// Conformité Meta : la page décrit une expérience sans diagnostiquer le visiteur
+// ni promettre un résultat certain ou médical.
+const soinRituelCopy = JSON.stringify(content);
+assert.doesNotMatch(soinRituelCopy, /est-ce que tu te reconnais/i);
+assert.doesNotMatch(soinRituelCopy, /tu te sens épuisé/i);
+assert.doesNotMatch(soinRituelCopy, /a été créé pour toi/i);
+assert.doesNotMatch(soinRituelCopy, /bienfaits que le rituel procure/i);
+assert.match(soinRituelCopy, /ne remplace pas.*professionnel.*santé/i);
+
+// Les anciennes personnalisations enregistrées sont neutralisées à l'affichage
+// sans supprimer les autres réglages de la page.
+const legacyRiskyContent = buildServiceLandingContent({
+  ...soinRituel,
+  landing: {
+    subtitle: 'LIBÉRATION, SÉRÉNITÉ, TRANSFORMATION',
+    intro:
+      'Un soin en profondeur précédé par un rituel. Une séance qui apporte compréhension et changement véritable à long terme.',
+    recognitionTitle: 'EST-CE QUE TU TE RECONNAIS ?',
+    recognitionIntro: 'Hypersensible, empathique, éponge, syndrome du sauveur(e)...',
+    recognitionItems: [
+      'Tu es souvent malade sans aucune raison.',
+      'Tu cherches encore des réponses après avoir vu un médecin et/ou des spécialistes.',
+    ],
+    recognitionFinalText: "Si tu te reconnais dans l'un de ces énoncés, ce soin est conçu pour toi.",
+    pillarsTitle: 'BIENFAITS DU SOIN RITUEL',
+    benefits: ['DÉPARASITAGE', 'RELATIONS AMÉLIORÉES'],
+    titleFont: 'cinzel',
+  },
+});
+const legacyRiskyCopy = JSON.stringify(legacyRiskyContent);
+assert.doesNotMatch(legacyRiskyCopy, /malade sans aucune raison|médecin|déparasitage|relations améliorées/i);
+assert.match(legacyRiskyContent.intro, /ressentis peuvent varier/i);
+assert.equal(legacyRiskyContent.titleFont, 'cinzel');
 
 const metadata = buildServiceLandingMetadata(soinRituel);
 assert.equal(metadata.title, 'Le Soin Rituel avec Noctura | La Voie des Arcanes');
