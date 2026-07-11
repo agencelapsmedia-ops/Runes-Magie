@@ -7,6 +7,23 @@ export const dynamic = 'force-dynamic';
 const STATUSES = ['A_FAIRE', 'EN_COURS', 'EN_VERIFICATION', 'TERMINE'];
 const PRIORITIES = ['URGENTE', 'HAUTE', 'MOYENNE', 'BASSE'];
 
+/** GET /api/admin/todos/[id] — détail complet : tâche + notes + fichiers joints. */
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const guard = await requireAdmin();
+  if (guard) return guard;
+
+  const { id } = await params;
+  const todo = await prisma.todoTask.findUnique({
+    where: { id },
+    include: {
+      notes: { orderBy: { createdAt: 'asc' } },
+      attachments: { orderBy: { createdAt: 'asc' } },
+    },
+  });
+  if (!todo) return NextResponse.json({ error: 'Tâche introuvable.' }, { status: 404 });
+  return NextResponse.json(todo);
+}
+
 /** PATCH /api/admin/todos/[id] — met à jour (déplacement d'étape inclus) / archive. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin();

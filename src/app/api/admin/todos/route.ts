@@ -16,6 +16,7 @@ export async function GET(req: Request) {
   const todos = await prisma.todoTask.findMany({
     where: archived ? { archivedAt: { not: null } } : { archivedAt: null },
     orderBy: archived ? [{ archivedAt: 'desc' }] : [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    include: { _count: { select: { notes: true, attachments: true } } },
   });
   return NextResponse.json(todos);
 }

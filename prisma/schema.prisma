@@ -101,8 +101,31 @@ model TodoTask {
   archivedAt  DateTime? // tâche archivée (masquée du tableau)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  notes       TodoNote[]
+  attachments TodoAttachment[]
 
   @@index([status, sortOrder])
+}
+
+model TodoNote {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      TodoTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+}
+
+model TodoAttachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      TodoTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name      String // nom du fichier affiché
+  url       String // URL publique (Supabase Storage)
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
 }
 
 // ─── Chat Noctura (guide virtuel du site public) ────────────────────────────

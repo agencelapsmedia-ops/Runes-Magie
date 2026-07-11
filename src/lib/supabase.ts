@@ -35,6 +35,40 @@ export async function uploadImage(file: File, folder = 'general'): Promise<strin
 }
 
 /**
+ * Types de fichiers acceptés en pièce jointe (to-do) et taille maximale.
+ */
+const FILE_MAX_BYTES = 10 * 1024 * 1024; // 10 Mo
+const FILE_ALLOWED = /\.(jpe?g|png|webp|gif|avif|svg|pdf|docx?|xlsx?|pptx?|txt|csv|zip)$/i;
+
+/**
+ * Upload d'un fichier quelconque (document, image…) vers Supabase Storage.
+ * Utilisé par les pièces jointes du module to-do. @returns URL publique.
+ */
+export async function uploadFile(file: File, folder = 'todo'): Promise<string> {
+  if (file.size > FILE_MAX_BYTES) {
+    throw new Error('Fichier trop lourd (maximum 10 Mo).');
+  }
+  if (!FILE_ALLOWED.test(file.name)) {
+    throw new Error('Type de fichier non accepté (images, PDF, Word, Excel, PowerPoint, txt, csv, zip).');
+  }
+  // Nom nettoyé + horodatage : lisible ET sans collision.
+  const safeName = file.name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // retire les accents décomposés
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileName = `${folder}/${Date.now()}-${safeName}`;
+
+  const { error } = await supabase.storage.from(BUCKET).upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+  if (error) throw new Error(`Échec du téléversement : ${error.message}`);
+
+  return supabase.storage.from(BUCKET).getPublicUrl(fileName).data.publicUrl;
+}
+
+/**
  * Liste les images du stockage (médiathèque). Parcourt le bucket sur deux
  * niveaux de dossiers et retourne les URLs publiques, les plus récentes d'abord.
  */
