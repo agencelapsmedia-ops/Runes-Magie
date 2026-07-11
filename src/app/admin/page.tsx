@@ -5,7 +5,7 @@ import Link from 'next/link';
 const modules = [
   { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Commandes, inventaire, catégories et caisse Clover.', sub: 'Hub e-commerce' },
   { rune: 'ᚹ', label: 'Soins & Cours', href: '/admin/services', desc: 'Calendrier, services, praticiennes, formations et revenus.', sub: 'Hub holistique' },
-  { rune: 'ᛗ', label: 'CRM / Clients', href: '/admin/clients', desc: 'Comptes clients et abonnés à l’infolettre.', sub: 'CRM & infolettre' },
+  { rune: 'ᛗ', label: 'CRM / Clients', href: '/admin/crm', desc: 'Clients, infolettre, conversations du chat et to-do du projet.', sub: 'CRM & suivi' },
   { rune: 'ᛟ', label: 'Site', href: '/admin/site', desc: 'Menu de navigation, sliders et structure du site public.', sub: 'Navigation & pages' },
 ];
 

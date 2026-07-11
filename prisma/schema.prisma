@@ -86,6 +86,25 @@ model BookingSetting {
 // logique se fait via Category.slug ↔ Product.category.
 // ════════════════════════════════════════════════════════════════
 
+// ─── To-do du projet (module kanban de l'admin) ─────────────────────────────
+model TodoTask {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  status      String    @default("A_FAIRE") // A_FAIRE | EN_COURS | EN_VERIFICATION | TERMINE
+  priority    String    @default("MOYENNE") // URGENTE | HAUTE | MOYENNE | BASSE
+  label       String? // étiquette de catégorie (Site web, Boutique, Marketing…)
+  assignee    String? // nom simple de la personne assignée
+  startsOn    DateTime? // date de début
+  dueOn       DateTime? // date d'échéance
+  sortOrder   Int       @default(0)
+  archivedAt  DateTime? // tâche archivée (masquée du tableau)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, sortOrder])
+}
+
 // ─── Chat Noctura (guide virtuel du site public) ────────────────────────────
 model ChatConversation {
   id             String        @id @default(cuid())
