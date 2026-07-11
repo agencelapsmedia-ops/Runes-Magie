@@ -10,25 +10,76 @@ import MessageList from './MessageList';
 import ChatComposer from './ChatComposer';
 
 const STORAGE_KEY = 'noctura-conversation-id';
+const OPEN_KEY = 'noctura-open'; // sessionStorage : le chat reste ouvert d'une page à l'autre
 
 /**
  * Orchestrateur du chat Noctura : launcher + fenêtre + état de conversation.
  * Monté globalement dans le layout ; masqué sur les pages /admin.
+ * La conversation SURVIT aux changements de page : l'historique est restauré
+ * depuis la base, et le chat se rouvre s'il était ouvert.
  */
 export default function NocturaChat() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [typing, setTyping] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
   const conversationIdRef = useRef<string | null>(null);
+  const historyLoadedRef = useRef(false);
   const idSeq = useRef(0);
 
-  useEffect(() => {
-    conversationIdRef.current = localStorage.getItem(STORAGE_KEY);
+  const nextId = () => `m${++idSeq.current}-${Date.now()}`;
+
+  /** Ouvre/ferme en mémorisant l'état pour les changements de page (onglet courant). */
+  const setOpen = useCallback((v: boolean) => {
+    setOpenState(v);
+    try {
+      if (v) sessionStorage.setItem(OPEN_KEY, '1');
+      else sessionStorage.removeItem(OPEN_KEY);
+    } catch {
+      // stockage indisponible (navigation privée stricte) — sans conséquence
+    }
   }, []);
 
-  const nextId = () => `m${++idSeq.current}-${Date.now()}`;
+  /** Restaure l'historique de la conversation depuis la base (une seule fois). */
+  const loadHistory = useCallback(async () => {
+    if (historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+    const id = conversationIdRef.current;
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/chat/history?id=${encodeURIComponent(id)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.messages) && data.messages.length) {
+        setMessages(
+          data.messages.map((m: { role: string; content: string }) => ({
+            id: nextId(),
+            role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+            content: m.content,
+          })),
+        );
+      }
+    } catch {
+      // hors-ligne : la visiteuse repart simplement de l'accueil
+    }
+  }, []);
+
+  // Au chargement d'une page : récupère la conversation, et rouvre le chat
+  // s'il était ouvert sur la page précédente (avec son historique).
+  useEffect(() => {
+    conversationIdRef.current = localStorage.getItem(STORAGE_KEY);
+    let wasOpen = false;
+    try {
+      wasOpen = sessionStorage.getItem(OPEN_KEY) === '1';
+    } catch {
+      /* stockage indisponible */
+    }
+    if (wasOpen) {
+      setOpenState(true);
+      void loadHistory();
+    }
+  }, [loadHistory]);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: ChatMsg = { id: nextId(), role: 'user', content: text };
@@ -95,7 +146,14 @@ export default function NocturaChat() {
 
   return (
     <>
-      {!open && <ChatLauncher onOpen={() => setOpen(true)} />}
+      {!open && (
+        <ChatLauncher
+          onOpen={() => {
+            setOpen(true);
+            void loadHistory(); // reprend la conversation là où elle était
+          }}
+        />
+      )}
       {open && (
         <ChatWindow
           onClose={() => setOpen(false)}
