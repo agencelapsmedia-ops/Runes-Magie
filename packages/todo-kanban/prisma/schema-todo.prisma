@@ -1,0 +1,43 @@
+// ─── Kit To-do Kanban — modèles à coller dans le prisma/schema.prisma de l'hôte ───
+// Puis : npx prisma migrate dev --name add_todo_kanban   (ou exécuter migration.sql)
+
+model TodoTask {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  status      String    @default("A_FAIRE") // A_FAIRE | EN_COURS | EN_VERIFICATION | TERMINE
+  priority    String    @default("MOYENNE") // URGENTE | HAUTE | MOYENNE | BASSE
+  label       String? // étiquette de catégorie (Site web, Boutique, Marketing…)
+  assignee    String? // nom simple de la personne assignée
+  startsOn    DateTime? // date de début
+  dueOn       DateTime? // date d'échéance
+  sortOrder   Int       @default(0)
+  archivedAt  DateTime? // tâche archivée (masquée du tableau)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  notes       TodoNote[]
+  attachments TodoAttachment[]
+
+  @@index([status, sortOrder])
+}
+
+model TodoNote {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      TodoTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+}
+
+model TodoAttachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      TodoTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name      String // nom du fichier affiché
+  url       String // URL publique du fichier téléversé
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+}
