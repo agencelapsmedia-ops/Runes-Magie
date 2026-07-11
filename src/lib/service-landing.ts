@@ -382,6 +382,7 @@ export function buildServiceLandingContent(offering: OfferingView): ServiceLandi
  * comme un diagnostic personnel, une promesse médicale ou un résultat garanti.
  */
 function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLandingContent {
+  const normalizeMatch = (value: string) => value.normalize('NFC').trim().toLocaleUpperCase('fr-CA');
   const replacements = new Map<string, string>([
     ['DÉPARASITAGE', 'RECENTRAGE'],
     ['DÉBLOCAGE ÉMOTIONNEL', 'EXPLORATION INTÉRIEURE'],
@@ -404,9 +405,9 @@ function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLand
     ['VIE PLUS SAINE', 'MOMENT CONSACRÉ À SOI'],
     ['ESTIME & CONFIANCE EN SOI', 'CONNEXION À SES RESSOURCES'],
     ['ESPRIT PLUS CLAIR', 'ESPACE DE RÉFLEXION'],
-  ]);
+  ].map(([source, replacement]) => [normalizeMatch(source), replacement]));
 
-  const replaceExact = (value: string) => replacements.get(value) ?? value;
+  const replaceExact = (value: string) => replacements.get(normalizeMatch(value)) ?? value;
   const safeFaqs = content.faqs.map((faq) => {
     if (/est-ce que je dois me préparer/i.test(faq.question)) {
       return {
@@ -436,7 +437,7 @@ function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLand
   return {
     ...content,
     subtitle:
-      content.subtitle === 'LIBÉRATION, SÉRÉNITÉ, TRANSFORMATION'
+      normalizeMatch(content.subtitle) === normalizeMatch('LIBÉRATION, SÉRÉNITÉ, TRANSFORMATION')
         ? 'RECENTRAGE, SÉRÉNITÉ, EXPLORATION'
         : content.subtitle,
     intro: /changement véritable à long terme/i.test(content.intro)

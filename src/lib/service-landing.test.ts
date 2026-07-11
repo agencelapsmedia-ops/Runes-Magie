@@ -60,7 +60,7 @@ assert.match(soinRituelCopy, /ne remplace pas.*professionnel.*santé/i);
 const legacyRiskyContent = buildServiceLandingContent({
   ...soinRituel,
   landing: {
-    subtitle: 'LIBÉRATION, SÉRÉNITÉ, TRANSFORMATION',
+    subtitle: 'Libération, sérénité, transformation',
     intro:
       'Un soin en profondeur précédé par un rituel. Une séance qui apporte compréhension et changement véritable à long terme.',
     recognitionTitle: 'EST-CE QUE TU TE RECONNAIS ?',
@@ -71,7 +71,7 @@ const legacyRiskyContent = buildServiceLandingContent({
     ],
     recognitionFinalText: "Si tu te reconnais dans l'un de ces énoncés, ce soin est conçu pour toi.",
     pillarsTitle: 'BIENFAITS DU SOIN RITUEL',
-    benefits: ['DÉPARASITAGE', 'RELATIONS AMÉLIORÉES'],
+    benefits: ['Déparasitage', 'Relations améliorées'],
     steps: [
       {
         number: '04',
