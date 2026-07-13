@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadImage, listImages } from '@/lib/supabase';
@@ -392,7 +393,7 @@ function PillarIconsEditor({
   }
 
   return (
-    <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+    <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
       {items.map((label, index) => (
         <div
           key={`${label}-${index}`}
@@ -524,7 +525,7 @@ function PairListEditor({
     'w-full rounded-sm border border-[#D4AF37]/30 bg-black/35 p-2 font-cormorant text-base text-parchemin outline-none transition focus:border-[#FF4FD8]';
 
   return (
-    <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
       {rows.map(([first, second], index) => (
         <div key={index} className="rounded-sm border border-[#D4AF37]/25 bg-black/20 p-3">
           <div className="mb-2 flex items-center justify-between">
@@ -585,7 +586,7 @@ function FontPicker({
   setDraft: (value: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+    <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
       {FONT_KEYS.map((key) => {
         const active = draft === key;
         return (
@@ -735,7 +736,7 @@ function SeoPanel({
     'mt-2 w-full rounded-sm border border-[#D4AF37]/35 bg-black/35 p-3 font-cormorant text-base text-parchemin outline-none transition focus:border-[#FF4FD8]';
 
   return (
-    <div className="fixed inset-0 z-[90]">
+    <div className="fixed inset-0 z-[110]">
       <button
         type="button"
         className="absolute inset-0 bg-black/65 backdrop-blur-sm"
@@ -922,6 +923,11 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [seoOpen, setSeoOpen] = useState(false);
+  // Les surcouches (pupitre, panneau SEO, badge) sont téléportées dans <body> via un
+  // portail : le <main> du layout crée un contexte d'empilement (relative z-10) qui,
+  // sinon, les piège SOUS la barre de navigation (z-50) et le chat Noctura (z-96).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const activeTarget = useMemo(
     () => targets.find((target) => target.field === activeField) ?? null,
@@ -967,11 +973,9 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
     router.refresh();
   }
 
-  return (
-    <ArcaneEditorContext.Provider value={openEditor}>
-      {children}
-
-      <div className="fixed bottom-5 left-5 z-40 hidden flex-col gap-2 md:flex">
+  const overlays = (
+    <>
+      <div className="fixed bottom-5 left-5 z-[100] hidden flex-col gap-2 md:flex">
         <div className="rounded-sm border border-[#D4AF37]/40 bg-[#0A1028]/90 px-4 py-3 font-cinzel text-[0.68rem] uppercase tracking-[0.18em] text-[#E6C87A] shadow-[0_0_24px_rgba(106,0,255,0.35)] backdrop-blur">
           Mode édition des arcanes actif
         </div>
@@ -991,7 +995,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
       )}
 
       {activeTarget && (
-        <div className="fixed inset-0 z-[80]">
+        <div className="fixed inset-0 z-[100]">
           <button
             type="button"
             className="absolute inset-0 bg-black/55 backdrop-blur-sm"
@@ -1085,6 +1089,13 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
           </aside>
         </div>
       )}
+    </>
+  );
+
+  return (
+    <ArcaneEditorContext.Provider value={openEditor}>
+      {children}
+      {mounted && createPortal(overlays, document.body)}
     </ArcaneEditorContext.Provider>
   );
 }
