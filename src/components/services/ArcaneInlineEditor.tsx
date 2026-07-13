@@ -506,13 +506,18 @@ function PairListEditor({
   addLabel: string;
   helper?: string;
 }) {
-  const rows = useMemo<[string, string][]>(
-    () => (draft.length ? draft.split(ROW_SEP).map((line) => splitPair(line)) : []),
-    [draft],
+  // État local BRUT des entrées : si on re-dérivait les lignes du brouillon à chaque
+  // frappe, le trim() de splitPair avalerait les espaces et retours-ligne en fin de
+  // texte pendant la saisie (impossible de taper « mot mot » ou Entrée). Le brouillon
+  // parent n'est qu'une sortie ; le nettoyage final se fait au scellement (buildPayload).
+  const [rows, setRows] = useState<[string, string][]>(() =>
+    draft.length ? draft.split(ROW_SEP).map((line) => splitPair(line)) : [],
   );
 
-  const commit = (next: [string, string][]) =>
+  const commit = (next: [string, string][]) => {
+    setRows(next);
     setDraft(next.map(([a, b]) => `${a} || ${b}`).join(ROW_SEP));
+  };
 
   const update = (index: number, slot: 0 | 1, value: string) => {
     const next = rows.map((row) => [...row] as [string, string]);
@@ -1027,6 +1032,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
               />
             ) : activeTarget.field === 'steps' ? (
               <PairListEditor
+                key="steps"
                 draft={draft}
                 setDraft={setDraft}
                 firstLabel="Titre de l'étape"
@@ -1036,6 +1042,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
               />
             ) : activeTarget.field === 'faqs' ? (
               <PairListEditor
+                key="faqs"
                 draft={draft}
                 setDraft={setDraft}
                 firstLabel="Question"
