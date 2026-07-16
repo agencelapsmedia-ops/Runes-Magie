@@ -6,6 +6,7 @@ import { RESEAU_LABELS, STATUTS_POST, TYPES_CONTENU } from '@/lib/social-constan
 import type { PostSerialise } from '@/lib/social-posts';
 import type { CompteSerialise } from '@/lib/social-accounts';
 import FichePublication from './FichePublication';
+import CalendrierEditorial from './CalendrierEditorial';
 
 const VIOLET = '#6B3FA0';
 
@@ -18,9 +19,11 @@ export default function PublicationsClient({
   comptes: CompteSerialise[];
 }) {
   const [posts, setPosts] = useState<PostSerialise[]>(postsInitiaux);
+  const [vue, setVue] = useState<'calendrier' | 'liste'>('calendrier');
   const [filtreStatut, setFiltreStatut] = useState('tous');
   const [filtreType, setFiltreType] = useState('tous');
   const [fiche, setFiche] = useState<PostSerialise | 'nouveau' | null>(null);
+  const [dateInitiale, setDateInitiale] = useState<string | null>(null);
 
   const recharger = useCallback(async () => {
     const res = await fetch('/api/admin/social/posts');
@@ -58,7 +61,10 @@ export default function PublicationsClient({
           </Link>
           <button
             type="button"
-            onClick={() => setFiche('nouveau')}
+            onClick={() => {
+              setDateInitiale(null);
+              setFiche('nouveau');
+            }}
             style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: `linear-gradient(135deg, ${VIOLET}, #4A2D7A)`, color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
           >
             + Nouvelle publication
@@ -75,6 +81,18 @@ export default function PublicationsClient({
 
       {/* Filtres + légende */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px', background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: '12px 16px', marginBottom: '16px' }}>
+        <div style={{ display: 'inline-flex', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${VIOLET}` }}>
+          {(['calendrier', 'liste'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setVue(v)}
+              style={{ padding: '7px 16px', border: 'none', background: vue === v ? VIOLET : '#FFFFFF', color: vue === v ? '#FFFFFF' : VIOLET, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+            >
+              {v === 'calendrier' ? '📅 Calendrier' : '☰ Liste'}
+            </button>
+          ))}
+        </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>
           Statut :
           <select value={filtreStatut} onChange={(e) => setFiltreStatut(e.target.value)} style={selectStyle}>
@@ -103,7 +121,24 @@ export default function PublicationsClient({
         </div>
       </div>
 
+      {/* Calendrier */}
+      {vue === 'calendrier' && (
+        <CalendrierEditorial
+          posts={visibles}
+          onOpen={(p) => {
+            setDateInitiale(null);
+            setFiche(p);
+          }}
+          onDateClick={(dateLocale) => {
+            setDateInitiale(dateLocale);
+            setFiche('nouveau');
+          }}
+          onMoved={recharger}
+        />
+      )}
+
       {/* Liste */}
+      {vue === 'liste' && (
       <div style={{ background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
         {visibles.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF', fontSize: '0.9rem' }}>
@@ -177,11 +212,13 @@ export default function PublicationsClient({
           </table>
         )}
       </div>
+      )}
 
       {fiche && (
         <FichePublication
           post={fiche === 'nouveau' ? null : fiche}
           comptes={comptesActifs}
+          dateInitiale={dateInitiale}
           onClose={() => setFiche(null)}
           onChanged={async () => {
             await recharger();

@@ -32,11 +32,13 @@ function versInputLocal(iso: string | null): string {
 export default function FichePublication({
   post,
   comptes,
+  dateInitiale,
   onClose,
   onChanged,
 }: {
   post: PostSerialise | null; // null = création
   comptes: CompteSerialise[]; // comptes actifs
+  dateInitiale?: string | null; // pré-remplissage depuis un clic sur le calendrier
   onClose: () => void;
   onChanged: () => Promise<void>;
 }) {
@@ -50,7 +52,7 @@ export default function FichePublication({
   const [images, setImages] = useState<SocialImage[]>(post?.images ?? []);
   const [variants, setVariants] = useState<Record<string, SocialVariant>>(post?.variants ?? {});
   const [cibles, setCibles] = useState<string[]>(post?.targets.map((t) => t.accountId) ?? comptes.map((c) => c.id));
-  const [dateProg, setDateProg] = useState(versInputLocal(post?.scheduledAt ?? null));
+  const [dateProg, setDateProg] = useState(versInputLocal(post?.scheduledAt ?? null) || (dateInitiale ?? ''));
   const [ongletVariante, setOngletVariante] = useState<'FACEBOOK' | 'INSTAGRAM'>('FACEBOOK');
 
   const [busy, setBusy] = useState(false);
