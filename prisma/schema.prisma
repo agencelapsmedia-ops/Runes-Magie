@@ -841,3 +841,106 @@ model CourseProgress {
   @@unique([userId, lessonId])
   @@index([userId, courseId])
 }
+
+// ════════════════════════════════════════════════════════════════
+// PUBLICATIONS RÉSEAUX SOCIAUX (module admin /admin/publications)
+//  Phase 1 : Facebook Page + Instagram Business, images seulement.
+//  `organizationId` prépare le multi-marques (RCA, Noblio, Lapsmédia…).
+//  Statuts en TEXT + whitelists applicatives (src/lib/social-constants.ts).
+// ════════════════════════════════════════════════════════════════
+
+// Compte connecté — la cliente colle l'ID + le token longue durée.
+// Le token est CHIFFRÉ (AES-256-GCM, src/lib/social-crypto.ts) : jamais en
+// clair en base, dans les logs ni dans les réponses API (seulement tokenLastFour).
+model SocialAccount {
+  id                   String          @id @default(cuid())
+  organizationId       String          @default("runes-et-magie")
+  network              String // FACEBOOK | INSTAGRAM (extensible : TIKTOK | YOUTUBE)
+  label                String // nom affiché (ex. « Page Runes & Magie »)
+  externalId           String // page-id Facebook OU ig-user-id Instagram
+  encryptedAccessToken String          @db.Text
+  tokenLastFour        String? // 4 derniers caractères, pour identification visuelle
+  tokenExpiresAt       DateTime? // indicatif — un token « longue durée » peut être invalidé à tout moment
+  connectionStatus     String          @default("CONNECTED") // CONNECTED | EXPIRED | INVALID | PERMISSION_MISSING
+  lastTestedAt         DateTime?
+  lastTestSucceeded    Boolean?
+  lastTestError        String?         @db.Text
+  isActive             Boolean         @default(true)
+  // Le compte Instagram professionnel est rattaché à une Page Facebook :
+  parentAccountId      String?
+  parentAccount        SocialAccount?  @relation("SocialAccountParent", fields: [parentAccountId], references: [id])
+  childAccounts        SocialAccount[] @relation("SocialAccountParent")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  targets              SocialPostTarget[]
+  jobs                 SocialPublishJob[]
+
+  @@unique([organizationId, network, externalId])
+  @@index([organizationId, network, isActive])
+}
+
+// Une publication : contenu de base + déclinaisons par réseau.
+// Le statut est TOUJOURS calculé par le serveur (jamais posé par le client).
+model SocialPost {
+  id               String    @id @default(cuid())
+  organizationId   String    @default("runes-et-magie")
+  title            String // titre interne (jamais publié)
+  type             String    @default("PUBLICATION") // PUBLICATION | CARROUSEL | STORY | REEL | PRODUIT | PROMO_SOIN | CITATION | PLEINE_LUNE | FORMATION | EVENEMENT | TEMOIGNAGE
+  baseText         String    @default("") // texte / idée de base
+  callToAction     String    @default("")
+  link             String? // lien à inclure dans le texte
+  hashtags         String    @default("") // hashtags de base, séparés par espaces
+  images           Json      @default("[]") // [{ url, alt }] — 0 à 10, URLs Supabase Storage publiques
+  variants         Json      @default("{}") // { FACEBOOK: { texte, hashtags }, INSTAGRAM: {...} } — éditable après génération IA
+  complianceReport Json? // dernier rapport « Vérifier la conformité Meta »
+  status           String    @default("BROUILLON") // BROUILLON | A_APPROUVER | PROGRAMMEE | PUBLIEE | ERREUR
+  scheduledAt      DateTime? // UTC — affiché/saisi en heure de Montréal (America/Toronto)
+  publishedAt      DateTime? // quand tous les jobs ont réussi
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  targets          SocialPostTarget[]
+  jobs             SocialPublishJob[]
+
+  @@index([organizationId, status, scheduledAt])
+  @@index([scheduledAt])
+}
+
+// Comptes ciblés par une publication (une marque peut avoir plusieurs Pages).
+model SocialPostTarget {
+  id        String        @id @default(cuid())
+  postId    String
+  post      SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  accountId String
+  account   SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  network   String // copie dénormalisée (lisibilité)
+  enabled   Boolean       @default(true)
+
+  @@unique([postId, accountId])
+}
+
+// Un job = une tentative de publication sur UN compte (historique + erreurs).
+model SocialPublishJob {
+  id             String        @id @default(cuid())
+  organizationId String        @default("runes-et-magie")
+  postId         String
+  post           SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        SocialAccount @relation(fields: [accountId], references: [id])
+  network        String // copie dénormalisée (lisibilité de l'historique)
+  status         String        @default("EN_ATTENTE") // EN_ATTENTE | EN_COURS | PUBLIE | ERREUR
+  attempts       Int           @default(0) // max 3 (MAX_TENTATIVES)
+  nextAttemptAt  DateTime? // recul progressif : +10 min, +30 min, puis arrêt
+  errorCode      String? // code d'erreur Graph API
+  errorCategory  String? // TEMPORAIRE | PERMANENTE — une PERMANENTE n'est pas réessayée
+  lastHttpStatus Int?
+  lastError      String?       @db.Text
+  externalPostId String? // id du post FB / media IG une fois publié
+  startedAt      DateTime? // verrou : moment où une exécution a réclamé le job
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([postId, accountId]) // idempotence : UN job par compte par publication
+  @@index([status, nextAttemptAt])
+  @@index([postId])
+}
