@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/holistic-reminders",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/social-publish",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
