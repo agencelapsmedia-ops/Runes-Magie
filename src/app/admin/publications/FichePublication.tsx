@@ -17,6 +17,23 @@ import type { CompteSerialise } from '@/lib/social-accounts';
 
 const VIOLET = '#6B3FA0';
 
+interface SectionConformiteUI {
+  niveau: 'OK' | 'ATTENTION' | 'RISQUE';
+  problemes: { extrait: string; raison: string; categorie: string; suggestion: string }[];
+}
+interface RapportConformiteUI {
+  baseText: SectionConformiteUI;
+  facebook: SectionConformiteUI;
+  instagram: SectionConformiteUI;
+  globalLevel: 'OK' | 'ATTENTION' | 'RISQUE';
+}
+
+const COULEUR_NIVEAU: Record<string, { bg: string; fg: string; border: string }> = {
+  OK: { bg: '#D1FAE5', fg: '#065F46', border: '#6EE7B7' },
+  ATTENTION: { bg: '#FEF3C7', fg: '#92400E', border: '#FCD34D' },
+  RISQUE: { bg: '#FEE2E2', fg: '#991B1B', border: '#FCA5A5' },
+};
+
 /** Convertit un ISO UTC vers la valeur d'un input datetime-local (fuseau du navigateur). */
 function versInputLocal(iso: string | null): string {
   if (!iso) return '';
@@ -58,6 +75,9 @@ export default function FichePublication({
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [iaEnCours, setIaEnCours] = useState<'variantes' | 'conformite' | null>(null);
+  const [suggestionsHashtags, setSuggestionsHashtags] = useState<string[]>([]);
+  const [rapport, setRapport] = useState<RapportConformiteUI | null>(null);
 
   const verrouille = courant?.status === 'PUBLIEE';
   const statut = STATUTS_POST[courant?.status ?? 'BROUILLON'] ?? STATUTS_POST.BROUILLON;
@@ -131,6 +151,62 @@ export default function FichePublication({
       setFeedback({ ok: false, text: 'Erreur réseau — réessaie.' });
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** « ✨ Générer les déclinaisons » : enregistre puis remplit FB/IG + alt + suggestions. */
+  async function genererIA() {
+    const sauve = await enregistrer(true);
+    if (!sauve) return;
+    setIaEnCours('variantes');
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/admin/social/ia/variantes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: sauve.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback({ ok: false, text: data.error ?? 'Échec de la génération.' });
+        return;
+      }
+      setVariants((prev) => ({ ...prev, FACEBOOK: data.facebook, INSTAGRAM: data.instagram }));
+      setSuggestionsHashtags(data.suggestionsHashtags ?? []);
+      if (Array.isArray(data.altTexts) && data.altTexts.length > 0) {
+        setImages((prev) => prev.map((img, i) => (img.alt ? img : { ...img, alt: data.altTexts[i] ?? '' })));
+      }
+      setFeedback({ ok: true, text: 'Déclinaisons générées ✓ — relis-les, ajuste, puis enregistre.' });
+    } catch {
+      setFeedback({ ok: false, text: 'Erreur réseau — réessaie.' });
+    } finally {
+      setIaEnCours(null);
+    }
+  }
+
+  /** « 🛡 Vérifier la conformité Meta » : enregistre puis analyse les textes. */
+  async function verifierIA() {
+    const sauve = await enregistrer(true);
+    if (!sauve) return;
+    setIaEnCours('conformite');
+    setFeedback(null);
+    setRapport(null);
+    try {
+      const res = await fetch('/api/admin/social/ia/conformite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: sauve.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback({ ok: false, text: data.error ?? 'Échec de la vérification.' });
+        return;
+      }
+      setRapport(data);
+    } catch {
+      setFeedback({ ok: false, text: 'Erreur réseau — réessaie.' });
+    } finally {
+      setIaEnCours(null);
     }
   }
 
@@ -341,6 +417,27 @@ export default function FichePublication({
         <div style={{ margin: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
             <p style={{ ...etiquette, margin: 0 }}>Déclinaisons par réseau (optionnel — sinon le texte de base est publié)</p>
+            {!verrouille && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  disabled={busy || iaEnCours !== null || !baseText.trim()}
+                  onClick={genererIA}
+                  title={!baseText.trim() ? "Écris d'abord ton idée de base" : 'Générer les versions Facebook et Instagram avec l’IA'}
+                  style={boutonPlein(busy || iaEnCours !== null || !baseText.trim())}
+                >
+                  {iaEnCours === 'variantes' ? '✨ Génération…' : '✨ Générer les déclinaisons'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || iaEnCours !== null}
+                  onClick={verifierIA}
+                  style={boutonContour(VIOLET, '#C4B5FD')}
+                >
+                  {iaEnCours === 'conformite' ? '🛡 Vérification…' : '🛡 Vérifier la conformité Meta'}
+                </button>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
             {(['FACEBOOK', 'INSTAGRAM'] as const).map((r) => (
@@ -379,7 +476,51 @@ export default function FichePublication({
             placeholder={`Hashtags ${RESEAU_LABELS[ongletVariante]}`}
             style={{ ...champ, marginTop: '8px' }}
           />
+          {suggestionsHashtags.length > 0 && (
+            <p style={{ fontSize: '0.78rem', color: '#6B7280', marginTop: '8px' }}>
+              💡 Suggestions : {suggestionsHashtags.join(' ')}
+            </p>
+          )}
         </div>
+
+        {/* Rapport de conformité Meta */}
+        {rapport && (
+          <div style={{ margin: '16px 0', border: `1px solid ${COULEUR_NIVEAU[rapport.globalLevel].border}`, borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', background: COULEUR_NIVEAU[rapport.globalLevel].bg, color: COULEUR_NIVEAU[rapport.globalLevel].fg, fontWeight: 700, fontSize: '0.85rem' }}>
+              🛡 Conformité Meta : {rapport.globalLevel === 'OK' ? 'aucun problème repéré' : rapport.globalLevel === 'ATTENTION' ? 'à surveiller' : 'risque de refus'}
+            </div>
+            <div style={{ padding: '12px 14px' }}>
+              {(
+                [
+                  ['Texte de base', rapport.baseText],
+                  ['Facebook', rapport.facebook],
+                  ['Instagram', rapport.instagram],
+                ] as const
+              ).map(([nom, section]) =>
+                section.problemes.length === 0 ? null : (
+                  <div key={nom} style={{ marginBottom: '10px' }}>
+                    <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#2D1B4E', marginBottom: '4px' }}>{nom}</p>
+                    {section.problemes.map((p, i) => (
+                      <div key={i} style={{ fontSize: '0.8rem', color: '#374151', padding: '8px 10px', background: '#F9FAFB', borderRadius: '6px', marginBottom: '6px' }}>
+                        <p style={{ margin: 0 }}>
+                          <span style={{ color: '#991B1B', fontStyle: 'italic' }}>« {p.extrait} »</span>
+                          {p.categorie && <span style={{ color: '#9CA3AF' }}> — {p.categorie}</span>}
+                        </p>
+                        <p style={{ margin: '3px 0 0' }}>{p.raison}</p>
+                        {p.suggestion && (
+                          <p style={{ margin: '3px 0 0', color: '#065F46' }}>Suggestion : {p.suggestion}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ),
+              )}
+              <p style={{ fontSize: '0.72rem', color: '#9CA3AF', margin: 0 }}>
+                Cette vérification repère les formulations potentiellement sensibles. Elle ne garantit pas l’approbation de la publication ou de la publicité par Meta.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Programmation */}
         {!verrouille && (
