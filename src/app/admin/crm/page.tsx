@@ -13,13 +13,16 @@ const TONE: Record<string, string> = {
 /** Hub CRM / Clients : clients, infolettre, conversations du chat, to-do du projet. */
 export default async function CrmHubPage() {
   const now = new Date();
-  const [clientCount, subscriberCount, conversationCount, activeTasks, lateTasks] = await Promise.all([
-    prisma.holisticUser.count({ where: { role: 'CLIENT' } }),
-    prisma.newsletterSubscriber.count(),
-    prisma.chatConversation.count(),
-    prisma.todoTask.count({ where: { archivedAt: null, status: { not: 'TERMINE' } } }),
-    prisma.todoTask.count({ where: { archivedAt: null, status: { not: 'TERMINE' }, dueOn: { lt: now } } }),
-  ]);
+  const [clientCount, subscriberCount, conversationCount, activeTasks, lateTasks, postsProgrammes, postsEnErreur] =
+    await Promise.all([
+      prisma.holisticUser.count({ where: { role: 'CLIENT' } }),
+      prisma.newsletterSubscriber.count(),
+      prisma.chatConversation.count(),
+      prisma.todoTask.count({ where: { archivedAt: null, status: { not: 'TERMINE' } } }),
+      prisma.todoTask.count({ where: { archivedAt: null, status: { not: 'TERMINE' }, dueOn: { lt: now } } }),
+      prisma.socialPost.count({ where: { status: 'PROGRAMMEE' } }),
+      prisma.socialPost.count({ where: { status: 'ERREUR' } }),
+    ]);
 
   const cards = [
     {
@@ -53,6 +56,14 @@ export default async function CrmHubPage() {
       desc: 'Tableau kanban : À faire · En cours · En vérification · Terminé.',
       badge: lateTasks > 0 ? `${lateTasks} en retard` : `${activeTasks} active${activeTasks > 1 ? 's' : ''}`,
       tone: lateTasks > 0 ? ('alert' as const) : ('muted' as const),
+    },
+    {
+      rune: 'ᛒ',
+      label: 'Publications réseaux sociaux',
+      href: '/admin/publications',
+      desc: 'Prépare, programme et publie sur Facebook et Instagram.',
+      badge: postsEnErreur > 0 ? `${postsEnErreur} en erreur` : `${postsProgrammes} programmée${postsProgrammes > 1 ? 's' : ''}`,
+      tone: postsEnErreur > 0 ? ('alert' as const) : ('teal' as const),
     },
   ];
 

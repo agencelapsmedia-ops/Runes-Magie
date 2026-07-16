@@ -27,6 +27,7 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
   },
   { label: 'CRM / Clients', href: '/admin/crm', icon: 'ᛗ', match: ['/admin/crm', '/admin/clients', '/admin/conversations'] },
   { label: 'To-do liste', href: '/admin/todo', icon: 'ᛏ', match: ['/admin/todo'] },
+  { label: 'Publications', href: '/admin/publications', icon: 'ᛒ', match: ['/admin/publications'] },
   { label: 'Site', href: '/admin/site', icon: 'ᛟ', match: ['/admin/site'] },
 ];
 
