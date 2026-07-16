@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
-// Menu épuré : 5 entrées de haut niveau. Chacune ouvre une PAGE HUB qui regroupe
+// Menu épuré : 6 entrées de haut niveau. Chacune ouvre une PAGE HUB qui regroupe
 // ses outils en cartes (plus de sous-liste dans le menu). `match` = préfixes de
 // routes appartenant à la catégorie, pour surligner l'entrée même sur une page-outil.
 const navItems: { label: string; href: string; icon: string; exact?: boolean; match: string[] }[] = [
@@ -25,7 +25,8 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
       '/admin/offerings', '/admin/formations', '/admin/revenus-holistique',
     ],
   },
-  { label: 'CRM / Clients', href: '/admin/crm', icon: 'ᛗ', match: ['/admin/crm', '/admin/clients', '/admin/conversations', '/admin/todo'] },
+  { label: 'CRM / Clients', href: '/admin/crm', icon: 'ᛗ', match: ['/admin/crm', '/admin/clients', '/admin/conversations'] },
+  { label: 'To-do liste', href: '/admin/todo', icon: 'ᛏ', match: ['/admin/todo'] },
   { label: 'Site', href: '/admin/site', icon: 'ᛟ', match: ['/admin/site'] },
 ];
 
