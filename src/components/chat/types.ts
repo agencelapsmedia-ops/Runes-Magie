@@ -25,14 +25,19 @@ export const LAUNCHER_IMG = '/images/chat/noctura-launcher.jpg';
 export const WELCOME_IMG = '/images/chat/noctura-accueil.jpg';
 export const FALLBACK_IMG = '/images/services/arcane/soin-rituel-personnage.webp';
 
-/** Sépare le texte d'un message assistant de ses marqueurs [CARTE:slug]. */
-export function parseCards(content: string): { text: string; slugs: string[] } {
+/** Sépare le texte d'un message assistant de ses marqueurs [CARTE:slug] et [EQUIPE]. */
+export function parseCards(content: string): { text: string; slugs: string[]; handoff: boolean } {
   const slugs: string[] = [];
+  let handoff = false;
   const text = content
     .replace(/\[CARTE:([a-z0-9-]+)\]/gi, (_, slug: string) => {
       if (slugs.length < 2 && !slugs.includes(slug)) slugs.push(slug);
       return '';
     })
+    .replace(/\[EQUIPE\]/gi, () => {
+      handoff = true;
+      return '';
+    })
     .trim();
-  return { text, slugs };
+  return { text, slugs, handoff };
 }

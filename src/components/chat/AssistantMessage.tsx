@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { LAUNCHER_IMG, FALLBACK_IMG, parseCards } from './types';
 import ServiceCard from './ServiceCard';
+import HumanHandoff from './HumanHandoff';
 
 /** Bulle de Noctura : fond prune translucide, fine bordure dorée, mini-portrait. */
 export default function AssistantMessage({ content }: { content: string }) {
   const [src, setSrc] = useState(LAUNCHER_IMG);
-  const { text, slugs } = parseCards(content);
+  const { text, slugs, handoff } = parseCards(content);
 
   return (
     <div className="flex items-end gap-2 pr-8">
@@ -33,6 +34,7 @@ export default function AssistantMessage({ content }: { content: string }) {
         {slugs.map((slug) => (
           <ServiceCard key={slug} slug={slug} />
         ))}
+        {handoff && <HumanHandoff />}
       </div>
     </div>
   );
