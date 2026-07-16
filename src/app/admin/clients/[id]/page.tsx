@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { isInternalEmail } from '@/lib/holistic-clients';
+import EmailClientButton from './EmailClientButton';
 
 async function getClientDetail(id: string) {
   return prisma.holisticUser.findUnique({
@@ -146,6 +148,12 @@ export default async function ClientDetailPage({
             {newsletterSub?.unsubscribedAt && <Badge color="red">Désabonné infolettre</Badge>}
           </div>
         </div>
+        <EmailClientButton
+          clientId={client.id}
+          clientFirstName={client.firstName}
+          clientEmail={client.email}
+          disabled={isInternalEmail(client.email)}
+        />
       </div>
 
       {/* Stats */}
