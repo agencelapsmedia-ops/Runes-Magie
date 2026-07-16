@@ -277,6 +277,8 @@ export default function CalendrierClient({
           eventClick={onEventClick}
           dateClick={onDateClick}
           eventContent={renderEvent}
+          eventDisplay="block"
+          eventTextColor="#FFFFFF"
           slotMinTime="07:00:00"
           slotMaxTime="22:00:00"
           allDaySlot={false}
@@ -514,6 +516,10 @@ export default function CalendrierClient({
         .fc .fc-timegrid-slot, .fc .fc-daygrid-day-frame { cursor: pointer; }
         .fc .fc-day-today { background: rgba(107, 63, 160, 0.06) !important; }
         .fc-event { cursor: pointer; font-size: 0.76rem; }
+        /* Vue mois : texte des blocs toujours lisible (jamais la couleur pâle héritée du thème) */
+        .fc .fc-daygrid-event { color: #FFFFFF; }
+        .fc .fc-daygrid-dot-event { color: #1F2937; }
+        .fc .fc-daygrid-more-link { color: #6B3FA0; font-weight: 600; }
         .fc-event.rdv-annule .fc-event-title, .fc-event.rdv-annule .fc-event-time { text-decoration: line-through; }
         .fc-event.rdv-attente { opacity: 0.75; border-style: dashed !important; }
       `}</style>
