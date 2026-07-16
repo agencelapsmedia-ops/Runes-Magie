@@ -134,6 +134,35 @@ export default function FichePublication({
     }
   }
 
+  /** « Publier maintenant » : enregistre, confirme, publie et affiche le résultat par réseau. */
+  async function publierMaintenant() {
+    const sauve = await enregistrer(true);
+    if (!sauve) return;
+    if (!window.confirm('Publier MAINTENANT sur les comptes cochés ? Cette action est visible publiquement.')) return;
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/admin/social/posts/${sauve.id}/publish`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback({ ok: false, text: data.error ?? 'Échec de la publication.' });
+        return;
+      }
+      if (data.post) setCourant(data.post);
+      const r = data.resultat ?? { publies: 0, erreurs: 0 };
+      setFeedback(
+        r.erreurs === 0
+          ? { ok: true, text: `Publié sur ${r.publies} compte${r.publies > 1 ? 's' : ''} ✓` }
+          : { ok: false, text: `${r.publies} réussite(s), ${r.erreurs} échec(s) — détails dans l'historique ci-dessous.` },
+      );
+      await onChanged();
+    } catch {
+      setFeedback({ ok: false, text: 'Erreur réseau — réessaie.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function supprimer() {
     if (!courant) return onClose();
     if (!window.confirm(`Supprimer « ${courant.title} » ?`)) return;
@@ -365,6 +394,15 @@ export default function FichePublication({
                 style={boutonPlein(busy || !dateProg)}
               >
                 📅 Programmer
+              </button>
+              <button
+                type="button"
+                disabled={busy || cibles.length === 0}
+                onClick={publierMaintenant}
+                style={{ ...boutonPlein(busy || cibles.length === 0), background: busy || cibles.length === 0 ? '#C4B5FD' : 'linear-gradient(135deg, #065F46, #047857)' }}
+                title={courant?.status === 'ERREUR' ? 'Relancer la publication (les erreurs seront réessayées)' : 'Publier immédiatement'}
+              >
+                🚀 {courant?.status === 'ERREUR' ? 'Relancer la publication' : 'Publier maintenant'}
               </button>
               {courant?.status === 'PROGRAMMEE' && (
                 <button type="button" disabled={busy} onClick={() => action('depublier')} style={boutonContour('#92400E', '#FCD34D')}>
