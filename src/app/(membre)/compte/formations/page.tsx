@@ -48,7 +48,7 @@ export default async function FormationsPage() {
             href="/ecole"
             className="inline-flex items-center font-cinzel text-xs uppercase tracking-widest text-turquoise-cristal transition-colors duration-200 hover:text-or-ancien"
           >
-            Voir l&apos;École de Sorcellerie →
+            Voir l&apos;École de Magie →
           </Link>
         </ComingSoon>
       ) : (
