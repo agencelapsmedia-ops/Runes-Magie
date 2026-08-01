@@ -39,6 +39,8 @@ export interface OfferingView {
   imageUrl: string | null;
   detailHref: string;
   landing: ServiceLandingOverrides;
+  /** Horodatage ISO de la dernière modification — sert de verrou optimiste à l'édition inline. */
+  updatedAt: string;
 }
 
 function money(n: number): string {
@@ -80,6 +82,7 @@ function toView(o: OfferingRow): OfferingView {
     imageUrl: o.imageUrl,
     detailHref,
     landing: parseLandingOverrides(o.landingContent),
+    updatedAt: o.updatedAt.toISOString(),
   };
 }
 

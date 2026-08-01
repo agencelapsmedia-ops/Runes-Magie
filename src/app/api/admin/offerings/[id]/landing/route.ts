@@ -25,6 +25,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
   }
 
+  // Verrou optimiste : si la page qui envoie la modification a été rendue AVANT une
+  // autre sauvegarde (deuxième onglet, onglet jamais rafraîchi, retour navigateur),
+  // son brouillon reconstruirait les listes entières depuis des données périmées et
+  // écraserait les modifications récentes. On refuse plutôt que de perdre du contenu.
+  if (typeof body.expectedUpdatedAt === 'string' && body.expectedUpdatedAt) {
+    const current = await prisma.offering.findUnique({
+      where: { id },
+      select: { updatedAt: true },
+    });
+    if (!current) {
+      return NextResponse.json({ error: 'Service introuvable.' }, { status: 404 });
+    }
+    if (current.updatedAt.toISOString() !== body.expectedUpdatedAt) {
+      return NextResponse.json(
+        {
+          error:
+            'Cette page a été modifiée depuis son affichage (autre onglet ou sauvegarde plus récente). Recharge la page, puis refais ta modification.',
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   const data: Prisma.OfferingUpdateInput = {};
 
   // 1) Champs-colonnes
@@ -105,7 +128,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const offering = await prisma.offering.update({
     where: { id },
     data,
-    select: { slug: true },
+    select: { slug: true, updatedAt: true },
   });
 
   revalidatePath('/seances');
@@ -114,5 +137,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   revalidatePath(`/ecole/${offering.slug}`);
   revalidatePath('/admin/offerings');
 
-  return NextResponse.json({ ok: true });
+  // Le nouvel horodatage permet au pupitre d'enchaîner plusieurs scellements dans le
+  // même onglet sans déclencher le verrou optimiste.
+  return NextResponse.json({ ok: true, updatedAt: offering.updatedAt.toISOString() });
 }

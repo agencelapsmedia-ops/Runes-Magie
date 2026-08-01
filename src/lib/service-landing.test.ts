@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   buildServiceJsonLd,
   buildServiceLandingContent,
+  buildEditableServiceLandingContent,
   buildServiceLandingMetadata,
   buildFaqJsonLd,
   buildBreadcrumbJsonLd,
@@ -28,6 +29,7 @@ const soinRituel: OfferingView = {
   imageUrl: '/images/services/soin-rituel.svg',
   detailHref: '/seances/soin-rituel',
   landing: {},
+  updatedAt: '2026-07-13T00:00:00.000Z',
 };
 
 const content = buildServiceLandingContent(soinRituel);
@@ -99,6 +101,43 @@ assert.doesNotMatch(legacyRiskyCopy, /purge le corps|blessures purgées|moins vu
 assert.match(legacyRiskyContent.intro, /ressentis peuvent varier/i);
 assert.equal(legacyRiskyContent.titleFont, 'cinzel');
 
+// --- Régression « impossible de modifier » : une réponse RÉÉCRITE par la propriétaire
+// ne doit PAS être écrasée à l'affichage (l'assainissement ne vise que les anciens
+// textes à risque, pas la question). ---
+const reecrit = buildServiceLandingContent({
+  ...soinRituel,
+  landing: {
+    faqs: [
+      {
+        question: 'Est-ce que je dois me préparer?',
+        answer: 'Nouvelle réponse rédigée par la propriétaire, avec ses propres mots.',
+      },
+      {
+        question: 'Est-ce un traitement médical ou psychologique?',
+        answer: "Non. Il ne remplace pas les soins d'un professionnel de la santé.",
+      },
+    ],
+  },
+});
+assert.equal(
+  reecrit.faqs[0].answer,
+  'Nouvelle réponse rédigée par la propriétaire, avec ses propres mots.',
+);
+
+// --- Le pupitre d'édition voit le texte STOCKÉ, pas la version assainie ---
+const editable = buildEditableServiceLandingContent({
+  ...soinRituel,
+  landing: {
+    faqs: [
+      {
+        question: 'EST-CE QUE JE DOIS ME PRÉPARER?',
+        answer: 'Prendre un bain avec des fleurs médicinales afin de se purifier.',
+      },
+    ],
+  },
+});
+assert.match(editable.faqs[0].answer, /fleurs médicinales/);
+
 const metadata = buildServiceLandingMetadata(soinRituel);
 assert.equal(metadata.title, 'Le Soin Rituel avec Noctura | La Voie des Arcanes');
 assert.deepEqual(metadata.alternates, {
@@ -130,6 +169,7 @@ const generique: OfferingView = {
   imageUrl: '/images/services/guidance.jpg',
   detailHref: '/seances/guidance-runique',
   landing: {},
+  updatedAt: '2026-07-13T00:00:00.000Z',
 };
 
 const genMeta = buildServiceLandingMetadata(generique);

@@ -377,6 +377,16 @@ export function buildServiceLandingContent(offering: OfferingView): ServiceLandi
 }
 
 /**
+ * Contenu SANS le passage d'assainissement : c'est ce que le pupitre d'édition doit
+ * afficher et resauvegarder. Si l'éditeur était nourri du contenu assaini, chaque
+ * scellement réécrirait en base les textes remplacés — en écrasant silencieusement
+ * ce que la propriétaire a réellement enregistré.
+ */
+export function buildEditableServiceLandingContent(offering: OfferingView): ServiceLandingContent {
+  return applyOverrides(buildDefaultLandingContent(offering), offering.landing ?? {});
+}
+
+/**
  * Garde les personnalisations visuelles et les textes déjà acceptables, mais
  * neutralise les formulations du Soin Rituel qui pourraient être comprises
  * comme un diagnostic personnel, une promesse médicale ou un résultat garanti.
@@ -408,19 +418,28 @@ function sanitizeSoinRituelMetaCopy(content: ServiceLandingContent): ServiceLand
   ].map(([source, replacement]) => [normalizeMatch(source), replacement]));
 
   const replaceExact = (value: string) => replacements.get(normalizeMatch(value)) ?? value;
+  // IMPORTANT : ces règles ne doivent viser QUE les formulations à risque d'ORIGINE
+  // (textes par défaut ou anciennes versions), jamais la question elle-même. Sinon la
+  // propriétaire ne peut plus JAMAIS modifier ces réponses : sa sauvegarde aboutit,
+  // mais l'affichage la remplace à chaque rendu (bug « impossible de modifier »).
   const safeFaqs = content.faqs.map((faq) => {
-    if (/est-ce que je dois me préparer/i.test(faq.question)) {
+    // Anciennes réponses à risque de « Est-ce que je dois me préparer? » (bain aux
+    // « fleurs médicinales », « se purifier », « nommer ce que tu es prêt à déposer »)
+    // — remplacées par leur version neutre. Une réponse RÉÉCRITE passe telle quelle.
+    if (/fleurs médicinales|se purifier|moment de silence avant la rencontre|prêt à déposer/i.test(faq.answer)) {
       return {
         question: faq.question,
         answer:
           "Aucune préparation particulière n’est obligatoire. Porte des vêtements confortables et prévois, si possible, un peu de temps calme après la séance.",
       };
     }
+    // Ancienne question « Combien de temps durent les bienfaits? » : la promesse est
+    // dans la question ; on adoucit la question mais on garde la réponse rédigée
+    // (elle passe par replaceExact comme les autres).
     if (/combien de temps durent les bienfaits/i.test(faq.question)) {
       return {
         question: 'Combien de temps peut-on ressentir les effets de l’expérience?',
-        answer:
-          "Chaque personne vit l’expérience différemment. Certains ressentent surtout une détente immédiate, tandis que d’autres continuent à réfléchir aux symboles et aux intentions explorés. Aucun résultat précis ni aucune durée ne peuvent être garantis.",
+        answer: replaceExact(faq.answer),
       };
     }
     return { question: replaceExact(faq.question), answer: replaceExact(faq.answer) };
@@ -702,7 +721,7 @@ export function buildFaqJsonLd(offering: OfferingView) {
 /** Fil d'Ariane structuré (BreadcrumbList) : Accueil › Séances/École › Service. */
 export function buildBreadcrumbJsonLd(offering: OfferingView) {
   const isFormation = offering.detailHref.startsWith('/ecole');
-  const sectionName = isFormation ? 'École de Sorcellerie' : 'Séances';
+  const sectionName = isFormation ? 'École de Magie' : 'Séances';
   const sectionPath = isFormation ? '/ecole' : '/seances';
   return {
     '@context': 'https://schema.org',

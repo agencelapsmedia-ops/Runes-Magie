@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -114,6 +114,8 @@ interface ArcaneEditorProviderProps {
   offeringId: string;
   targets: EditTarget[];
   seo?: SeoPanelData;
+  /** Horodatage ISO de l'offrande au rendu de la page — verrou optimiste anti-écrasement. */
+  updatedAt?: string;
   children: React.ReactNode;
 }
 
@@ -520,9 +522,14 @@ function PairListEditor({
   };
 
   const update = (index: number, slot: 0 | 1, value: string) => {
+    // Neutralise les caractères qui corrompraient le découpage du brouillon : le
+    // séparateur d'entrées U+001E (jamais tapé, mais collable depuis certains exports)
+    // et « || » dans la question (c'est le délimiteur question/réponse).
+    let clean = value.split(ROW_SEP).join(' ');
+    if (slot === 0) clean = clean.replace(/\|\|/g, '|');
     const next = rows.map((row) => [...row] as [string, string]);
     if (!next[index]) next[index] = ['', ''];
-    next[index][slot] = value;
+    next[index][slot] = clean;
     commit(next);
   };
 
@@ -722,19 +729,24 @@ function SeoPanel({
   async function save() {
     setSaving(true);
     setError('');
-    const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metaTitle, metaDescription, focusKeyword, ogImage }),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      setError(data?.error ?? "Le SEO n'a pas pu être scellé.");
-      return;
+    try {
+      const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ metaTitle, metaDescription, focusKeyword, ogImage }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Le SEO n'a pas pu être scellé.");
+        return;
+      }
+      onClose();
+      router.refresh();
+    } catch {
+      setError('Connexion impossible — vérifie ton réseau puis réessaie.');
+    } finally {
+      setSaving(false);
     }
-    onClose();
-    router.refresh();
   }
 
   const fieldClass =
@@ -921,7 +933,7 @@ function SeoPanel({
  * boutons ✦ et rend le pupitre coulissant. Les boutons appellent `openEditor(field)`
  * via le contexte React (plus de pont `window`).
  */
-export default function ArcaneEditorProvider({ offeringId, targets, seo, children }: ArcaneEditorProviderProps) {
+export default function ArcaneEditorProvider({ offeringId, targets, seo, updatedAt, children }: ArcaneEditorProviderProps) {
   const router = useRouter();
   const [activeField, setActiveField] = useState<EditableField | null>(null);
   const [draft, setDraft] = useState('');
@@ -933,6 +945,30 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
   // sinon, les piège SOUS la barre de navigation (z-50) et le chat Noctura (z-96).
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Après plusieurs scellements dans le même onglet, l'horodatage des props devient
+  // périmé tant que router.refresh() n'a pas abouti : on garde le plus récent renvoyé
+  // par l'API pour que le verrou optimiste ne bloque pas les scellements en chaîne.
+  const [freshUpdatedAt, setFreshUpdatedAt] = useState<string | null>(null);
+  // « Scellé ✓ » : le pupitre reste ouvert le temps que la page se rafraîchisse, puis
+  // se referme — sinon l'ancienne page laisse croire que rien n'a été enregistré.
+  const [sealed, setSealed] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!sealed) return;
+    if (!isPending) {
+      setSealed(false);
+      setActiveField(null);
+      return;
+    }
+    // Filet de sécurité : si le rafraîchissement traîne (réseau lent/coupé), on
+    // referme quand même — la sauvegarde, elle, est déjà faite.
+    const timer = setTimeout(() => {
+      setSealed(false);
+      setActiveField(null);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [sealed, isPending]);
 
   const activeTarget = useMemo(
     () => targets.find((target) => target.field === activeField) ?? null,
@@ -949,6 +985,8 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
       const sep = field === 'faqs' || field === 'steps' ? ROW_SEP : '\n';
       setDraft(Array.isArray(target.value) ? target.value.join(sep) : target.value);
       setError('');
+      setSaving(false);
+      setSealed(false);
     },
     [targets],
   );
@@ -958,24 +996,41 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
     setSaving(true);
     setError('');
 
-    const payload = buildPayload(activeTarget.field, draft);
+    try {
+      const payload = buildPayload(activeTarget.field, draft);
+      const lockStamp = freshUpdatedAt ?? updatedAt;
+      if (lockStamp) payload.expectedUpdatedAt = lockStamp;
 
-    const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    setSaving(false);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        if (res.status === 401 || res.status === 403) {
+          setError(
+            'Ta session a expiré. Ouvre le site dans un autre onglet pour te reconnecter, puis reviens cliquer sur « Sceller » — ton texte est conservé ici.',
+          );
+        } else {
+          setError(data?.error ?? "La modification n'a pas pu être scellée.");
+        }
+        return;
+      }
 
-    if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setError(data?.error ?? "La modification n'a pas pu être scellée.");
-      return;
-    }
+      if (typeof data?.updatedAt === 'string') setFreshUpdatedAt(data.updatedAt);
 
-    setActiveField(null);
-    router.refresh();
+      setSealed(true);
+      startTransition(() => router.refresh());
+    } catch {
+      setError(
+        'Connexion impossible — vérifie ton réseau, puis clique de nouveau sur « Sceller la modification ». Ton texte est conservé.',
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   const overlays = (
@@ -1076,22 +1131,32 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, childre
               </p>
             )}
 
-            <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row">
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving}
-                className="flex-1 rounded-sm border border-[#E6C87A]/70 bg-[linear-gradient(90deg,#D4AF37,#E6C87A,#B8860B)] px-5 py-3 font-cinzel text-xs font-bold uppercase tracking-[0.18em] text-[#0A1028] shadow-[0_0_24px_rgba(212,175,55,0.35)] transition hover:brightness-110 disabled:opacity-60"
-              >
-                {saving ? 'Scellement...' : 'Sceller la modification'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveField(null)}
-                className="flex-1 rounded-sm border border-[#9A6CFF]/55 px-5 py-3 font-cinzel text-xs uppercase tracking-[0.18em] text-parchemin transition hover:border-[#00D9D9] hover:text-[#00D9D9]"
-              >
-                Refermer le pupitre
-              </button>
+            <div className="mt-auto pt-6">
+              <p className="mb-3 font-philosopher text-xs text-parchemin-vieilli/50">
+                Astuce : un champ laissé complètement vide fera réapparaître le texte
+                d&apos;origine du site.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving || sealed}
+                  className="flex-1 rounded-sm border border-[#E6C87A]/70 bg-[linear-gradient(90deg,#D4AF37,#E6C87A,#B8860B)] px-5 py-3 font-cinzel text-xs font-bold uppercase tracking-[0.18em] text-[#0A1028] shadow-[0_0_24px_rgba(212,175,55,0.35)] transition hover:brightness-110 disabled:opacity-60"
+                >
+                  {saving
+                    ? 'Scellement...'
+                    : sealed
+                      ? 'Scellé ✓ — mise à jour de la page…'
+                      : 'Sceller la modification'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveField(null)}
+                  className="flex-1 rounded-sm border border-[#9A6CFF]/55 px-5 py-3 font-cinzel text-xs uppercase tracking-[0.18em] text-parchemin transition hover:border-[#00D9D9] hover:text-[#00D9D9]"
+                >
+                  Refermer le pupitre
+                </button>
+              </div>
             </div>
           </aside>
         </div>

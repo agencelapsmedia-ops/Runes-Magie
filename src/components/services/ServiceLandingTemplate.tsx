@@ -4,6 +4,7 @@ import type { OfferingView } from '@/lib/offerings';
 import {
   buildServiceJsonLd,
   buildServiceLandingContent,
+  buildEditableServiceLandingContent,
   buildFaqJsonLd,
   buildBreadcrumbJsonLd,
   FONTS,
@@ -444,6 +445,11 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
   if (!canEdit) return body;
 
+  // Le pupitre édite le contenu STOCKÉ (non assaini) : s'il éditait le contenu affiché
+  // (post-sanitizer), chaque scellement matérialiserait en base les textes remplacés
+  // et écraserait silencieusement ce que la propriétaire a réellement enregistré.
+  const editable = buildEditableServiceLandingContent(offering);
+
   const autoTitle = `${offering.name} avec ${offering.practitionerName} | La Voie des Arcanes`;
   // Sur une seule ligne : un intro multi-paragraphes ne doit pas injecter de saut de ligne
   // dans la méta-description (aperçu SEO).
@@ -471,6 +477,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
   return (
     <ArcaneEditorProvider
       offeringId={offering.id}
+      updatedAt={offering.updatedAt}
       seo={{
         slug: offering.slug,
         detailHref: offering.detailHref,
@@ -491,58 +498,58 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
       }}
       targets={[
         { field: 'name', label: 'Titre principal du service', value: offering.name },
-        { field: 'titleFont', label: 'Police des grands titres', value: content.titleFont },
-        { field: 'labelFont', label: 'Police des sous-titres et labels', value: content.labelFont },
-        { field: 'bodyFont', label: 'Police des paragraphes', value: content.bodyFont },
-        { field: 'eyebrow', label: 'Petit texte au-dessus du titre', value: content.eyebrow },
-        { field: 'subtitle', label: 'Sous-titre (sous le grand titre)', value: content.subtitle },
-        { field: 'intro', label: "Texte d'ouverture (paragraphe sous le titre + méta description)", value: content.intro },
-        { field: 'ctaLabel', label: 'Texte des boutons de réservation', value: content.ctaLabel },
+        { field: 'titleFont', label: 'Police des grands titres', value: editable.titleFont },
+        { field: 'labelFont', label: 'Police des sous-titres et labels', value: editable.labelFont },
+        { field: 'bodyFont', label: 'Police des paragraphes', value: editable.bodyFont },
+        { field: 'eyebrow', label: 'Petit texte au-dessus du titre', value: editable.eyebrow },
+        { field: 'subtitle', label: 'Sous-titre (sous le grand titre)', value: editable.subtitle },
+        { field: 'intro', label: "Texte d'ouverture (paragraphe sous le titre + méta description)", value: editable.intro },
+        { field: 'ctaLabel', label: 'Texte des boutons de réservation', value: editable.ctaLabel },
         {
           field: 'imageUrl',
           label: 'Image du service',
           value: offering.imageUrl ?? '',
           helper: 'Colle une URL publique. Si le champ reste vide, le template utilise le visuel Noctura + Caracal fourni.',
         },
-        { field: 'imageAlt', label: "Texte alternatif de l'image principale (SEO)", value: content.imageAlt },
+        { field: 'imageAlt', label: "Texte alternatif de l'image principale (SEO)", value: editable.imageAlt },
         {
           field: 'backgroundUrl',
           label: 'Image de fond du hero',
-          value: content.backgroundUrl ?? '',
+          value: editable.backgroundUrl ?? '',
           helper: 'URL publique. Recommandé : 1920 × 1080 px (paysage), JPG ou PNG. Vide = ancien hero en dégradé.',
         },
         {
           field: 'characterUrl',
           label: 'Image du personnage (premier plan)',
-          value: content.characterUrl ?? '',
+          value: editable.characterUrl ?? '',
           helper: 'URL publique d\'un PNG/WebP TRANSPARENT (sujet détouré). Recommandé : ~1400 × 1600 px (portrait).',
         },
         {
           field: 'pillarIcons',
           label: 'Icônes devant les piliers',
-          value: offering.features.map((_, i) => content.pillarIcons[i] ?? ''),
+          value: offering.features.map((_, i) => editable.pillarIcons[i] ?? ''),
           items: offering.features,
           helper: 'Une icône par pilier (image transparente, idéalement WebP/PNG ~128 px). Laisse vide pour afficher une rune par défaut.',
         },
-        { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: content.sanctuaryTitle },
-        { field: 'sanctuaryText', label: 'Texte du sanctuaire', value: content.sanctuaryText },
-        { field: 'recognitionTitleFont', label: 'Police du titre de reconnaissance', value: content.recognitionTitleFont },
-        { field: 'recognitionTitle', label: 'Titre de la section reconnaissance', value: content.recognitionTitle },
-        { field: 'recognitionIntro', label: 'Introduction de la section reconnaissance', value: content.recognitionIntro },
+        { field: 'sanctuaryTitle', label: 'Titre de la section « sanctuaire »', value: editable.sanctuaryTitle },
+        { field: 'sanctuaryText', label: 'Texte du sanctuaire', value: editable.sanctuaryText },
+        { field: 'recognitionTitleFont', label: 'Police du titre de reconnaissance', value: editable.recognitionTitleFont },
+        { field: 'recognitionTitle', label: 'Titre de la section reconnaissance', value: editable.recognitionTitle },
+        { field: 'recognitionIntro', label: 'Introduction de la section reconnaissance', value: editable.recognitionIntro },
         {
           field: 'recognitionItems',
           label: 'Liste de reconnaissance',
-          value: content.recognitionItems,
+          value: editable.recognitionItems,
           helper: 'Un point par ligne. Ces éléments s’affichent avec les pastilles violettes.',
         },
-        { field: 'recognitionFinalText', label: 'Phrase finale de reconnaissance', value: content.recognitionFinalText },
+        { field: 'recognitionFinalText', label: 'Phrase finale de reconnaissance', value: editable.recognitionFinalText },
         {
           field: 'recognitionPortalText',
           label: 'Texte dans le portail',
-          value: content.recognitionPortalText,
+          value: editable.recognitionPortalText,
           helper: 'Texte court recommandé pour rester lisible dans le portail.',
         },
-        { field: 'pillarsTitle', label: 'Titre de la section des bienfaits', value: content.pillarsTitle },
+        { field: 'pillarsTitle', label: 'Titre de la section des bienfaits', value: editable.pillarsTitle },
         {
           field: 'features',
           label: 'Liste du panneau (hero)',
@@ -552,32 +559,32 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
         {
           field: 'benefits',
           label: 'Bienfaits du rituel (cartes numérotées)',
-          value: content.benefits,
+          value: editable.benefits,
           helper: 'Un bienfait par ligne. Section indépendante du panneau du hero.',
         },
-        { field: 'processTitle', label: 'Titre de la section des étapes', value: content.processTitle },
+        { field: 'processTitle', label: 'Titre de la section des étapes', value: editable.processTitle },
         {
           field: 'steps',
           label: 'Étapes du déroulement',
-          value: content.steps.map((step) => `${step.title} || ${step.text}`),
+          value: editable.steps.map((step) => `${step.title} || ${step.text}`),
           helper: 'Chaque étape a un titre et un texte. La numérotation (01, 02…) est automatique.',
         },
-        { field: 'faqTitle', label: 'Titre de la section FAQ', value: content.faqTitle },
+        { field: 'faqTitle', label: 'Titre de la section FAQ', value: editable.faqTitle },
         {
           field: 'faqs',
           label: 'Questions fréquentes',
-          value: content.faqs.map((faq) => `${faq.question} || ${faq.answer}`),
+          value: editable.faqs.map((faq) => `${faq.question} || ${faq.answer}`),
           helper: 'Chaque entrée a une question et une réponse.',
         },
         {
           field: 'faqImageUrl',
           label: 'Image de la section FAQ',
-          value: content.faqImageUrl ?? '',
+          value: editable.faqImageUrl ?? '',
           helper: 'Recommandé : 1080 × 1080 px (carré). Téléverse ou choisis dans la médiathèque.',
         },
-        { field: 'faqImageAlt', label: "Texte alternatif de l'image FAQ (SEO)", value: content.faqImageAlt },
-        { field: 'finalTitle', label: "Titre de l'appel final", value: content.finalTitle },
-        { field: 'finalText', label: "Texte de l'appel final", value: content.finalText },
+        { field: 'faqImageAlt', label: "Texte alternatif de l'image FAQ (SEO)", value: editable.faqImageAlt },
+        { field: 'finalTitle', label: "Titre de l'appel final", value: editable.finalTitle },
+        { field: 'finalText', label: "Texte de l'appel final", value: editable.finalText },
       ]}
     >
       {body}
