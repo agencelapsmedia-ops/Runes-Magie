@@ -5,7 +5,11 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 /**
- * Cron Vercel (toutes les 10 minutes) : publie les publications échues.
+ * Cron Vercel (quotidien, 10h Est) : publie les publications échues.
+ * ⚠️ Le plan Vercel Hobby n'autorise QUE des crons quotidiens ; une fréquence
+ * sub-quotidienne (ex. toutes les 10 minutes) fait échouer tout le build. Les
+ * publications programmées partent donc au passage quotidien suivant.
+ * Repasser à une fréquence fine nécessite le plan Pro.
  * Auth principale : `Authorization: Bearer <CRON_SECRET>` (envoyé nativement
  * par Vercel Cron) ; `x-cron-secret` accepté pour les tests manuels.
  */
