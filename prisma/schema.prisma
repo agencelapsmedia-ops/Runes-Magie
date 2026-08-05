@@ -351,6 +351,8 @@ model HolisticUser {
   orders            Order[]                @relation("UserOrders")
   entitlements      MemberEntitlement[]
   courseProgress    CourseProgress[]
+  // ── Événements (rituels, veillées) ──
+  eventRegistrations EventRegistration[]
 }
 
 model Practitioner {
@@ -943,4 +945,65 @@ model SocialPublishJob {
   @@unique([postId, accountId]) // idempotence : UN job par compte par publication
   @@index([status, nextAttemptAt])
   @@index([postId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// ÉVÉNEMENTS — rituels, veillées, célébrations.
+// Module volontairement SÉPARÉ des soins (Offering/Booking/
+// HolisticAppointment) : un événement est un rassemblement de
+// groupe à date fixe, pas un rendez-vous individuel sur créneau.
+// ─────────────────────────────────────────────────────────────
+
+enum EventRegistrationStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  description String
+  imageUrl    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  location    String
+  isOnline    Boolean   @default(false)
+  onlineUrl   String?
+  capacity    Int
+  bringItems  String?
+  isPublished Boolean   @default(false)
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  registrations EventRegistration[]
+
+  @@index([isPublished, startsAt])
+}
+
+model EventRegistration {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    HolisticUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Copie figée à l'inscription : si la personne change son courriel dans son
+  // profil plus tard, la liste de présence de l'événement reste exacte.
+  email     String
+  firstName String
+  lastName  String
+  phone     String?
+
+  note           String?
+  status         EventRegistrationStatus @default(CONFIRMED)
+  cancelToken    String                  @unique @default(cuid())
+  reminderSentAt DateTime?
+  createdAt      DateTime                @default(now())
+  cancelledAt    DateTime?
+
+  @@unique([eventId, userId])
+  @@index([eventId, status])
 }
