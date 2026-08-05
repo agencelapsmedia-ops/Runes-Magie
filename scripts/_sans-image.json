@@ -1,0 +1,394 @@
+[
+ {
+  "id": "cmser5b500000vay450fy2epu",
+  "slug": "agate",
+  "name": "Agate",
+  "stone": "agate",
+  "format": null,
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5bfc0001vay4gvzx6kbu",
+  "slug": "agate-naturelle-druse-pointe",
+  "name": "Agate naturelle w/druse — Pointe",
+  "stone": "agate-naturelle-druse",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5bou0002vay45rz6afo9",
+  "slug": "agate-druse-pointe",
+  "name": "Agate w/druse — Pointe",
+  "stone": "agate-druse",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5dso000avay47efv7mjs",
+  "slug": "ammonite-fossile-pierre-rare",
+  "name": "Ammonite fossile — Pierre Rare",
+  "stone": "ammonite-fossile",
+  "format": "Pierre Rare",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5e24000bvay4oijdc08x",
+  "slug": "apatite-bleue-pointe",
+  "name": "Apatite bleue — Pointe",
+  "stone": "apatite-bleue",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5ebj000cvay44titjjrh",
+  "slug": "aragonite-bleue-pierre-brute",
+  "name": "Aragonite bleue — Pierre Brute",
+  "stone": "aragonite-bleue",
+  "format": "Pierre Brute",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5ekz000dvay4eig9gxyc",
+  "slug": "aura-quartz-geode",
+  "name": "Aura quartz — Geode",
+  "stone": "aura-quartz",
+  "format": "Geode",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5eug000evay4fqj70bd7",
+  "slug": "aventurine-pierre-roulee",
+  "name": "Aventurine — Pierre roulée",
+  "stone": "aventurine",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5f40000fvay4sagos6n7",
+  "slug": "aventurine-quartz-pointe",
+  "name": "Aventurine w/quartz — Pointe",
+  "stone": "aventurine-quartz",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5s28001svay4z0afjmfc",
+  "slug": "base-lumineuse-bois-usb",
+  "name": "Base lumineuse bois USB",
+  "stone": null,
+  "format": null,
+  "category": "accessoires"
+ },
+ {
+  "id": "cmser5sbm001tvay41dfzmr27",
+  "slug": "bracelet-elastique",
+  "name": "Bracelet élastique",
+  "stone": null,
+  "format": null,
+  "category": "bijoux"
+ },
+ {
+  "id": "cmser5fdh000gvay4sagcitvq",
+  "slug": "chalcopyrite-de-paon-pierre-brute",
+  "name": "Chalcopyrite de paon — Pierre Brute",
+  "stone": "chalcopyrite-de-paon",
+  "format": "Pierre Brute",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5fmu000hvay4ck6usywm",
+  "slug": "chrysocolle-malachite-pierre-brute",
+  "name": "Chrysocolle w/malachite — Pierre Brute",
+  "stone": "chrysocolle-malachite",
+  "format": "Pierre Brute",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5gom000lvay46ji9alt2",
+  "slug": "cornaline-pierre-paume",
+  "name": "Cornaline — Pierre Paume",
+  "stone": "cornaline",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5gf7000kvay4hor76oe3",
+  "slug": "cornaline-pierre-roulee",
+  "name": "Cornaline — Pierre roulée",
+  "stone": "cornaline",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5hh2000ovay4r5j255zx",
+  "slug": "jais-pierre-roulee",
+  "name": "Jais — Pierre roulée",
+  "stone": "jais",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5hqp000pvay49j5rjj0i",
+  "slug": "jaspe-bourdon-pointe",
+  "name": "Jaspe bourdon — Pointe",
+  "stone": "jaspe-bourdon",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5i05000qvay4folfhxhi",
+  "slug": "jaspe-mosaique-pointe",
+  "name": "Jaspe mosaïque — Pointe",
+  "stone": "jaspe-mosaique",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5ijh000svay4q12rvvys",
+  "slug": "malachite-pierre-roulee",
+  "name": "Malachite — Pierre roulée",
+  "stone": "malachite",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5it0000tvay4ez25mcdq",
+  "slug": "malachite-pointe",
+  "name": "Malachite — Pointe",
+  "stone": "malachite",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5j2g000uvay48vp5wplq",
+  "slug": "merlinite-pierre-paume",
+  "name": "Merlinite — Pierre Paume",
+  "stone": "merlinite",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5jby000vvay4j1ub1egn",
+  "slug": "merlinite-pointe",
+  "name": "Merlinite — Pointe",
+  "stone": "merlinite",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5jus000xvay41zwgzzkt",
+  "slug": "nakauriite-glacierite-pierre-paume",
+  "name": "Nakauriite (glacierite) — Pierre Paume",
+  "stone": "nakauriite-glacierite",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5jlf000wvay4gek90phv",
+  "slug": "nakauriite-glacierite-pierre-roulee",
+  "name": "Nakauriite (glacierite) — Pierre roulée",
+  "stone": "nakauriite-glacierite",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5lf80013vay4ap4eq6q3",
+  "slug": "onyx-noir-et-rouge-trou-fee",
+  "name": "Onyx noir & rouge — Trou Fée",
+  "stone": "onyx-noir-et-rouge",
+  "format": "Trou Fée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5lom0014vay4agj9f3fx",
+  "slug": "or-du-guerisseur-octaedrique",
+  "name": "Or du guérisseur — Octaedrique",
+  "stone": "or-du-guerisseur",
+  "format": "Octaedrique",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5ly60015vay4j7w07nwi",
+  "slug": "pierre-de-lune-arc-en-ciel-pointe",
+  "name": "Pierre de lune arc-en-ciel — Pointe",
+  "stone": "pierre-de-lune-arc-en-ciel",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5m7q0016vay4hfdd5d0c",
+  "slug": "pierre-de-prophetie-egyptienne-pierre-rare",
+  "name": "Pierre de prophétie égyptienne — Pierre Rare",
+  "stone": "pierre-de-prophetie-egyptienne",
+  "format": "Pierre Rare",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5mjd0017vay4rudchppp",
+  "slug": "pierre-de-sang-pointe",
+  "name": "Pierre de sang — Pointe",
+  "stone": "pierre-de-sang",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5mt30018vay4dvcqgjk9",
+  "slug": "pyrite-pierre-brute",
+  "name": "Pyrite — Pierre Brute",
+  "stone": "pyrite",
+  "format": "Pierre Brute",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5n2l0019vay46o6ls5qn",
+  "slug": "quartz-clair-pointe",
+  "name": "Quartz clair — Pointe",
+  "stone": "quartz-clair",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5nln001bvay49h1iqjww",
+  "slug": "quartz-fume-fleur-de-cristal",
+  "name": "Quartz fumé — Fleur de cristal",
+  "stone": "quartz-fume",
+  "format": "Fleur de cristal",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5nc7001avay4p1790ymt",
+  "slug": "quartz-fume-pierre-roulee",
+  "name": "Quartz fumé — Pierre roulée",
+  "stone": "quartz-fume",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5nv1001cvay4og3iu4vv",
+  "slug": "quartz-fume-pointe",
+  "name": "Quartz fumé — Pointe",
+  "stone": "quartz-fume",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5o4g001dvay4u66se9nh",
+  "slug": "quartz-lemurien-pointe",
+  "name": "Quartz lémurien — Pointe",
+  "stone": "quartz-lemurien",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5odx001evay4c2f0dsf8",
+  "slug": "quartz-lithium-pointe",
+  "name": "Quartz lithium — Pointe",
+  "stone": "quartz-lithium",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5onc001fvay43et4afr3",
+  "slug": "quartz-rose-bille",
+  "name": "Quartz rose — Bille",
+  "stone": "quartz-rose",
+  "format": "Bille",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5owu001gvay4ka0uqawl",
+  "slug": "quartz-rose-pierre-paume",
+  "name": "Quartz rose — Pierre Paume",
+  "stone": "quartz-rose",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5p6b001hvay46u6fqnf9",
+  "slug": "quartz-rose-aura-pierre-roulee",
+  "name": "Quartz rose aura — Pierre roulée",
+  "stone": "quartz-rose-aura",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5pfq001ivay4u7fo3shb",
+  "slug": "quartz-rose-lavande-pointe",
+  "name": "Quartz rose lavande — Pointe",
+  "stone": "quartz-rose-lavande",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5pp7001jvay4t5f9mr64",
+  "slug": "quartz-tourmaline-pierre-roulee",
+  "name": "Quartz tourmaline — Pierre roulée",
+  "stone": "quartz-tourmaline",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5pyq001kvay4ixby9xg6",
+  "slug": "quartz-tourmaline-pointe",
+  "name": "Quartz tourmaline — Pointe",
+  "stone": "quartz-tourmaline",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5qhm001mvay4s1iex5dc",
+  "slug": "rhodonite-pierre-paume",
+  "name": "Rhodonite — Pierre Paume",
+  "stone": "rhodonite",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5q85001lvay43oec46cw",
+  "slug": "rhodonite-pointe",
+  "name": "Rhodonite — Pointe",
+  "stone": "rhodonite",
+  "format": "Pointe",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5qr7001nvay4zs5eosmm",
+  "slug": "rubis-fuschite-pierre-paume",
+  "name": "Rubis fuschite — Pierre Paume",
+  "stone": "rubis-fuschite",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5r0j001ovay4l7an57iv",
+  "slug": "septaria-pierre-paume",
+  "name": "Septaria — Pierre Paume",
+  "stone": "septaria",
+  "format": "Pierre Paume",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5r9w001pvay433pagnd8",
+  "slug": "shungite-pierre-roulee",
+  "name": "Shungite — Pierre roulée",
+  "stone": "shungite",
+  "format": "Pierre roulée",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5rje001qvay4yj8742w3",
+  "slug": "sodalite-pierre-de-travail",
+  "name": "Sodalite — Pierre de Travail",
+  "stone": "sodalite",
+  "format": "Pierre de Travail",
+  "category": "cristaux"
+ },
+ {
+  "id": "cmser5sky001uvay4kdp1bbxy",
+  "slug": "tapis-de-velours",
+  "name": "Tapis de velours",
+  "stone": null,
+  "format": null,
+  "category": "accessoires"
+ }
+]
