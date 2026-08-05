@@ -104,19 +104,28 @@ export async function inscrire(params: ParamsInscription): Promise<EventRegistra
   );
 }
 
+/**
+ * Annule une inscription à partir de son jeton. Idempotente : un jeton déjà
+ * utilisé renvoie l'inscription telle quelle plutôt que d'échouer.
+ *
+ * `dejaAnnulee` indique si l'inscription était déjà annulée AVANT cet appel,
+ * pour permettre à l'appelant de ne pas renvoyer de courriel sur un second
+ * clic (aucun changement d'état ne s'est produit).
+ */
 export async function annulerParJeton(token: string) {
   const inscription = await prisma.eventRegistration.findUnique({
     where: { cancelToken: token },
     include: { event: true },
   });
   if (!inscription) return null;
-  if (inscription.status === 'CANCELLED') return inscription;
+  if (inscription.status === 'CANCELLED') return { inscription, dejaAnnulee: true };
 
-  return prisma.eventRegistration.update({
+  const miseAJour = await prisma.eventRegistration.update({
     where: { id: inscription.id },
     data: { status: 'CANCELLED', cancelledAt: new Date() },
     include: { event: true },
   });
+  return { inscription: miseAJour, dejaAnnulee: false };
 }
 
 export async function annulerParMembre(registrationId: string, userId: string) {

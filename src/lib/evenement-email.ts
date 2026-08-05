@@ -31,7 +31,7 @@ async function envoyer(to: string | string[], subject: string, html: string, quo
 
 function blocDetails(d: DonneesCourrielEvenement): string {
   const lieu = d.enLigne
-    ? `En ligne${d.lienEnLigne ? ` — <a href="${d.lienEnLigne}" style="color:#C9A84C;">rejoindre</a>` : ''}`
+    ? `En ligne${d.lienEnLigne ? ` — <a href="${encoderHtml(d.lienEnLigne)}" style="color:#C9A84C;">rejoindre</a>` : ''}`
     : encoderHtml(d.lieu);
   return encadre(
     `<p style="margin:4px 0;color:#C9A84C;font-size:18px;"><strong>${encoderHtml(d.titre)}</strong></p>` +
