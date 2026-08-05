@@ -41,6 +41,27 @@ export async function GET(req: Request) {
   const echecs: string[] = [];
 
   for (const inscription of inscriptions) {
+    // Réserve AVANT d'envoyer, avec un `updateMany` conditionné par
+    // `reminderSentAt: null` ET `status: 'CONFIRMED'` : c'est le même verrou
+    // atomique que `annulerParMembre`/`annulerParJeton` dans
+    // src/lib/evenements.ts. L'ordre paraît à l'envers — marquer avant
+    // d'avoir réellement envoyé — mais c'est le seul moyen d'empêcher deux
+    // exécutions concurrentes (ex. un test manuel qui chevauche le
+    // déclenchement automatique de Vercel) de lire le même lot et d'envoyer
+    // toutes les deux : seule l'exécution qui obtient `count === 1` a le
+    // droit d'envoyer, l'autre voit `count === 0` et passe son tour. La
+    // contrepartie est gérée plus bas : si l'envoi échoue après la
+    // réservation, on remet `reminderSentAt` à `null` pour permettre un
+    // nouvel essai demain.
+    const reservation = await prisma.eventRegistration.updateMany({
+      where: { id: inscription.id, status: 'CONFIRMED', reminderSentAt: null },
+      data: { reminderSentAt: maintenant },
+    });
+    if (reservation.count === 0) {
+      // Déjà réservée par une autre exécution, ou plus confirmée entre-temps.
+      continue;
+    }
+
     try {
       await envoyerRappel({
         prenom: inscription.firstName,
@@ -54,15 +75,28 @@ export async function GET(req: Request) {
         aApporter: inscription.event.bringItems,
         jetonAnnulation: inscription.cancelToken,
       });
-      // Marqué seulement après un envoi réussi : un échec sera retenté demain.
-      await prisma.eventRegistration.update({
-        where: { id: inscription.id },
-        data: { reminderSentAt: new Date() },
-      });
       envoyes++;
     } catch (erreur) {
-      console.error('[Rappels] Echec pour', inscription.email, erreur);
+      console.error('[Rappels] Echec envoi pour', inscription.email, erreur);
       echecs.push(inscription.email);
+      // On libère la réservation pour que le rappel soit retenté au prochain
+      // passage. Si cette remise à zéro échoue elle aussi, on NE retente PAS
+      // automatiquement : mieux vaut un rappel manquant qu'un doublon. On
+      // journalise clairement l'adresse concernée pour qu'une intervention
+      // manuelle reste possible.
+      try {
+        await prisma.eventRegistration.update({
+          where: { id: inscription.id },
+          data: { reminderSentAt: null },
+        });
+      } catch (erreurLiberation) {
+        console.error(
+          '[Rappels] Echec de la remise a zero de reminderSentAt pour',
+          inscription.email,
+          '- rappel possiblement perdu, verifier manuellement.',
+          erreurLiberation,
+        );
+      }
     }
   }
 
