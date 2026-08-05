@@ -1165,7 +1165,11 @@ export default function ReservationPage({
                   Connectez-vous pour finaliser votre réservation.
                 </p>
                 <Button
-                  href={`/soins/auth/login?redirect=/soins/reserver/${practitionerId}`}
+                  href={`/soins/auth/login?next=${encodeURIComponent(
+                    typeof window !== 'undefined'
+                      ? window.location.pathname + window.location.search
+                      : `/soins/reserver/${practitionerId}`,
+                  )}`}
                   variant="primary"
                 >
                   Se connecter pour réserver
