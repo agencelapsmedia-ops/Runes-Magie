@@ -17,7 +17,7 @@ export default async function PageAnnulationEvenement({
   return (
     <main className="min-h-screen bg-noir-nuit py-20">
       <div className="mx-auto max-w-xl px-4">
-        <SectionTitle title="Annuler mon inscription" subtitle="Libérer votre place" />
+        <SectionTitle title="Annuler mon inscription" subtitle="Libérer votre place" as="h1" />
         <RuneDivider />
 
         {/* L'appel à l'API n'a lieu qu'au clic du bouton ci-dessous, jamais au

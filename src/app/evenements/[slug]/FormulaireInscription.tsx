@@ -124,12 +124,19 @@ export default function FormulaireInscription({
           Un compte gratuit est nécessaire pour réserver votre place. Vous pouvez déjà laisser un
           message ci-dessous : il vous sera proposé à nouveau à votre retour.
         </p>
+        <label
+          htmlFor="note-inscription-visiteur"
+          className="mt-4 block font-cinzel text-sm uppercase tracking-widest text-or-ancien"
+        >
+          Message (optionnel)
+        </label>
         <textarea
+          id="note-inscription-visiteur"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Un message ? une allergie ? vous venez accompagné ?"
           rows={3}
-          className="mt-4 w-full rounded-md border border-violet-royal/40 bg-noir-nuit p-3 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/40 focus:border-or-ancien/60 focus:outline-none"
+          className="mt-2 w-full rounded-md border border-violet-royal/40 bg-noir-nuit p-3 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/40 focus:border-or-ancien/60 focus:outline-none"
         />
         <div className="mt-4 flex flex-wrap gap-4">
           <Link
@@ -157,11 +164,14 @@ export default function FormulaireInscription({
       onSubmit={inscrireMembre}
       className="rounded-lg border border-violet-royal/40 bg-charbon-mystere p-6"
     >
+      <p className="font-cinzel text-sm uppercase tracking-widest text-or-ancien">
+        Réserver ma place
+      </p>
       <label
         htmlFor="note-inscription"
-        className="font-cinzel text-sm uppercase tracking-widest text-or-ancien"
+        className="mt-3 block font-cormorant text-sm text-parchemin-vieilli/70"
       >
-        Réserver ma place
+        Message ou allergie (optionnel)
       </label>
       <textarea
         id="note-inscription"
@@ -169,7 +179,7 @@ export default function FormulaireInscription({
         onChange={(e) => setNote(e.target.value)}
         placeholder="Un message ? une allergie ? vous venez accompagné ?"
         rows={3}
-        className="mt-3 w-full rounded-md border border-violet-royal/40 bg-noir-nuit p-3 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/40 focus:border-or-ancien/60 focus:outline-none"
+        className="mt-2 w-full rounded-md border border-violet-royal/40 bg-noir-nuit p-3 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/40 focus:border-or-ancien/60 focus:outline-none"
       />
 
       {erreur && <p className="mt-3 font-cormorant text-magenta-rituel">{erreur}</p>}

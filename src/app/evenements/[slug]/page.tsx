@@ -71,7 +71,11 @@ export default async function PageEvenement({
   return (
     <main className="min-h-screen bg-noir-nuit py-20">
       <div className="mx-auto max-w-3xl px-4">
-        <SectionTitle title={evenement.title} subtitle={formaterDateEvenement(evenement.startsAt)} />
+        <SectionTitle
+          title={evenement.title}
+          subtitle={formaterDateEvenement(evenement.startsAt)}
+          as="h1"
+        />
         <RuneDivider />
 
         {evenement.imageUrl && (

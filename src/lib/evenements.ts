@@ -111,6 +111,13 @@ export async function inscrire(params: ParamsInscription): Promise<EventRegistra
  * `dejaAnnulee` indique si l'inscription était déjà annulée AVANT cet appel,
  * pour permettre à l'appelant de ne pas renvoyer de courriel sur un second
  * clic (aucun changement d'état ne s'est produit).
+ *
+ * La transition est rendue atomique via un `updateMany` conditionné par
+ * `status: 'CONFIRMED'` (même principe que `annulerParMembre`) : si deux
+ * clics sur le même lien arrivent en même temps, un seul obtient `count: 1`
+ * et déclenche le courriel — l'autre constate `count: 0` et sait qu'il n'a
+ * rien changé, sans dépendre d'une lecture préalable qui pourrait être
+ * périmée avant l'écriture.
  */
 export async function annulerParJeton(token: string) {
   const inscription = await prisma.eventRegistration.findUnique({
@@ -118,11 +125,17 @@ export async function annulerParJeton(token: string) {
     include: { event: true },
   });
   if (!inscription) return null;
-  if (inscription.status === 'CANCELLED') return { inscription, dejaAnnulee: true };
 
-  const miseAJour = await prisma.eventRegistration.update({
-    where: { id: inscription.id },
+  const resultat = await prisma.eventRegistration.updateMany({
+    where: { cancelToken: token, status: 'CONFIRMED' },
     data: { status: 'CANCELLED', cancelledAt: new Date() },
+  });
+  if (resultat.count === 0) return { inscription, dejaAnnulee: true };
+
+  // On relit pour renvoyer l'inscription à jour (cancelledAt, status) plutôt
+  // que la version pré-transition capturée avant l'écriture.
+  const miseAJour = await prisma.eventRegistration.findUniqueOrThrow({
+    where: { cancelToken: token },
     include: { event: true },
   });
   return { inscription: miseAJour, dejaAnnulee: false };

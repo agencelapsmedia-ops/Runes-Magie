@@ -23,7 +23,7 @@ export default async function PageEvenements() {
   return (
     <main className="min-h-screen bg-noir-nuit py-20">
       <div className="mx-auto max-w-5xl px-4">
-        <SectionTitle title="Événements" subtitle="Rituels, veillées et célébrations" />
+        <SectionTitle title="Événements" subtitle="Rituels, veillées et célébrations" as="h1" />
         <RuneDivider />
 
         {evenements.length === 0 ? (
