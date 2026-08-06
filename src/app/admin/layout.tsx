@@ -3,7 +3,7 @@
 import { SessionProvider, useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Menu épuré : 6 entrées de haut niveau. Chacune ouvre une PAGE HUB qui regroupe
 // ses outils en cartes (plus de sous-liste dans le menu). `match` = préfixes de
@@ -36,6 +36,13 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const [menuOuvert, setMenuOuvert] = useState(false);
+
+  // Le panneau se referme à chaque navigation : sur téléphone, garder le menu
+  // ouvert après un clic masquerait la page qu'on vient d'ouvrir.
+  useEffect(() => {
+    setMenuOuvert(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (status === 'unauthenticated' && pathname !== '/admin/login') {
@@ -77,8 +84,43 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f6f2' }}>
+      {/* Barre mobile : n'existe que sous 1024 px, où le menu latéral est rétracté */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 z-40 flex items-center gap-3 px-4"
+              style={{ background: 'linear-gradient(90deg, #2D1B4E 0%, #1A1A2E 100%)' }}>
+        <button
+          type="button"
+          onClick={() => setMenuOuvert(true)}
+          aria-label="Ouvrir le menu"
+          aria-expanded={menuOuvert}
+          className="flex items-center justify-center w-11 h-11 -ml-2 text-or-ancien"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <span className="font-cinzel text-or-ancien text-base truncate">
+          {navItems.find((i) => (i.exact ? pathname === i.href : i.match.some((p) => pathname.startsWith(p))))?.label
+            ?? 'Administration'}
+        </span>
+      </header>
+
+      {/* Voile : fermer en tapant à côté est le geste attendu sur téléphone */}
+      <div
+        onClick={() => setMenuOuvert(false)}
+        aria-hidden="true"
+        className={`lg:hidden fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 ${
+          menuOuvert ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 w-64 flex flex-col z-30" style={{ background: 'linear-gradient(180deg, #2D1B4E 0%, #1A1A2E 100%)' }}>
+      <aside
+        className={`fixed inset-y-0 left-0 w-64 flex flex-col z-50 transition-transform duration-300 ${
+          menuOuvert ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 lg:z-30`}
+        style={{ background: 'linear-gradient(180deg, #2D1B4E 0%, #1A1A2E 100%)' }}
+      >
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-violet-royal/30">
           <span className="text-or-ancien text-xl mr-2 select-none">&#10022;</span>
@@ -138,7 +180,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <main className="ml-64 p-8">{children}</main>
+      <main className="ml-0 lg:ml-64 pt-14 lg:pt-0 p-4 lg:p-8">{children}</main>
     </div>
   );
 }
