@@ -58,11 +58,46 @@ export default async function PageEvenement({
 
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
-  const dejaInscrit = userId
-    ? (await prisma.eventRegistration.count({
+
+  // Prénom/nom du membre connecté, pour afficher clairement à qui l'inscription
+  // profite. L'identifiant de session peut appartenir à un AdminUser plutôt
+  // qu'à un HolisticUser (compte d'administration) : dans ce cas la requête ne
+  // renvoie rien, et on ne montre simplement pas la phrase personnalisée.
+  const membre = userId
+    ? await prisma.holisticUser.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true },
+      })
+    : null;
+  const nomComplet = membre ? `${membre.firstName} ${membre.lastName}`.trim() : null;
+
+  // Inscription CONFIRMED de la personne connectée à CET événement précis.
+  const monInscription = userId
+    ? await prisma.eventRegistration.findFirst({
         where: { eventId: evenement.id, userId, status: 'CONFIRMED' },
-      })) > 0
-    : false;
+        select: { id: true },
+      })
+    : null;
+  const dejaInscrit = monInscription !== null;
+
+  // Liste des personnes présentes ("Le cercle") : donnée confidentielle
+  // (Loi 25) — on ne l'interroge même pas si la personne n'est pas elle-même
+  // inscrite et confirmée à cet événement, pour être certain qu'elle ne soit
+  // jamais transmise au navigateur d'un visiteur ou d'un membre non inscrit.
+  const participants = dejaInscrit
+    ? (
+        await prisma.eventRegistration.findMany({
+          where: { eventId: evenement.id, status: 'CONFIRMED' },
+          select: { id: true, userId: true, firstName: true, lastName: true },
+          orderBy: { createdAt: 'asc' },
+        })
+      ).map((inscription) => ({
+        id: inscription.id,
+        prenom: inscription.firstName,
+        initiale: inscription.lastName.trim().charAt(0).toUpperCase(),
+        estMoi: inscription.userId === userId,
+      }))
+    : [];
 
   const restantes = Math.max(0, evenement.capacity - evenement._count.registrations);
   const estAnnule = evenement.cancelledAt !== null;
@@ -135,6 +170,9 @@ export default async function PageEvenement({
             placesRestantes={restantes}
             dejaInscrit={dejaInscrit}
             capacite={evenement.capacity}
+            nomComplet={nomComplet}
+            titreEvenement={evenement.title}
+            participants={participants}
           />
         )}
       </div>

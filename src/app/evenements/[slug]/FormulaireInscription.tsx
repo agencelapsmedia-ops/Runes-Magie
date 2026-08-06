@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+
+interface Participant {
+  id: string;
+  prenom: string;
+  initiale: string;
+  estMoi: boolean;
+}
 
 interface FormulaireInscriptionProps {
   slug: string;
@@ -10,15 +18,12 @@ interface FormulaireInscriptionProps {
   placesRestantes: number;
   dejaInscrit: boolean;
   capacite: number;
-}
-
-/** Mémorise le message avant de quitter la page pour se connecter/s'inscrire. */
-function memoriserNote(slug: string, note: string) {
-  try {
-    if (note.trim()) sessionStorage.setItem(`evenement:${slug}:note`, note.trim());
-  } catch {
-    // Navigation privée : tant pis, le message n'est pas conservé.
-  }
+  /** null si non connecté, ou si le compte de session n'est pas un membre (ex. admin). */
+  nomComplet: string | null;
+  titreEvenement: string;
+  /** Liste des personnes CONFIRMED — fournie par le serveur uniquement si la
+   * personne connectée est elle-même inscrite et confirmée à cet événement. */
+  participants: Participant[];
 }
 
 export default function FormulaireInscription({
@@ -27,48 +32,40 @@ export default function FormulaireInscription({
   placesRestantes,
   dejaInscrit,
   capacite,
+  nomComplet,
+  titreEvenement,
+  participants,
 }: FormulaireInscriptionProps) {
-  const [note, setNote] = useState('');
+  const router = useRouter();
   const [restantes, setRestantes] = useState(placesRestantes);
   const [inscrit, setInscrit] = useState(dejaInscrit);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-
-  // Au montage : si un message a été laissé avant une redirection vers la
-  // connexion, on le réinjecte puis on l'efface — il ne doit servir qu'une fois.
-  useEffect(() => {
-    const cle = `evenement:${slug}:note`;
-    try {
-      const memorise = sessionStorage.getItem(cle);
-      if (memorise) {
-        setNote(memorise);
-        sessionStorage.removeItem(cle);
-      }
-    } catch {
-      // Navigation privée : rien à réinjecter.
-    }
-  }, [slug]);
 
   async function inscrireMembre(evenementFormulaire: FormEvent<HTMLFormElement>) {
     evenementFormulaire.preventDefault();
     setErreur(null);
     setChargement(true);
     try {
-      const reponse = await fetch(`/api/evenements/${slug}/inscription`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note }),
-      });
+      const reponse = await fetch(`/api/evenements/${slug}/inscription`, { method: 'POST' });
       const donnees = await reponse.json();
       if (!reponse.ok) {
         setErreur(donnees.error ?? 'Une erreur est survenue.');
         if (donnees.code === 'COMPLET') setRestantes(0);
         // Conflit de double-soumission : une autre requête nous a déjà inscrit.
-        if (donnees.code === 'DEJA_INSCRIT') setInscrit(true);
+        if (donnees.code === 'DEJA_INSCRIT') {
+          setInscrit(true);
+          // On recharge les données serveur pour obtenir la liste à jour du cercle.
+          router.refresh();
+        }
         return;
       }
       setInscrit(true);
       setRestantes(donnees.placesRestantes);
+      // La liste du cercle n'a pas encore été chargée pour cette personne au
+      // premier rendu de la page (elle n'était pas encore inscrite) : on
+      // redemande le rendu serveur pour l'obtenir avec les autres données à jour.
+      router.refresh();
     } catch {
       setErreur('Impossible de contacter le serveur. Réessayez dans un instant.');
     } finally {
@@ -92,6 +89,30 @@ export default function FormulaireInscription({
         >
           Voir mes événements
         </Link>
+
+        {participants.length > 0 && (
+          <div className="mt-6 border-t border-violet-royal/40 pt-6 text-left">
+            <p className="text-center font-cinzel text-sm uppercase tracking-widest text-or-ancien">
+              Le cercle
+            </p>
+            {participants.length === 1 ? (
+              <p className="mt-2 text-center font-cormorant text-parchemin-vieilli/70">
+                Vous êtes la première inscrite — le cercle se formera bientôt.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-1 font-cormorant text-parchemin-vieilli/80">
+                {participants.map((participant) => (
+                  <li key={participant.id}>
+                    {participant.prenom} {participant.initiale}.
+                    {participant.estMoi && (
+                      <span className="text-turquoise-cristal"> (vous)</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -110,7 +131,7 @@ export default function FormulaireInscription({
   }
 
   // État « non connecté » : pas de formulaire de réservation, seulement les
-  // liens de connexion/inscription — le message est mémorisé avant de partir.
+  // liens de connexion/inscription.
   if (!estConnecte) {
     const retour = encodeURIComponent(
       typeof window !== 'undefined' ? window.location.pathname : `/evenements/${slug}`,
@@ -121,34 +142,17 @@ export default function FormulaireInscription({
           Connectez-vous pour réserver
         </p>
         <p className="mt-2 font-cormorant text-parchemin-vieilli/70">
-          Un compte gratuit est nécessaire pour réserver votre place. Vous pouvez déjà laisser un
-          message ci-dessous : il vous sera proposé à nouveau à votre retour.
+          Un compte gratuit est nécessaire pour réserver votre place.
         </p>
-        <label
-          htmlFor="note-inscription-visiteur"
-          className="mt-4 block font-cinzel text-sm uppercase tracking-widest text-or-ancien"
-        >
-          Message (optionnel)
-        </label>
-        <textarea
-          id="note-inscription-visiteur"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Un message ? une allergie ? vous venez accompagné ?"
-          rows={3}
-          className="mt-2 w-full rounded-md border border-violet-royal/40 bg-noir-nuit p-3 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/40 focus:border-or-ancien/60 focus:outline-none"
-        />
         <div className="mt-4 flex flex-wrap gap-4">
           <Link
             href={`/soins/auth/login?next=${retour}`}
-            onClick={() => memoriserNote(slug, note)}
             className="inline-flex items-center justify-center rounded-sm border border-or-ancien/50 px-6 py-3 font-cinzel text-sm uppercase tracking-[0.15em] text-or-ancien transition-all duration-300 hover:border-or-ancien hover:bg-or-ancien/10"
           >
             Se connecter
           </Link>
           <Link
             href={`/soins/auth/register?next=${retour}`}
-            onClick={() => memoriserNote(slug, note)}
             className="inline-flex items-center justify-center rounded-sm border border-turquoise-cristal/50 px-6 py-3 font-cinzel text-sm uppercase tracking-[0.15em] text-turquoise-cristal transition-all duration-300 hover:border-turquoise-cristal hover:bg-turquoise-cristal/10"
           >
             Créer mon compte
@@ -167,20 +171,14 @@ export default function FormulaireInscription({
       <p className="font-cinzel text-sm uppercase tracking-widest text-or-ancien">
         Réserver ma place
       </p>
-      <label
-        htmlFor="note-inscription"
-        className="mt-3 block font-cormorant text-sm text-parchemin-vieilli/70"
-      >
-        Message ou allergie (optionnel)
-      </label>
-      <textarea
-        id="note-inscription"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Un message ? une allergie ? vous venez accompagné ?"
-        rows={3}
-        className="mt-2 w-full rounded-md border border-violet-royal/40 bg-noir-nuit p-3 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/40 focus:border-or-ancien/60 focus:outline-none"
-      />
+
+      {nomComplet && (
+        <p className="mt-3 font-cormorant text-parchemin-vieilli/80">
+          Vous vous inscrivez au{' '}
+          <strong className="text-or-ancien">{titreEvenement}</strong> en tant que{' '}
+          <strong className="text-turquoise-cristal">{nomComplet}</strong>.
+        </p>
+      )}
 
       {erreur && <p className="mt-3 font-cormorant text-magenta-rituel">{erreur}</p>}
 
