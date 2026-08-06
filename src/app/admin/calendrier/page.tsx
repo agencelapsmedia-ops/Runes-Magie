@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { isInternalEmail } from '@/lib/holistic-clients';
 import CalendrierClient from './CalendrierClient';
 
 // Toujours frais : les rendez-vous changent en continu (réservations publiques + manuelles).
@@ -85,5 +86,55 @@ export default async function CalendrierAdminPage() {
     offerings: p.offerings,
   }));
 
-  return <CalendrierClient rdvs={rdvs} praticiennes={praticiennes} practitionerOptions={practitionerOptions} />;
+  // Praticienne principale pour la feuille de création mobile (Task 7) : à ce
+  // jour une seule praticienne est APPROVED, on retient donc la première —
+  // même convention que ManualAppointmentButton (practitioners[0]).
+  //
+  // Tri des soins par fréquence (demandé par le brief) : `Offering` n'a pas de
+  // relation vers `HolisticAppointment` (le soin d'un RDV v2 est retrouvé par
+  // texte dans les notes, voir `serviceFromNotes` ci-dessus) — aucun compte de
+  // rendez-vous n'est donc disponible côté Prisma. On retombe sur le tri déjà
+  // fait par la requête ci-dessus (`orderBy: { name: 'asc' }`).
+  const practitionerPrincipale = practitionerOptions[0] ?? null;
+
+  // Dernières clientes de la praticienne principale — même forme que
+  // GET /api/admin/clients/search (id, firstName, lastName, email, phone).
+  // Dérivées de ses derniers rendez-vous, dédupliquées par personne (la plus
+  // récente conservée), limitées à 8 comme la recherche.
+  const clientesRecentes: { id: string; firstName: string; lastName: string; email: string; phone: string }[] = [];
+  if (practitionerPrincipale) {
+    const rdvsRecents = await prisma.holisticAppointment.findMany({
+      where: { practitionerId: practitionerPrincipale.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+      },
+      take: 60, // marge pour dédupliquer par cliente avant de garder les 8 plus récentes
+    });
+    const dejaVues = new Set<string>();
+    for (const { client } of rdvsRecents) {
+      if (!client.id || dejaVues.has(client.id)) continue; // id vide (garde-fou) ou cliente déjà retenue
+      dejaVues.add(client.id);
+      clientesRecentes.push({
+        id: client.id,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        // Adresse interne (compte créé sans courriel) : jamais affichée, comme côté /clients/search.
+        email: isInternalEmail(client.email) ? '' : client.email,
+        // `phone` est nullable en base ; la feuille attend une chaîne.
+        phone: client.phone ?? '',
+      });
+      if (clientesRecentes.length >= 8) break;
+    }
+  }
+
+  return (
+    <CalendrierClient
+      rdvs={rdvs}
+      praticiennes={praticiennes}
+      practitionerOptions={practitionerOptions}
+      practitionerPrincipale={practitionerPrincipale}
+      clientesRecentes={clientesRecentes}
+    />
+  );
 }
