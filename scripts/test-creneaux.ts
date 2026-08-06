@@ -40,11 +40,15 @@ async function main() {
 
   const premier = mardi.creneaux[0];
   if (premier) {
-    const heureLocale = new Intl.DateTimeFormat('fr-CA', {
+    // en-CA + hour12:false rend directement "HH:MM" (fr-CA rend "HH h MM",
+    // que .replace('h', ':') ne ramene pas a "HH:MM" a cause des espaces —
+    // l'ancienne comparaison echouait donc toujours, quel que soit le fuseau
+    // reellement calcule par instantEst).
+    const heureLocale = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Toronto', hour: '2-digit', minute: '2-digit', hour12: false,
     }).format(new Date(premier.debutIso));
     console.log(`\nCoherence du fuseau : etiquette « ${premier.debut} » vs instant reel « ${heureLocale} »`);
-    if (heureLocale.replace('h', ':').trim() !== premier.debut) {
+    if (heureLocale !== premier.debut) {
       console.log('  ECHEC : l heure affichee ne correspond pas a l instant enregistre');
       succes = false;
     }
