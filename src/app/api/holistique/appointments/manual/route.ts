@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
     const body = await req.json();
-    const { practitionerId, client, offeringId, startsAt, mode, paymentMode, notes, forcerMalgreAgenda } = body ?? {};
+    const { practitionerId, client, clientId, offeringId, startsAt, mode, paymentMode, notes, forcerMalgreAgenda } = body ?? {};
 
     // Auth : admin ou propriétaire (n'importe quelle praticienne) OU praticienne (elle-même uniquement)
     const isAdmin = user.role === 'ADMIN' || user.isOwner === true;
@@ -114,13 +114,82 @@ export async function POST(req: Request) {
       console.error('[rdv manuel] vérif agenda Google échouée (non-bloquant)', err);
     }
 
-    // Retrouve ou crée le compte cliente
-    const { user: clientUser, created } = await findOrCreateHolisticClient({
-      firstName: client.firstName,
-      lastName: client.lastName,
-      phone: client.phone,
-      email: email || null,
-    });
+    // Le compte cliente.
+    //
+    // Deux chemins. Avec `clientId` (la feuille mobile l'envoie dès que la cliente
+    // a été choisie dans la recherche ou dans les dernières clientes), on emploie
+    // CE compte-là. Sans lui (saisie manuelle, formulaire d'ordinateur), on garde
+    // le comportement historique : recherche par courriel puis création.
+    //
+    // Pourquoi ce chemin existe : `findOrCreateHolisticClient` ne déduplique que
+    // par courriel, et une cliente enregistrée sans courriel porte une adresse
+    // interne dérivée de son téléphone. Ajouter un vrai courriel à cette cliente
+    // (nécessaire pour Interac / lien Stripe) ne retrouvait donc aucun compte et
+    // en créait un second : la fiche se dédoublait et son historique se scindait.
+    let clientUser: { id: string; hashedPassword: string };
+    let created: boolean;
+
+    if (typeof clientId === 'string' && clientId.trim()) {
+      const existante = await prisma.holisticUser.findUnique({ where: { id: clientId.trim() } });
+      // Un identifiant fourni mais introuvable est une erreur : se rabattre sur la
+      // création dupliquerait précisément ce qu'on cherche à éviter.
+      if (!existante || existante.role !== 'CLIENT') {
+        return NextResponse.json({ error: 'Cliente introuvable.' }, { status: 404 });
+      }
+      created = false;
+      clientUser = existante;
+
+      // Cliente enregistrée sans courriel + vrai courriel fourni → on renseigne son
+      // adresse, sinon le lien Stripe ou les instructions Interac n'ont nulle part
+      // où aller. Une adresse réelle déjà en place n'est jamais écrasée.
+      if (email && isInternalEmail(existante.email)) {
+        const proprietaire = await prisma.holisticUser.findUnique({
+          where: { email: email.toLowerCase() },
+          select: { id: true, firstName: true, lastName: true },
+        });
+        if (proprietaire && proprietaire.id !== existante.id) {
+          // `email` est unique : la mise à jour échouerait. On refuse en nommant la
+          // fiche concernée plutôt que de fusionner deux comptes (irréversible) ou
+          // de rattacher le rendez-vous à quelqu'un d'autre.
+          return NextResponse.json(
+            {
+              error: `Ce courriel appartient déjà à la fiche de ${proprietaire.firstName} ${proprietaire.lastName}. `
+                + 'Choisis cette fiche dans la recherche, ou emploie une autre adresse.',
+              code: 'COURRIEL_DEJA_UTILISE',
+            },
+            { status: 409 },
+          );
+        }
+        try {
+          clientUser = await prisma.holisticUser.update({
+            where: { id: existante.id },
+            data: { email: email.toLowerCase() },
+          });
+        } catch (err) {
+          // Filet : la vérification ci-dessus et la mise à jour ne sont pas atomiques.
+          // Plutôt qu'une erreur Prisma brute (« Unique constraint failed… »), on
+          // renvoie le même message en français, actionnable.
+          console.error('[rdv manuel] mise à jour du courriel cliente refusée', err);
+          return NextResponse.json(
+            {
+              error: 'Ce courriel appartient déjà à une autre fiche. '
+                + 'Choisis cette fiche dans la recherche, ou emploie une autre adresse.',
+              code: 'COURRIEL_DEJA_UTILISE',
+            },
+            { status: 409 },
+          );
+        }
+      }
+    } else {
+      const trouve = await findOrCreateHolisticClient({
+        firstName: client.firstName,
+        lastName: client.lastName,
+        phone: client.phone,
+        email: email || null,
+      });
+      clientUser = trouve.user;
+      created = trouve.created;
+    }
 
     // Notes enrichies (même format que le parcours public → parsé par buildBookingEmailData / Google)
     const enrichedNotes = [
