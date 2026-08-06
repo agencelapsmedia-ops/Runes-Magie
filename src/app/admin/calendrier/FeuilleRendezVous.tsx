@@ -371,15 +371,36 @@ export default function FeuilleRendezVous({
 
   function choisirCliente(c: Cliente | ClienteRetenue) {
     const identifiant = c.id ?? null;
-    // Re-choisir la MÊME fiche ne fait rien perdre. Changer de cliente, en
-    // revanche, périme tout ce qui parlait de la précédente : l'adresse refusée
-    // visait son compte à elle, la note était écrite pour elle, l'avertissement
-    // et l'erreur portaient sur son rendez-vous à elle.
-    const memeCliente = cliente !== null && identifiant !== null && cliente.id === identifiant;
-    if (!memeCliente) {
+
+    /*
+     * Deux questions différentes, donc deux tests différents.
+     *
+     * Les états jetables — adresse refusée, avertissement d'agenda, message
+     * d'erreur — parlaient de la cliente précédente. Au moindre doute on les
+     * jette : ils ne coûtent rien à reconstituer, et un exemplaire périmé bloque
+     * un bouton. On ne les garde donc que si la MÊME fiche identifiée est
+     * re-choisie (là, l'adresse refusée l'est toujours : la lui faire oublier
+     * lui ferait taper « Créer » pour un refus certain).
+     *
+     * La note, elle, est un texte qu'elle a écrit : l'effacer est une perte
+     * sèche, sans retour en arrière possible. On ne l'efface donc que sur PREUVE
+     * qu'il s'agit d'une autre personne — deux fiches identifiées, différentes.
+     * Sans identifiant (« + Nouvelle cliente »), aucune preuve n'existe : se
+     * fonder sur le nom ou le téléphone rejouerait exactement le défaut qu'on
+     * corrige, puisque ce sont les champs qu'elle revient corriger. Dans le
+     * doute on garde — la note reste affichée à l'étape 4, juste au-dessus du
+     * bouton, et l'effacer est un geste qu'elle maîtrise.
+     */
+    const memeFicheIdentifiee = cliente !== null && identifiant !== null && cliente.id === identifiant;
+    const autreFicheProuvee =
+      cliente !== null && cliente.id !== null && identifiant !== null && cliente.id !== identifiant;
+
+    if (!memeFicheIdentifiee) {
       setCourrielRefuse(null);
       setAvertissementAgenda(null);
       setErreur(null);
+    }
+    if (autreFicheProuvee) {
       setNotes('');
       setNotesDepliees(false);
     }
