@@ -108,7 +108,12 @@ export default function CalendrierClient({
   const [rdvOuvert, setRdvOuvert] = useState<RdvSerialise | null>(null);
 
   // Petit écran (téléphone) : vue liste du jour + feuille de création en bas d'écran.
-  const [surTelephone, setSurTelephone] = useState(false);
+  // `null` tant que la largeur réelle n'est pas connue (état SSR / premier rendu
+  // client, nécessaire à l'hydratation) : FullCalendar n'est monté qu'une fois
+  // qu'on la connaît, pour ne jamais le monter une première fois avec la mauvaise
+  // vue puis le remonter aussitôt (vue semaine visible un instant sur téléphone
+  // avant de basculer en liste).
+  const [surTelephone, setSurTelephone] = useState<boolean | null>(null);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1023px)');
     const appliquer = () => setSurTelephone(mq.matches);
@@ -259,12 +264,18 @@ export default function CalendrierClient({
           marginBottom: '16px',
         }}
       >
-        <ManualAppointmentButton
-          practitioners={practitionerOptions}
-          variant="light"
-          label="+ Nouveau rendez-vous"
-          prefill={prefill}
-        />
+        {/* Formulaire à dix champs : réservé à l'ordinateur. Sur téléphone, la
+            feuille de création en quatre temps (bouton flottant plus bas) est
+            le seul chemin — deux chemins concurrents sur le même écran seraient
+            source d'erreur. */}
+        <div className="hidden lg:block">
+          <ManualAppointmentButton
+            practitioners={practitionerOptions}
+            variant="light"
+            label="+ Nouveau rendez-vous"
+            prefill={prefill}
+          />
+        </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#374151', fontWeight: 600 }}>
           Praticienne :
@@ -301,37 +312,54 @@ export default function CalendrierClient({
         </div>
       </div>
 
-      {/* Calendrier */}
+      {/* Calendrier — monté seulement une fois `surTelephone` connu (voir la note à
+          sa déclaration) ; avant ça, un indicateur occupe la place plutôt qu'un
+          écran vide. */}
       <div style={{ background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', padding: '18px' }}>
-        <FullCalendar
-          // `initialView` n'est appliqué qu'au montage par FullCalendar (pas réactif) :
-          // la `key` force un remontage quand on bascule téléphone ↔ ordinateur, pour
-          // que la bonne vue de départ s'applique réellement des deux côtés.
-          key={surTelephone ? 'telephone' : 'ordinateur'}
-          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-          locale={frLocale}
-          initialView={surTelephone ? 'listDay' : 'timeGridWeek'}
-          headerToolbar={
-            surTelephone
-              ? { left: 'prev,next', center: 'title', right: 'listDay,timeGridWeek,dayGridMonth' }
-              : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
-          }
-          buttonText={{ today: "Aujourd'hui", month: 'Mois', week: 'Semaine', day: 'Jour', list: 'Jour' }}
-          events={events}
-          eventClick={onEventClick}
-          dateClick={onDateClick}
-          eventContent={renderEvent}
-          eventDisplay="block"
-          eventTextColor="#FFFFFF"
-          slotMinTime="07:00:00"
-          slotMaxTime="22:00:00"
-          allDaySlot={false}
-          nowIndicator
-          height="auto"
-          dayMaxEventRows={4}
-          eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-          slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-        />
+        {surTelephone === null ? (
+          <div
+            style={{
+              minHeight: '420px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#6B7280',
+              fontSize: '0.9rem',
+            }}
+          >
+            Chargement du calendrier…
+          </div>
+        ) : (
+          <FullCalendar
+            // `initialView` n'est appliqué qu'au montage par FullCalendar (pas réactif) :
+            // la `key` force un remontage si on bascule téléphone ↔ ordinateur (redimension
+            // de la fenêtre en direct), pour que la bonne vue de départ s'applique.
+            key={surTelephone ? 'telephone' : 'ordinateur'}
+            plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+            locale={frLocale}
+            initialView={surTelephone ? 'listDay' : 'timeGridWeek'}
+            headerToolbar={
+              surTelephone
+                ? { left: 'prev,next', center: 'title', right: 'listDay,timeGridWeek,dayGridMonth' }
+                : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
+            }
+            buttonText={{ today: "Aujourd'hui", month: 'Mois', week: 'Semaine', day: 'Jour', list: 'Jour' }}
+            events={events}
+            eventClick={onEventClick}
+            dateClick={onDateClick}
+            eventContent={renderEvent}
+            eventDisplay="block"
+            eventTextColor="#FFFFFF"
+            slotMinTime="07:00:00"
+            slotMaxTime="22:00:00"
+            allDaySlot={false}
+            nowIndicator
+            height="auto"
+            dayMaxEventRows={4}
+            eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+            slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+          />
+        )}
       </div>
 
       {/* Bouton flottant (téléphone uniquement) : ouvre la feuille de création en quatre temps. */}
@@ -343,7 +371,10 @@ export default function CalendrierClient({
             setFeuilleOuverte(true);
           }}
           aria-label="Ajouter un rendez-vous"
-          className="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-3xl"
+          // z-30, pas z-40 : le voile du tiroir mobile (src/app/admin/layout.tsx)
+          // est à z-40. Rendu plus tard dans le DOM, ce bouton flotterait sinon
+          // au-dessus de l'écran assombri, menu ouvert, et resterait tapable.
+          className="lg:hidden fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-3xl"
           style={{ background: '#6B3FA0' }}
         >
           +
