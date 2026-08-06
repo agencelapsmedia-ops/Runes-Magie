@@ -46,7 +46,10 @@ export async function calculerCreneaux(params: {
     select: { durationMinutes: true, practitionerId: true },
   });
   if (!offering || offering.practitionerId !== practitionerId) {
-    return { creneaux: [], agendaGoogleConsulte: false };
+    // Le refus tient au soin (introuvable ou d'une autre praticienne), pas à
+    // l'agenda Google : on n'a même pas tenté de le consulter. `true` dit
+    // « rien à signaler côté Google », pour ne pas envoyer sur une fausse piste.
+    return { creneaux: [], agendaGoogleConsulte: true };
   }
   const duree = offering.durationMinutes;
 
@@ -97,30 +100,45 @@ export async function calculerCreneaux(params: {
     console.error('[creneaux] agenda Google injoignable (non bloquant)', err);
   }
 
-  const creneaux: Creneau[] = [];
+  // Un même départ peut être produit par deux blocs qui se chevauchent (ex. une
+  // disponibilité ponctuelle posée un jour déjà couvert par la règle hebdomadaire —
+  // l'union est voulue, rien ne l'empêche côté éditeur). On déduplique sur
+  // `debutIso` : en cas de collision, l'exemplaire le plus contraignant l'emporte,
+  // pour qu'un créneau signalé pris ne soit jamais effacé par son jumeau libre.
+  const parDebutIso = new Map<string, Creneau>();
   for (const bloc of dispos) {
     for (const heure of departsPossibles(bloc.startTime, bloc.endTime, duree)) {
       const debutIso = instantEst(date, heure);
       const fin = new Date(debutIso.getTime() + duree * 60 * 1000);
+      const iso = debutIso.toISOString();
 
       const prisParRdv = rdv.some((r) => r.startsAt < fin && r.endsAt > debutIso);
       const perso = occupes.find((o) => new Date(o.start) < fin && new Date(o.end) > debutIso);
 
-      creneaux.push({
+      const candidat: Creneau = {
         debut: heure,
-        debutIso: debutIso.toISOString(),
+        debutIso: iso,
         // Un événement personnel n'interdit pas : il avertit (voir §8 du devis).
         disponible: !prisParRdv,
         motif: prisParRdv ? 'RENDEZ_VOUS' : perso ? 'AGENDA_PERSONNEL' : undefined,
         etiquette: !prisParRdv && perso ? (perso.titre || 'Événement personnel') : undefined,
-      });
+      };
+
+      const existant = parDebutIso.get(iso);
+      if (!existant || (existant.disponible && !candidat.disponible)) {
+        parDebutIso.set(iso, candidat);
+      }
     }
   }
 
-  // Les créneaux déjà passés n'ont pas d'intérêt.
+  // Les créneaux déjà passés n'ont pas d'intérêt. L'ordre chronologique est
+  // reconstruit explicitement : l'ordre d'insertion ci-dessus suit les blocs
+  // (triés par heure de début), pas nécessairement les départs eux-mêmes.
   const maintenant = Date.now();
   return {
-    creneaux: creneaux.filter((c) => new Date(c.debutIso).getTime() > maintenant),
+    creneaux: Array.from(parDebutIso.values())
+      .filter((c) => new Date(c.debutIso).getTime() > maintenant)
+      .sort((a, b) => new Date(a.debutIso).getTime() - new Date(b.debutIso).getTime()),
     agendaGoogleConsulte,
   };
 }
