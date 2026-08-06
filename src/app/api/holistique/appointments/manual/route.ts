@@ -180,6 +180,16 @@ export async function POST(req: Request) {
           );
         }
       }
+
+      // Cliente enregistrée sans téléphone + numéro tapé à l'étape 4 (obligatoire,
+      // voir la validation plus haut) → on l'enregistre, même prudence que pour le
+      // courriel : un numéro déjà présent n'est jamais écrasé.
+      if (!existante.phone) {
+        clientUser = await prisma.holisticUser.update({
+          where: { id: existante.id },
+          data: { phone: client.phone.trim() },
+        });
+      }
     } else {
       const trouve = await findOrCreateHolisticClient({
         firstName: client.firstName,
