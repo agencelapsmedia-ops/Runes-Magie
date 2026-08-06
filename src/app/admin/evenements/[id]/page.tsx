@@ -13,6 +13,8 @@ interface Inscrit {
   phone: string | null;
   note: string | null;
   createdAt: string;
+  /** A consenti (à l'inscription) à apparaître dans la liste publique « Le cercle ». */
+  showPublicly: boolean;
 }
 
 const thStyle: React.CSSProperties = {
@@ -149,6 +151,7 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
                 <th style={thStyle}>Téléphone</th>
                 <th style={thStyle}>Inscrit le</th>
                 <th style={thStyle}>Message</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>Cercle public</th>
                 <th style={{ padding: '12px 16px' }} />
               </tr>
             </thead>
@@ -160,6 +163,17 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
                   <td style={tdStyle}>{i.phone || '—'}</td>
                   <td style={tdStyle}>{formaterDateEvenement(i.createdAt)}</td>
                   <td style={{ ...tdStyle, maxWidth: '260px', whiteSpace: 'pre-line' }}>{i.note || '—'}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center' }} title={i.showPublicly ? 'Apparaît dans « Le cercle » (a consenti à l\'inscription)' : 'N\'apparaît pas dans « Le cercle » (consentement non donné)'}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: i.showPublicly ? '#16A34A' : '#D1D5DB',
+                      }}
+                    />
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <button
                       type="button"

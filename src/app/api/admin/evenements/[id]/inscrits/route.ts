@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const url = new URL(req.url);
   if (url.searchParams.get('format') === 'csv') {
     const lignes = [
-      ['Prénom', 'Nom', 'Courriel', 'Téléphone', 'Inscrit le', 'Message'],
+      ['Prénom', 'Nom', 'Courriel', 'Téléphone', 'Inscrit le', 'Message', 'Cercle public'],
       ...inscrits.map((i) => [
         i.firstName,
         i.lastName,
@@ -47,6 +47,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         i.phone ?? '',
         i.createdAt.toISOString().slice(0, 10),
         i.note ?? '',
+        i.showPublicly ? 'Oui' : 'Non',
       ]),
     ];
 

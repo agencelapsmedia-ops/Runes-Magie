@@ -69,6 +69,7 @@ async function main() {
           lastName: m.lastName,
           phone: null,
           note: null,
+          showPublicly: false,
         }),
       ),
     );

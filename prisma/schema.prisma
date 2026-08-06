@@ -1004,6 +1004,13 @@ model EventRegistration {
   createdAt      DateTime                @default(now())
   cancelledAt    DateTime?
 
+  /** La personne accepte que son prénom apparaisse publiquement dans la liste
+   * des participants (« Le cercle »). Opt-in explicite requis par la Loi 25 —
+   * la croyance/pratique spirituelle qu'implique la présence à un rituel est
+   * une catégorie de donnée particulièrement protégée. Défaut false : les
+   * inscriptions déjà en base ne deviennent jamais publiques rétroactivement. */
+  showPublicly   Boolean                 @default(false)
+
   @@unique([eventId, userId])
   @@index([eventId, status])
 }

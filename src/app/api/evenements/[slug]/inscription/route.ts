@@ -42,13 +42,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   }
 
   let note: string | null = null;
+  // Seul le booléen strict `true` vaut consentement — toute autre valeur
+  // (absente, `false`, chaîne, nombre…) est traitée comme un refus. C'est une
+  // donnée Loi 25 sensible : en cas de doute sur l'intention, on ne publie pas.
+  let afficherPubliquement = false;
   try {
-    const corps = (await req.json()) as { note?: unknown };
+    const corps = (await req.json()) as { note?: unknown; afficherPubliquement?: unknown };
     if (typeof corps.note === 'string' && corps.note.trim()) {
       note = corps.note.trim().slice(0, 1000);
     }
+    afficherPubliquement = corps.afficherPubliquement === true;
   } catch {
-    // Corps vide : le message est optionnel.
+    // Corps vide ou invalide : message optionnel absent, pas de consentement.
   }
 
   try {
@@ -60,6 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       lastName: membre.lastName,
       phone: membre.phone,
       note,
+      showPublicly: afficherPubliquement,
     });
 
     const restantes = await placesRestantes(evenement.id);

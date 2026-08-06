@@ -80,24 +80,29 @@ export default async function PageEvenement({
     : null;
   const dejaInscrit = monInscription !== null;
 
-  // Liste des personnes présentes ("Le cercle") : donnée confidentielle
-  // (Loi 25) — on ne l'interroge même pas si la personne n'est pas elle-même
-  // inscrite et confirmée à cet événement, pour être certain qu'elle ne soit
-  // jamais transmise au navigateur d'un visiteur ou d'un membre non inscrit.
-  const participants = dejaInscrit
-    ? (
-        await prisma.eventRegistration.findMany({
-          where: { eventId: evenement.id, status: 'CONFIRMED' },
-          select: { id: true, userId: true, firstName: true, lastName: true },
-          orderBy: { createdAt: 'asc' },
-        })
-      ).map((inscription) => ({
-        id: inscription.id,
-        prenom: inscription.firstName,
-        initiale: inscription.lastName.trim().charAt(0).toUpperCase(),
-        estMoi: inscription.userId === userId,
-      }))
-    : [];
+  // Total des inscriptions confirmées — sert au calcul des places restantes.
+  // Ce total N'EST PAS filtré par consentement : quelqu'un qui n'a pas accepté
+  // d'apparaître dans « Le cercle » occupe quand même une place.
+  const totalInscrits = evenement._count.registrations;
+
+  // Liste des personnes présentes dans « Le cercle » : le filtre `showPublicly`
+  // est posé DANS la requête Prisma, pas après coup — une inscription sans
+  // consentement ne doit jamais quitter le serveur (Loi 25 : la présence à un
+  // rituel révèle une croyance/pratique spirituelle, catégorie protégée).
+  // Contrairement à avant, cette liste est désormais construite pour tout le
+  // monde, connecté ou non — seul son contenu (qui a consenti) reste filtré.
+  const participantsPublics = (
+    await prisma.eventRegistration.findMany({
+      where: { eventId: evenement.id, status: 'CONFIRMED', showPublicly: true },
+      select: { id: true, userId: true, firstName: true, lastName: true },
+      orderBy: { createdAt: 'asc' },
+    })
+  ).map((inscription) => ({
+    id: inscription.id,
+    prenom: inscription.firstName,
+    initiale: inscription.lastName.trim().charAt(0).toUpperCase(),
+    estMoi: inscription.userId === userId,
+  }));
 
   const restantes = Math.max(0, evenement.capacity - evenement._count.registrations);
   const estAnnule = evenement.cancelledAt !== null;
@@ -163,6 +168,41 @@ export default async function PageEvenement({
 
         <RuneDivider />
 
+        {/* « Le cercle » : visible pour tout le monde (connecté ou non), dans
+            tous les états de la page — pas seulement pour la personne déjà
+            inscrite. Seuls les prénoms des personnes ayant consenti à y
+            apparaître sont montrés ; le compte total d'inscrits reste séparé,
+            calculé sans ce filtre (voir `restantes` ci-dessus). */}
+        <div className="mb-8 rounded-lg border border-violet-royal/40 bg-charbon-mystere p-6 text-left">
+          <p className="text-center font-cinzel text-sm uppercase tracking-widest text-or-ancien">
+            Le cercle
+          </p>
+          {totalInscrits === 0 ? (
+            <p className="mt-2 text-center font-cormorant text-parchemin-vieilli/70">
+              Soyez la première personne à réserver sa place pour ce rituel.
+            </p>
+          ) : participantsPublics.length === 0 ? (
+            <p className="mt-2 text-center font-cormorant text-parchemin-vieilli/70">
+              {totalInscrits} personne{totalInscrits > 1 ? 's' : ''}{' '}
+              {totalInscrits > 1 ? 'sont inscrites' : 'est inscrite'}.
+            </p>
+          ) : participantsPublics.length === 1 && participantsPublics[0].estMoi ? (
+            <p className="mt-2 text-center font-cormorant text-parchemin-vieilli/70">
+              Vous êtes la première à avoir accepté d&apos;apparaître ici — le cercle se formera
+              bientôt.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1 font-cormorant text-parchemin-vieilli/80">
+              {participantsPublics.map((participant) => (
+                <li key={participant.id}>
+                  {participant.prenom} {participant.initiale}.
+                  {participant.estMoi && <span className="text-turquoise-cristal"> (vous)</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {!estAnnule && !estPasse && (
           <FormulaireInscription
             slug={slug}
@@ -172,7 +212,6 @@ export default async function PageEvenement({
             capacite={evenement.capacity}
             nomComplet={nomComplet}
             titreEvenement={evenement.title}
-            participants={participants}
           />
         )}
       </div>

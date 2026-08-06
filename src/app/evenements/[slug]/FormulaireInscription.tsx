@@ -5,13 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 
-interface Participant {
-  id: string;
-  prenom: string;
-  initiale: string;
-  estMoi: boolean;
-}
-
 interface FormulaireInscriptionProps {
   slug: string;
   estConnecte: boolean;
@@ -21,9 +14,6 @@ interface FormulaireInscriptionProps {
   /** null si non connecté, ou si le compte de session n'est pas un membre (ex. admin). */
   nomComplet: string | null;
   titreEvenement: string;
-  /** Liste des personnes CONFIRMED — fournie par le serveur uniquement si la
-   * personne connectée est elle-même inscrite et confirmée à cet événement. */
-  participants: Participant[];
 }
 
 export default function FormulaireInscription({
@@ -34,20 +24,26 @@ export default function FormulaireInscription({
   capacite,
   nomComplet,
   titreEvenement,
-  participants,
 }: FormulaireInscriptionProps) {
   const router = useRouter();
   const [restantes, setRestantes] = useState(placesRestantes);
   const [inscrit, setInscrit] = useState(dejaInscrit);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Non coché par défaut : le consentement à apparaître publiquement doit être
+  // un choix actif, jamais un défaut (Loi 25).
+  const [afficherPubliquement, setAfficherPubliquement] = useState(false);
 
   async function inscrireMembre(evenementFormulaire: FormEvent<HTMLFormElement>) {
     evenementFormulaire.preventDefault();
     setErreur(null);
     setChargement(true);
     try {
-      const reponse = await fetch(`/api/evenements/${slug}/inscription`, { method: 'POST' });
+      const reponse = await fetch(`/api/evenements/${slug}/inscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ afficherPubliquement }),
+      });
       const donnees = await reponse.json();
       if (!reponse.ok) {
         setErreur(donnees.error ?? 'Une erreur est survenue.');
@@ -55,16 +51,16 @@ export default function FormulaireInscription({
         // Conflit de double-soumission : une autre requête nous a déjà inscrit.
         if (donnees.code === 'DEJA_INSCRIT') {
           setInscrit(true);
-          // On recharge les données serveur pour obtenir la liste à jour du cercle.
+          // On recharge les données serveur : la section « Le cercle » (rendue
+          // par la page) doit refléter cette inscription si elle est publique.
           router.refresh();
         }
         return;
       }
       setInscrit(true);
       setRestantes(donnees.placesRestantes);
-      // La liste du cercle n'a pas encore été chargée pour cette personne au
-      // premier rendu de la page (elle n'était pas encore inscrite) : on
-      // redemande le rendu serveur pour l'obtenir avec les autres données à jour.
+      // Idem : la section « Le cercle » de la page vit hors de ce composant et
+      // doit être redemandée au serveur pour montrer cette inscription à jour.
       router.refresh();
     } catch {
       setErreur('Impossible de contacter le serveur. Réessayez dans un instant.');
@@ -89,30 +85,6 @@ export default function FormulaireInscription({
         >
           Voir mes événements
         </Link>
-
-        {participants.length > 0 && (
-          <div className="mt-6 border-t border-violet-royal/40 pt-6 text-left">
-            <p className="text-center font-cinzel text-sm uppercase tracking-widest text-or-ancien">
-              Le cercle
-            </p>
-            {participants.length === 1 ? (
-              <p className="mt-2 text-center font-cormorant text-parchemin-vieilli/70">
-                Vous êtes la première inscrite — le cercle se formera bientôt.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-1 font-cormorant text-parchemin-vieilli/80">
-                {participants.map((participant) => (
-                  <li key={participant.id}>
-                    {participant.prenom} {participant.initiale}.
-                    {participant.estMoi && (
-                      <span className="text-turquoise-cristal"> (vous)</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
       </div>
     );
   }
@@ -186,6 +158,23 @@ export default function FormulaireInscription({
         {restantes} place{restantes > 1 ? 's' : ''} restante{restantes > 1 ? 's' : ''} sur{' '}
         {capacite}.
       </p>
+
+      <div className="mt-4 flex items-start gap-3">
+        <input
+          type="checkbox"
+          id="afficher-publiquement"
+          checked={afficherPubliquement}
+          onChange={(evenementChange) => setAfficherPubliquement(evenementChange.target.checked)}
+          className="mt-1 h-4 w-4 shrink-0 accent-turquoise-cristal"
+        />
+        <label htmlFor="afficher-publiquement" className="font-cormorant text-parchemin-vieilli/80">
+          J&apos;accepte que mon prénom apparaisse dans la liste publique des participants.
+          <span className="mt-1 block text-sm text-parchemin-vieilli/50">
+            Sans cette autorisation, vous êtes comptée dans le nombre d&apos;inscrits, mais votre
+            prénom n&apos;apparaît pas dans « Le cercle ».
+          </span>
+        </label>
+      </div>
 
       <Button type="submit" disabled={chargement} className="mt-4">
         {chargement ? 'Envoi…' : 'Je réserve ma place'}

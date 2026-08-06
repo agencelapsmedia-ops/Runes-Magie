@@ -15,6 +15,8 @@ export interface ParamsInscription {
   lastName: string;
   phone: string | null;
   note: string | null;
+  /** Consentement à apparaître dans la liste publique « Le cercle ». */
+  showPublicly: boolean;
 }
 
 export async function placesRestantes(eventId: string): Promise<number> {
@@ -81,6 +83,9 @@ export async function inscrire(params: ParamsInscription): Promise<EventRegistra
 
         // Réinscription après annulation : on réactive la ligne existante.
         // La contrainte @@unique([eventId, userId]) interdit d'en créer une seconde.
+        // Le consentement d'affichage public est repris de la nouvelle demande
+        // (et non de l'ancienne inscription annulée) : la personne peut très
+        // bien avoir changé d'avis entre les deux inscriptions.
         if (existante) {
           return tx.eventRegistration.update({
             where: { id: existante.id },
@@ -93,6 +98,7 @@ export async function inscrire(params: ParamsInscription): Promise<EventRegistra
               email: params.email,
               firstName: params.firstName,
               lastName: params.lastName,
+              showPublicly: params.showPublicly,
             },
           });
         }
