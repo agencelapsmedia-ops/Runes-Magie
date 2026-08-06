@@ -4,6 +4,10 @@ import { prisma } from '@/lib/db';
 import { envoyerAnnulationEvenement } from '@/lib/evenement-email';
 
 export const dynamic = 'force-dynamic';
+// L'annulation envoie les courriels d'annulation étalés à 600 ms par destinataire
+// pour respecter le débit autorisé par Resend. Pour 15 inscrits, cela fait ~9 secondes.
+// La route a besoin de plus que la durée par défaut (10 secondes).
+export const maxDuration = 60;
 
 /**
  * POST /api/admin/evenements/[id]/annuler
