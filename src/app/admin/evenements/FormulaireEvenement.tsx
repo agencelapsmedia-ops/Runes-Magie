@@ -28,12 +28,52 @@ export interface Evenement {
  * L'Est est à UTC-4 en heure avancée (mars→novembre), UTC-5 sinon. Le calcul
  * passe par Intl (fuseau IANA America/Toronto), qui gère lui-même les deux
  * décalages — jamais de « -4 » codé en dur.
+ *
+ * Attention : on ne repasse JAMAIS la chaîne saisie dans `new Date(...)` sans
+ * fuseau explicite — ça la ferait réinterpréter avec le fuseau du navigateur
+ * de l'administratrice, pas celui de Toronto (bogue mesuré : correct sous
+ * TZ=America/Toronto, faux d'une heure sous TZ=UTC).
+ *
+ * Méthode : on pose une estimation en UTC à partir des composants saisis, on
+ * la formate avec Intl en `timeZone: 'America/Toronto'`, on compare les
+ * composants obtenus à ceux saisis pour en déduire le décalage réel à cet
+ * instant, puis on répète une fois (le décalage peut changer si l'estimation
+ * initiale tombe de l'autre côté d'une bascule d'heure).
  */
 export function versDateEst(valeur: string): string {
-  const local = new Date(`${valeur}:00`);
-  const enEst = new Date(local.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
-  const decalage = local.getTime() - enEst.getTime();
-  return new Date(local.getTime() + decalage).toISOString();
+  const correspondance = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(valeur);
+  if (!correspondance) {
+    throw new RangeError(`Date invalide : « ${valeur} »`);
+  }
+  const [, anS, moisS, jourS, heureS, minuteS] = correspondance;
+  const an = Number(anS);
+  const mois = Number(moisS);
+  const jour = Number(jourS);
+  const heure = Number(heureS);
+  const minute = Number(minuteS);
+  const cible = Date.UTC(an, mois - 1, jour, heure, minute);
+
+  let instant = cible;
+  for (let i = 0; i < 2; i++) {
+    const parties = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Toronto',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(instant));
+    const get = (type: string) => Number(parties.find((p) => p.type === type)?.value ?? 0);
+    const obtenu = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+    instant -= obtenu - cible;
+  }
+
+  const resultat = new Date(instant);
+  if (Number.isNaN(resultat.getTime())) {
+    throw new RangeError(`Date invalide : « ${valeur} »`);
+  }
+  return resultat.toISOString();
 }
 
 /**
@@ -164,23 +204,26 @@ export default function FormulaireEvenement({ evenement, onSaved }: Props) {
       return setError('Le nombre de places doit être un entier positif.');
     }
 
-    const payload = {
-      title: form.title.trim(),
-      excerpt: form.excerpt.trim() || null,
-      description: form.description.trim(),
-      imageUrl: form.imageUrl.trim() || null,
-      startsAt: versDateEst(form.debut),
-      endsAt: form.fin ? versDateEst(form.fin) : null,
-      location: form.location.trim(),
-      isOnline: form.isOnline,
-      onlineUrl: form.onlineUrl.trim() || null,
-      capacity: capacite,
-      bringItems: form.bringItems.trim() || null,
-      isPublished: form.isPublished,
-    };
-
     setSaving(true);
     try {
+      // `versDateEst` peut lever (date malformée) : la construction du payload
+      // doit rester DANS le bloc protégé, sinon un rejet silencieux laisse
+      // croire à l'administratrice que l'enregistrement a réussi.
+      const payload = {
+        title: form.title.trim(),
+        excerpt: form.excerpt.trim() || null,
+        description: form.description.trim(),
+        imageUrl: form.imageUrl.trim() || null,
+        startsAt: versDateEst(form.debut),
+        endsAt: form.fin ? versDateEst(form.fin) : null,
+        location: form.location.trim(),
+        isOnline: form.isOnline,
+        onlineUrl: form.onlineUrl.trim() || null,
+        capacity: capacite,
+        bringItems: form.bringItems.trim() || null,
+        isPublished: form.isPublished,
+      };
+
       const res = evenement
         ? await fetch(`/api/admin/evenements/${evenement.id}`, {
             method: 'PATCH',
@@ -196,7 +239,11 @@ export default function FormulaireEvenement({ evenement, onSaved }: Props) {
       if (!res.ok) throw new Error(data.error || 'Échec de l’enregistrement.');
       onSaved(data.evenement as Evenement);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inattendue.');
+      if (e instanceof RangeError) {
+        setError('La date saisie est invalide.');
+      } else {
+        setError(e instanceof Error ? e.message : 'Erreur inattendue.');
+      }
     } finally {
       setSaving(false);
     }

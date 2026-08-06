@@ -81,7 +81,13 @@ export default function ActionsInscrits({ evenementId, dejaAnnule, onAnnule }: P
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Échec de l'envoi.");
-      setConfirmation(`Message envoyé à ${data.envoyesA} inscrit${data.envoyesA > 1 ? 's' : ''}.`);
+      const envoyesA = typeof data.envoyesA === 'number' ? data.envoyesA : 0;
+      const echecs = typeof data.echecs === 'number' ? data.echecs : 0;
+      setConfirmation(
+        echecs > 0
+          ? `Message envoyé à ${envoyesA} inscrit${envoyesA > 1 ? 's' : ''} — échec pour ${echecs} adresse${echecs > 1 ? 's' : ''}.`
+          : `Message envoyé à ${envoyesA} inscrit${envoyesA > 1 ? 's' : ''}.`,
+      );
       setSujet('');
       setMessage('');
       setModale(null);
@@ -105,6 +111,13 @@ export default function ActionsInscrits({ evenementId, dejaAnnule, onAnnule }: P
       if (!res.ok) throw new Error(data.error || "Échec de l'annulation.");
       setModale(null);
       setMotif('');
+      const envoyesA = typeof data.envoyesA === 'number' ? data.envoyesA : 0;
+      const echecs = typeof data.echecs === 'number' ? data.echecs : 0;
+      setConfirmation(
+        echecs > 0
+          ? `Événement annulé. ${envoyesA} inscrit${envoyesA > 1 ? 's' : ''} prévenu${envoyesA > 1 ? 's' : ''} — échec pour ${echecs} adresse${echecs > 1 ? 's' : ''} (à contacter manuellement).`
+          : `Événement annulé. ${envoyesA} inscrit${envoyesA > 1 ? 's' : ''} prévenu${envoyesA > 1 ? 's' : ''}.`,
+      );
       onAnnule();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur inattendue.');

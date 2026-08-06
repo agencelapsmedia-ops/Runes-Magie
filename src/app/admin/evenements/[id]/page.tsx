@@ -33,6 +33,8 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
   const [inscrits, setInscrits] = useState<Inscrit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorInscrits, setErrorInscrits] = useState<string | null>(null);
+  const [errorDesinscription, setErrorDesinscription] = useState<string | null>(null);
   const [aDesinscrire, setADesinscrire] = useState<Inscrit | null>(null);
   const [desinscrivant, setDesinscrivant] = useState(false);
 
@@ -44,9 +46,20 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
       ]);
       const dataEv = await rEv.json().catch(() => ({}));
       if (!rEv.ok) throw new Error(dataEv.error || 'Événement introuvable.');
-      const dataIns = await rIns.json().catch(() => ({ inscrits: [] }));
       setEvenement(dataEv.evenement);
-      setInscrits(dataIns.inscrits ?? []);
+
+      // Un échec de chargement des inscrits est traité à part de l'événement
+      // lui-même : il ne doit jamais ressembler à « aucun inscrit », sinon
+      // l'administratrice pourrait annuler l'événement en croyant qu'il
+      // n'intéresse personne.
+      const dataIns = await rIns.json().catch(() => ({}));
+      if (!rIns.ok) {
+        setErrorInscrits(dataIns.error || 'Échec du chargement des inscrits.');
+        setInscrits([]);
+      } else {
+        setErrorInscrits(null);
+        setInscrits(dataIns.inscrits ?? []);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de chargement.');
     } finally {
@@ -61,10 +74,18 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
   async function confirmerDesinscription() {
     if (!aDesinscrire) return;
     setDesinscrivant(true);
+    setErrorDesinscription(null);
     try {
-      await fetch(`/api/admin/evenements/${id}/inscrits/${aDesinscrire.id}`, { method: 'DELETE' });
+      // `fetch` ne rejette pas sur un 4xx (ex. 409 « déjà annulée », 404) :
+      // il faut vérifier `res.ok` explicitement, sinon la modale se ferme
+      // comme si tout allait bien.
+      const res = await fetch(`/api/admin/evenements/${id}/inscrits/${aDesinscrire.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec de la désinscription.');
       setADesinscrire(null);
       await charger();
+    } catch (e) {
+      setErrorDesinscription(e instanceof Error ? e.message : 'Erreur inattendue.');
     } finally {
       setDesinscrivant(false);
     }
@@ -110,7 +131,11 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
 
       <ActionsInscrits evenementId={id} dejaAnnule={!!evenement.cancelledAt} onAnnule={() => void charger()} />
 
-      {inscrits.length === 0 ? (
+      {errorInscrits ? (
+        <div style={{ background: '#FEF2F2', borderRadius: '12px', padding: '30px', textAlign: 'center', border: '1px solid #FCA5A5' }}>
+          <p style={{ color: '#991B1B', fontSize: '0.9rem', fontWeight: 600 }}>{errorInscrits}</p>
+        </div>
+      ) : inscrits.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: '12px', padding: '30px', textAlign: 'center', border: '1px solid #E5E7EB' }}>
           <p style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Aucune personne inscrite pour l&apos;instant.</p>
         </div>
@@ -138,7 +163,7 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <button
                       type="button"
-                      onClick={() => setADesinscrire(i)}
+                      onClick={() => { setErrorDesinscription(null); setADesinscrire(i); }}
                       style={{ padding: '6px 12px', background: '#fff', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
                     >
                       Désinscrire
@@ -156,15 +181,20 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
           role="dialog"
           aria-modal="true"
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', zIndex: 1000, overflowY: 'auto' }}
-          onClick={() => !desinscrivant && setADesinscrire(null)}
+          onClick={() => {
+            if (desinscrivant) return;
+            setADesinscrire(null);
+            setErrorDesinscription(null);
+          }}
         >
           <div style={{ background: '#fff', borderRadius: '12px', padding: '26px', width: '100%', maxWidth: '420px', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }} onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.2rem', color: '#2D1B4E', margin: '0 0 14px' }}>Désinscrire cette personne ?</h2>
             <p style={{ fontSize: '0.9rem', color: '#4B5563', marginBottom: '20px' }}>
               {aDesinscrire.firstName} {aDesinscrire.lastName} sera prévenu(e) par courriel de son désistement.
             </p>
+            {errorDesinscription && <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '14px' }}>{errorDesinscription}</p>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button type="button" onClick={() => setADesinscrire(null)} disabled={desinscrivant} style={{ padding: '9px 16px', background: 'transparent', color: '#6B7280', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <button type="button" onClick={() => { setADesinscrire(null); setErrorDesinscription(null); }} disabled={desinscrivant} style={{ padding: '9px 16px', background: 'transparent', color: '#6B7280', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
                 Annuler
               </button>
               <button

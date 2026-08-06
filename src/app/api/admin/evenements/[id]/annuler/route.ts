@@ -48,12 +48,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }),
   ]);
 
+  // Un échec d'envoi ne doit jamais faire échouer l'annulation ; on rapporte le
+  // nombre réellement envoyé plutôt que le nombre de destinataires visés.
+  let resultat: { envoyes: number; echecs: string[] } = { envoyes: 0, echecs: destinataires };
   try {
-    await envoyerAnnulationEvenement(destinataires, evenement.title, evenement.startsAt, motif);
+    resultat = await envoyerAnnulationEvenement(destinataires, evenement.title, evenement.startsAt, motif);
   } catch (erreur) {
-    // Un échec d'envoi ne doit jamais faire échouer l'annulation.
     console.error('[evenements/admin] échec envoi courriel d\'annulation de l\'événement', erreur);
   }
 
-  return NextResponse.json({ evenement: evenementAnnule });
+  return NextResponse.json({
+    evenement: evenementAnnule,
+    envoyesA: resultat.envoyes,
+    echecs: resultat.echecs.length,
+  });
 }

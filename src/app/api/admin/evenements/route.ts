@@ -48,8 +48,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Le nombre de places doit être un entier positif.' }, { status: 400 });
   }
 
+  // Alignée sur PATCH ([id]/route.ts) : une date de fin invalide est refusée,
+  // jamais mise à `null` en silence.
   const fin = corps.endsAt ? new Date(String(corps.endsAt)) : null;
-  if (fin && !Number.isNaN(fin.getTime()) && fin.getTime() <= debut.getTime()) {
+  if (corps.endsAt && (!fin || Number.isNaN(fin.getTime()))) {
+    return NextResponse.json({ error: 'La date de fin est invalide.' }, { status: 400 });
+  }
+  if (fin && fin.getTime() <= debut.getTime()) {
     return NextResponse.json({ error: 'La fin doit suivre le début.' }, { status: 400 });
   }
 
@@ -68,7 +73,7 @@ export async function POST(req: Request) {
       description,
       imageUrl: typeof corps.imageUrl === 'string' ? corps.imageUrl.trim() || null : null,
       startsAt: debut,
-      endsAt: fin && !Number.isNaN(fin.getTime()) ? fin : null,
+      endsAt: fin,
       location: lieu,
       isOnline: corps.isOnline === true,
       onlineUrl: typeof corps.onlineUrl === 'string' ? corps.onlineUrl.trim() || null : null,

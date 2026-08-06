@@ -36,12 +36,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
   const destinataires = inscrits.map((i) => i.email);
 
+  // Un échec d'envoi ne doit jamais faire échouer la requête ; on rapporte le
+  // nombre réellement envoyé plutôt que le nombre de destinataires visés.
+  let resultat: { envoyes: number; echecs: string[] } = { envoyes: 0, echecs: destinataires };
   try {
-    await envoyerMessageAuxInscrits(destinataires, evenement.title, sujet, message);
+    resultat = await envoyerMessageAuxInscrits(destinataires, evenement.title, sujet, message);
   } catch (erreur) {
-    // Un échec d'envoi ne doit jamais faire échouer la requête.
     console.error('[evenements/admin] échec envoi message aux inscrits', erreur);
   }
 
-  return NextResponse.json({ envoyesA: destinataires.length });
+  return NextResponse.json({ envoyesA: resultat.envoyes, echecs: resultat.echecs.length });
 }

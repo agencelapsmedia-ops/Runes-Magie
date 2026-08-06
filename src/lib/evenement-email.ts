@@ -21,12 +21,29 @@ export interface DonneesCourrielEvenement {
   jetonAnnulation: string;
 }
 
+/** Pause entre deux envois — le débit Resend par défaut est de 2 requêtes/seconde. */
+function attendre(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Envoie un courriel via Resend.
+ *
+ * Le SDK Resend ne lève JAMAIS d'exception : il renvoie `{ data, error }`. Un
+ * refus (dépassement de débit, domaine invalide, adresse supprimée) est sinon
+ * traité comme un succès silencieux. On lit donc explicitement `error` et on
+ * lève nous-mêmes, pour que les appelants (dont le cron de rappel) puissent
+ * réagir à un échec réel.
+ */
 async function envoyer(to: string | string[], subject: string, html: string, quoi: string) {
   if (!resend) {
     console.log(`[Courriel] ${quoi} ->`, to);
     return;
   }
-  await resend.emails.send({ from: FROM, to, subject, html });
+  const { error } = await resend.emails.send({ from: FROM, to, subject, html });
+  if (error) {
+    throw new Error(`Envoi Resend echoue (${quoi}) : ${error.message ?? JSON.stringify(error)}`);
+  }
 }
 
 function blocDetails(d: DonneesCourrielEvenement): string {
@@ -105,23 +122,44 @@ export async function envoyerConfirmationAnnulation(d: DonneesCourrielEvenement)
   ]);
 }
 
+export interface ResultatEnvoiMasse {
+  /** Nombre de courriels réellement envoyés (confirmés par Resend). */
+  envoyes: number;
+  /** Adresses pour lesquelles l'envoi a échoué. */
+  echecs: string[];
+}
+
 export async function envoyerAnnulationEvenement(
   destinataires: string[],
   titre: string,
   debut: Date,
   motif: string | null,
-) {
-  if (destinataires.length === 0) return;
+): Promise<ResultatEnvoiMasse> {
+  if (destinataires.length === 0) return { envoyes: 0, echecs: [] };
   const html = gabaritCourriel(
     `<h2 style="color:#C9A84C;margin-top:0;">Événement annulé</h2>` +
       `<p style="color:#F5F0E8;">Nous sommes désolés : <strong>${encoderHtml(titre)}</strong>, prévu le ${formaterDateEvenement(debut)}, est annulé.</p>` +
       (motif ? `<p style="color:#E8DCC8;white-space:pre-wrap;">${encoderHtml(motif)}</p>` : '') +
       bouton(`${APP_URL}/evenements`, 'Voir les autres événements'),
   );
+  const echecs: string[] = [];
+  let envoyes = 0;
   // Envoi individuel : jamais de liste de destinataires en clair (Loi 25).
-  for (const destinataire of destinataires) {
-    await envoyer(destinataire, `Annulé — ${titre}`, html, 'annulation evenement');
+  // Un échec sur une adresse ne doit jamais empêcher de prévenir les suivantes
+  // (le pire scénario pour une annulation est que des gens se présentent).
+  for (let i = 0; i < destinataires.length; i++) {
+    const destinataire = destinataires[i];
+    try {
+      await envoyer(destinataire, `Annulé — ${titre}`, html, 'annulation evenement');
+      envoyes++;
+    } catch (erreur) {
+      echecs.push(destinataire);
+      console.error(`[evenement-email] échec envoi annulation à ${destinataire}`, erreur);
+    }
+    // Pause entre deux envois pour rester sous le débit Resend (2 req/s).
+    if (i < destinataires.length - 1) await attendre(600);
   }
+  return { envoyes, echecs };
 }
 
 export async function envoyerMessageAuxInscrits(
@@ -129,13 +167,24 @@ export async function envoyerMessageAuxInscrits(
   titre: string,
   sujet: string,
   message: string,
-) {
-  if (destinataires.length === 0) return;
+): Promise<ResultatEnvoiMasse> {
+  if (destinataires.length === 0) return { envoyes: 0, echecs: [] };
   const html = gabaritCourriel(
     `<h2 style="color:#C9A84C;margin-top:0;">${encoderHtml(titre)}</h2>` +
       `<p style="color:#F5F0E8;white-space:pre-wrap;">${encoderHtml(message)}</p>`,
   );
-  for (const destinataire of destinataires) {
-    await envoyer(destinataire, sujet, html, 'message aux inscrits');
+  const echecs: string[] = [];
+  let envoyes = 0;
+  for (let i = 0; i < destinataires.length; i++) {
+    const destinataire = destinataires[i];
+    try {
+      await envoyer(destinataire, sujet, html, 'message aux inscrits');
+      envoyes++;
+    } catch (erreur) {
+      echecs.push(destinataire);
+      console.error(`[evenement-email] échec envoi message à ${destinataire}`, erreur);
+    }
+    if (i < destinataires.length - 1) await attendre(600);
   }
+  return { envoyes, echecs };
 }

@@ -5,6 +5,8 @@ import BoutonAnnulation from './BoutonAnnulation';
 
 export const metadata: Metadata = {
   title: 'Annuler mon inscription | Runes & Magie',
+  // L'URL contient un jeton secret : jamais indexée ni suivie.
+  robots: { index: false, follow: false },
 };
 
 export default async function PageAnnulationEvenement({
