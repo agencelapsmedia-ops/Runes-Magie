@@ -307,6 +307,9 @@ export default function FeuilleRendezVous({
         if (ctrl.signal.aborted) return;
         if (!res.ok) {
           setCreneaux([]);
+          // Le bandeau « agenda Google injoignable » parlait du chargement
+          // précédent : sans créneaux affichés, il n'a plus de sujet.
+          setAgendaConsulte(true);
           setErreurCreneaux(j.error ?? 'Impossible de charger les disponibilités.');
           return;
         }
@@ -315,6 +318,7 @@ export default function FeuilleRendezVous({
       } catch {
         if (ctrl.signal.aborted) return;
         setCreneaux([]);
+        setAgendaConsulte(true);
         setErreurCreneaux('Impossible de charger les disponibilités. Vérifie ta connexion.');
       } finally {
         if (!ctrl.signal.aborted) setCreneauxEnCours(false);
@@ -323,13 +327,34 @@ export default function FeuilleRendezVous({
     return () => ctrl.abort();
   }, [ouverte, etape, soin, jour, practitionerId]);
 
-  /* --- Ce qu'il manque avant de pouvoir envoyer ---------------------- */
+  /* --- Ce qu'il manque avant de pouvoir envoyer ----------------------
+   * Un seul calcul sert à la fois de message affiché et de raison de bloquer
+   * le bouton : l'avertissement et l'inertie du bouton ne peuvent donc jamais
+   * se contredire. Pas de message → rien ne bloque, et réciproquement.
+   */
+  const courrielUtile = paiement !== 'CASH'; // comptant : la route n'exige aucun courriel
+  const courrielSaisi = (cliente?.email ?? '').trim();
+
+  /** Message expliquant ce qui manque côté courriel, ou null si rien ne manque. */
+  const messageCourriel: string | null = !courrielUtile
+    ? null
+    : !/\S+@\S+/.test(courrielSaisi)
+      ? 'Un courriel est nécessaire pour ce mode de paiement.'
+      : courrielRefuse !== null && courrielSaisi.toLowerCase() === courrielRefuse
+        // Elle a resoumis l'adresse déjà prise par une autre fiche : refus certain.
+        ? 'Corrige le courriel : celui-ci appartient à une autre fiche.'
+        : null;
+
   const telephoneManquant = !(cliente?.phone ?? '').trim();
-  const courrielManquant = paiement !== 'CASH' && !/\S+@\S+/.test((cliente?.email ?? '').trim());
-  /** Elle a resoumis la même adresse déjà prise : la route la refuserait encore. */
-  const courrielEncoreRefuse =
-    courrielRefuse !== null && (cliente?.email ?? '').trim().toLowerCase() === courrielRefuse;
-  const complementRequis = telephoneManquant || courrielManquant || courrielEncoreRefuse;
+  const complementRequis = telephoneManquant || messageCourriel !== null;
+
+  /**
+   * Le champ courriel reste monté tant qu'une correction est en cours, même
+   * quand plus rien ne bloque : sans cela il disparaîtrait sous ses doigts à
+   * la première lettre corrigée. Un champ n'affirme rien — seul le message
+   * ci-dessus avertit, et lui suit strictement le blocage.
+   */
+  const champCourrielAffiche = messageCourriel !== null || (courrielUtile && courrielRefuse !== null);
 
   const fermer = useCallback(() => {
     if (envoiRef.current) return; // pas de fermeture au milieu d'un envoi
@@ -345,8 +370,21 @@ export default function FeuilleRendezVous({
   }
 
   function choisirCliente(c: Cliente | ClienteRetenue) {
+    const identifiant = c.id ?? null;
+    // Re-choisir la MÊME fiche ne fait rien perdre. Changer de cliente, en
+    // revanche, périme tout ce qui parlait de la précédente : l'adresse refusée
+    // visait son compte à elle, la note était écrite pour elle, l'avertissement
+    // et l'erreur portaient sur son rendez-vous à elle.
+    const memeCliente = cliente !== null && identifiant !== null && cliente.id === identifiant;
+    if (!memeCliente) {
+      setCourrielRefuse(null);
+      setAvertissementAgenda(null);
+      setErreur(null);
+      setNotes('');
+      setNotesDepliees(false);
+    }
     setCliente({
-      id: c.id ?? null,
+      id: identifiant,
       firstName: c.firstName,
       lastName: c.lastName,
       email: c.email ?? '',
@@ -373,8 +411,14 @@ export default function FeuilleRendezVous({
   }
 
   function choisirSoin(s: Soin) {
-    // Changer de soin change la durée : les créneaux affichés ne valent plus.
-    if (soin?.id !== s.id) { setCreneau(null); setCreneaux([]); }
+    // Changer de soin change la durée : les créneaux affichés ne valent plus,
+    // et l'avertissement comme l'erreur portaient sur l'ancienne plage horaire.
+    if (soin?.id !== s.id) {
+      setCreneau(null);
+      setCreneaux([]);
+      setAvertissementAgenda(null);
+      setErreur(null);
+    }
     setSoin(s);
     setEtape(3);
   }
@@ -384,6 +428,10 @@ export default function FeuilleRendezVous({
     setJour(date);
     setCreneau(null);
     setAutreHeure('');
+    // « Ce créneau chevauche… » ou « ce créneau vient d'être pris » ne parlaient
+    // que du jour qu'elle quitte.
+    setAvertissementAgenda(null);
+    setErreur(null);
   }
 
   function choisirCreneau(c: Creneau) {
@@ -1007,7 +1055,7 @@ export default function FeuilleRendezVous({
               </div>
 
               {/* Ce qu'il manque pour que la route accepte : demandé ICI, sans rien reprendre */}
-              {(complementRequis || courrielRefuse !== null) && (
+              {(complementRequis || champCourrielAffiche) && (
                 <div
                   style={{
                     border: `1px solid ${OR}`,
@@ -1020,12 +1068,17 @@ export default function FeuilleRendezVous({
                     gap: '10px',
                   }}
                 >
-                  {(courrielManquant || courrielRefuse !== null) && (
+                  {champCourrielAffiche && (
                     <label>
-                      <span style={{ ...etiquetteChamp, color: '#92400E' }}>
-                        {courrielRefuse !== null
-                          ? 'Corrige le courriel : celui-ci appartient à une autre fiche.'
-                          : 'Un courriel est nécessaire pour ce mode de paiement.'}
+                      {/* Un avertissement uniquement quand quelque chose bloque
+                          vraiment ; sinon une étiquette neutre. */}
+                      <span
+                        style={{
+                          ...etiquetteChamp,
+                          color: messageCourriel !== null ? '#92400E' : GRIS,
+                        }}
+                      >
+                        {messageCourriel ?? 'Courriel de la cliente'}
                       </span>
                       <input
                         type="email"
@@ -1089,21 +1142,23 @@ export default function FeuilleRendezVous({
                     >
                       Choisir une autre heure
                     </button>
+                    {/* Même garde que « Créer » : sans elle, changer de paiement
+                        pendant l'avertissement rendrait ce bouton silencieux
+                        (l'envoi refuse, mais rien ne l'expliquerait). */}
                     <button
                       type="button"
                       onClick={() => envoyer(true)}
-                      disabled={envoi}
+                      disabled={envoi || complementRequis}
                       style={{
                         ...TAPABLE,
                         width: '100%',
                         padding: '13px',
                         borderRadius: '10px',
                         border: 'none',
-                        background: VIOLET,
-                        color: '#fff',
+                        background: envoi || complementRequis ? BORDURE : VIOLET,
+                        color: envoi || complementRequis ? GRIS_CLAIR : '#fff',
                         fontSize: '0.95rem',
-                        opacity: envoi ? 0.6 : 1,
-                        cursor: envoi ? 'default' : 'pointer',
+                        cursor: envoi || complementRequis ? 'not-allowed' : 'pointer',
                       }}
                     >
                       {envoi ? 'Création…' : 'Réserver quand même'}
