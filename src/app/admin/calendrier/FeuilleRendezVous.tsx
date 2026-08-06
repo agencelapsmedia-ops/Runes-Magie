@@ -738,16 +738,13 @@ export default function FeuilleRendezVous({
               )}
 
               <div style={{ marginTop: '16px', borderTop: `1px solid ${BORDURE}`, paddingTop: '8px' }}>
+                {/* Ce bouton ouvre et referme, rien de plus : rouvrir un panneau ne
+                    jette jamais son contenu. Le seul chemin destructeur est le lien
+                    ci-dessous, dont l'intitulé annonce ce qu'il efface. Le libellé dit
+                    lequel des deux gestes il déclenche — reprendre, ou commencer. */}
                 <button
                   type="button"
-                  onClick={() => {
-                    // « + Nouvelle cliente » veut dire « une autre personne ». Si la
-                    // saisie en cours est déjà la personne retenue, on repart donc à
-                    // vide avec une nouvelle identité plutôt que de rouvrir la sienne.
-                    if (nouvelleDepliee) { setNouvelleDepliee(false); return; }
-                    if (saisieRetenue) { demarrerNouvelleSaisie(); return; }
-                    setNouvelleDepliee(true);
-                  }}
+                  onClick={() => setNouvelleDepliee((v) => !v)}
                   style={{
                     ...TAPABLE,
                     width: '100%',
@@ -760,17 +757,26 @@ export default function FeuilleRendezVous({
                     fontWeight: 600,
                   }}
                 >
-                  {nouvelleDepliee ? '− Nouvelle cliente' : '+ Nouvelle cliente'}
+                  {nouvelleDepliee
+                    ? '− Masquer la saisie'
+                    : saisieRetenue && cliente
+                      ? `Reprendre la saisie : ${cliente.firstName} ${cliente.lastName}`
+                      : '+ Nouvelle cliente'}
                 </button>
 
-                {/* Revenir sur la saisie déjà retenue sans changer de personne. */}
-                {!nouvelleDepliee && saisieRetenue && cliente && (
+                {/* Chemin destructeur, exemplaire pour le panneau REPLIÉ. Un second
+                    exemplaire, sous le même intitulé, se trouve plus bas dans le
+                    formulaire déplié (juste après « Continuer ») pour l'état ouvert.
+                    À eux deux, ce geste est disponible dans les deux états du
+                    panneau — c'est le seul qui vide les champs et change de
+                    personne. */}
+                {!nouvelleDepliee && saisieRetenue && (
                   <button
                     type="button"
-                    onClick={() => setNouvelleDepliee(true)}
+                    onClick={demarrerNouvelleSaisie}
                     style={{ ...lienDiscret, display: 'flex', width: '100%', textAlign: 'left' }}
                   >
-                    Modifier la saisie : {cliente.firstName} {cliente.lastName}
+                    Effacer et saisir une autre personne
                   </button>
                 )}
 
@@ -829,7 +835,9 @@ export default function FeuilleRendezVous({
                       Continuer
                     </button>
 
-                    {/* Le geste qui dit « ce n'est plus la même personne » : le
+                    {/* Chemin destructeur, exemplaire pour le panneau DÉPLIÉ — voir le
+                        jumeau plus haut, avant le formulaire, pour l'état replié. Le
+                        geste qui dit « ce n'est plus la même personne » : le
                         formulaire repart vide, et la note écrite pour la précédente
                         ne la suivra pas. */}
                     {saisieRetenue && (
