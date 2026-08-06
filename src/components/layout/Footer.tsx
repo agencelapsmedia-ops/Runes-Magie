@@ -208,6 +208,13 @@ export default function Footer() {
         <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
           <p className="font-cormorant text-sm text-parchemin/40">
             &copy; 2026 Runes &amp; Magie &mdash; Annabelle Dionne
+            <span className="mx-2 text-parchemin/20">·</span>
+            <Link
+              href="/confidentialite"
+              className="transition-colors duration-300 hover:text-turquoise-cristal"
+            >
+              Politique de confidentialité
+            </Link>
           </p>
           <p className="font-cormorant text-sm text-parchemin/30">
             Charte graphique par{' '}
