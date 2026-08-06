@@ -311,3 +311,113 @@ export async function getBusyPeriods(
     return [];
   }
 }
+
+export interface PeriodeOccupee {
+  start: string;
+  end: string;
+  /** Titre de l'événement Google, tel quel (peut être vide). */
+  titre: string;
+}
+
+export interface ResultatOccupation {
+  /** false si l'agenda n'a pas pu être consulté (non connectée, non
+   *  configuré, erreur réseau…) : dans ce cas on ne peut RIEN affirmer sur
+   *  l'agenda, `periodes` est vide par précaution mais ne doit pas être lu
+   *  comme « rien d'occupé ». */
+  consulte: boolean;
+  periodes: PeriodeOccupee[];
+}
+
+/** « 2026-08-11 » (date seule, sans heure) → minuit heure de l'Est, en instant
+ *  UTC exact. Même algorithme de convergence que `instantEst` dans
+ *  `creneaux.ts` (dupliqué à dessein : ce module ne dépend pas de celui-là).
+ *  Ne jamais coder -4/-5 en dur, ne jamais passer une chaîne sans fuseau à
+ *  `new Date()`. */
+function minuitEst(date: string): Date {
+  const [an, mois, jour] = date.split('-').map(Number);
+  let estimation = Date.UTC(an, mois - 1, jour, 0, 0);
+  for (let passe = 0; passe < 2; passe++) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date(estimation));
+    const lu = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+    const obtenu = Date.UTC(lu('year'), lu('month') - 1, lu('day'), lu('hour') % 24, lu('minute'));
+    const ecart = Date.UTC(an, mois - 1, jour, 0, 0) - obtenu;
+    if (ecart === 0) break;
+    estimation += ecart;
+  }
+  return new Date(estimation);
+}
+
+/**
+ * Sens ENTRANT (Google → site), version détaillée : contrairement à
+ * `getBusyPeriods` (API `freebusy`), celle-ci lit les ÉVÉNEMENTS de l'agenda
+ * (`events.list`) et renvoie donc leur TITRE — nécessaire pour avertir la
+ * praticienne de façon exploitable (elle doit pouvoir juger si l'événement
+ * personnel est déplaçable). `freebusy` ne donne jamais de titre, quel que
+ * soit le scope OAuth ; ce n'est pas une limite de code, c'est une limite de
+ * cette API-là.
+ *
+ * Distingue aussi explicitement « agenda consulté, rien d'occupé » de
+ * « agenda injoignable » via `consulte` — `getBusyPeriods` renvoie [] dans
+ * les deux cas, ce qui empêche d'avertir la praticienne quand son agenda
+ * n'a pas pu être vérifié. Ici, `consulte: false` couvre : praticienne non
+ * connectée, Google non configuré, et toute erreur réseau/API.
+ *
+ * Filtre ce que `freebusy` filtrait pour nous : les événements annulés
+ * (`status: 'cancelled'`) et ceux marqués « disponible » côté Google
+ * (`transparency: 'transparent'`) — ni l'un ni l'autre ne bloquent
+ * réellement l'agenda.
+ *
+ * Événements « toute la journée » (`start.date` / `end.date`, sans heure) :
+ * traités comme occupant tout l'intervalle, de minuit à minuit heure de
+ * l'Est (voir `minuitEst`) — un événement personnel d'une journée entière
+ * (vacances, absence...) doit avertir sur tous les créneaux de ce jour-là,
+ * pas être ignoré faute d'heure précise.
+ */
+export async function getEvenementsOccupes(
+  practitionerId: string,
+  from: Date,
+  to: Date,
+): Promise<ResultatOccupation> {
+  try {
+    const calendar = await getCalendarForPractitioner(practitionerId);
+    if (!calendar) return { consulte: false, periodes: [] };
+
+    const res = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: from.toISOString(),
+      timeMax: to.toISOString(),
+      timeZone: TIMEZONE,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const items = res.data.items ?? [];
+    const periodes: PeriodeOccupee[] = [];
+    for (const item of items) {
+      if (item.status === 'cancelled') continue;
+      if (item.transparency === 'transparent') continue;
+
+      const start = item.start?.dateTime
+        ? new Date(item.start.dateTime)
+        : item.start?.date
+          ? minuitEst(item.start.date)
+          : null;
+      const end = item.end?.dateTime
+        ? new Date(item.end.dateTime)
+        : item.end?.date
+          ? minuitEst(item.end.date)
+          : null;
+      if (!start || !end) continue;
+
+      periodes.push({ start: start.toISOString(), end: end.toISOString(), titre: item.summary ?? '' });
+    }
+
+    return { consulte: true, periodes };
+  } catch (err) {
+    console.error('[Google Calendar] échec lecture des événements', { practitionerId, err });
+    return { consulte: false, periodes: [] };
+  }
+}

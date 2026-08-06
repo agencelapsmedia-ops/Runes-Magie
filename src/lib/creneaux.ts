@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { getBusyPeriods } from '@/lib/google-calendar';
+import { getEvenementsOccupes } from '@/lib/google-calendar';
 
 const FUSEAU = 'America/Toronto';
 
@@ -101,13 +101,21 @@ export async function calculerCreneaux(params: {
     select: { startsAt: true, endsAt: true },
   });
 
-  // 3) L'agenda Google. Un échec ne doit jamais vider la liste : mieux vaut
-  //    des créneaux à vérifier qu'un écran vide.
-  let occupes: Array<{ start: string; end: string; summary?: string }> = [];
+  // 3) L'agenda Google. `getEvenementsOccupes` (events.list) plutôt que
+  //    `getBusyPeriods` (freebusy) : freebusy ne renvoie jamais de titre
+  //    d'événement (limite de cette API, quel que soit le scope OAuth) et ne
+  //    permet pas de distinguer « agenda consulté, rien d'occupé » de
+  //    « agenda injoignable » — elle renvoie [] dans les deux cas, ce qui
+  //    empêcherait tout avertissement quand Google est réellement injoignable.
+  //    Un échec ne doit jamais vider la liste des créneaux : mieux vaut des
+  //    créneaux à vérifier qu'un écran vide, mais l'interface doit savoir si
+  //    la vérification a eu lieu (agendaGoogleConsulte).
+  let occupes: Array<{ start: string; end: string; titre: string }> = [];
   let agendaGoogleConsulte = false;
   try {
-    occupes = (await getBusyPeriods(practitionerId, debutJournee, finJournee)) as typeof occupes;
-    agendaGoogleConsulte = true;
+    const resultat = await getEvenementsOccupes(practitionerId, debutJournee, finJournee);
+    occupes = resultat.periodes;
+    agendaGoogleConsulte = resultat.consulte;
   } catch (err) {
     console.error('[creneaux] agenda Google injoignable (non bloquant)', err);
   }
@@ -127,7 +135,7 @@ export async function calculerCreneaux(params: {
         // Un événement personnel n'interdit pas : il avertit (voir §8 du devis).
         disponible: !prisParRdv,
         motif: prisParRdv ? 'RENDEZ_VOUS' : perso ? 'AGENDA_PERSONNEL' : undefined,
-        etiquette: !prisParRdv && perso ? (perso.summary ?? 'Événement personnel') : undefined,
+        etiquette: !prisParRdv && perso ? (perso.titre || 'Événement personnel') : undefined,
       });
     }
   }
