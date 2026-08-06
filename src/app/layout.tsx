@@ -55,6 +55,17 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [SITE_LOGO_URL],
   },
+  appleWebApp: {
+    capable: true,
+    title: "Runes & Magie",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport = {
+  themeColor: "#2D1B4E",
+  width: "device-width",
+  initialScale: 1,
 };
 
 /** Données structurées Organization (logo, contact, adresse) — affichées sur toutes les pages. */
