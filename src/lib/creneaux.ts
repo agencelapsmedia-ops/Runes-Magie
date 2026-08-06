@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/db';
 import { getEvenementsOccupes } from '@/lib/google-calendar';
-
-const FUSEAU = 'America/Toronto';
+import { instantEst } from '@/lib/fuseau';
 
 export interface Creneau {
   /** Heure locale affichable, ex. « 13:15 ». */
@@ -19,28 +18,6 @@ export interface ResultatCreneaux {
   creneaux: Creneau[];
   /** false si l'agenda Google n'a pas pu être consulté : l'interface doit le dire. */
   agendaGoogleConsulte: boolean;
-}
-
-/** « 2026-08-11 » + « 13:15 » (heure de l'Est) → instant UTC exact. */
-function instantEst(date: string, heure: string): Date {
-  const [an, mois, jour] = date.split('-').map(Number);
-  const [h, min] = heure.split(':').map(Number);
-  // On part d'une estimation UTC, on lit l'heure qu'elle donne à Toronto,
-  // et on corrige de l'écart. Deux passes suffisent, y compris aux bascules
-  // d'heure avancée. Ne jamais coder -4 ou -5 en dur.
-  let estimation = Date.UTC(an, mois - 1, jour, h, min);
-  for (let passe = 0; passe < 2; passe++) {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: FUSEAU, year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    }).formatToParts(new Date(estimation));
-    const lu = (t: string) => Number(parts.find((p) => p.type === t)?.value);
-    const obtenu = Date.UTC(lu('year'), lu('month') - 1, lu('day'), lu('hour') % 24, lu('minute'));
-    const ecart = Date.UTC(an, mois - 1, jour, h, min) - obtenu;
-    if (ecart === 0) break;
-    estimation += ecart;
-  }
-  return new Date(estimation);
 }
 
 /** Découpe un bloc « 10:45 »–« 12:15 » en départs possibles, pas de 15 minutes. */

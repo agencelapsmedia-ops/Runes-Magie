@@ -14,9 +14,13 @@
 import { google } from 'googleapis';
 import { prisma } from '@/lib/db';
 import { BOUTIQUE_LOCATION } from '@/lib/constants';
+import { FUSEAU_EST, instantEst } from '@/lib/fuseau';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
-const TIMEZONE = 'America/Toronto';
+// Pointe sur la constante partagée avec creneaux.ts (voir src/lib/fuseau.ts) :
+// une seule source de vérité pour le fuseau, sans changer les usages
+// existants de TIMEZONE plus bas dans ce fichier.
+const TIMEZONE = FUSEAU_EST;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
 
 function getOAuthClient() {
@@ -328,28 +332,6 @@ export interface ResultatOccupation {
   periodes: PeriodeOccupee[];
 }
 
-/** « 2026-08-11 » (date seule, sans heure) → minuit heure de l'Est, en instant
- *  UTC exact. Même algorithme de convergence que `instantEst` dans
- *  `creneaux.ts` (dupliqué à dessein : ce module ne dépend pas de celui-là).
- *  Ne jamais coder -4/-5 en dur, ne jamais passer une chaîne sans fuseau à
- *  `new Date()`. */
-function minuitEst(date: string): Date {
-  const [an, mois, jour] = date.split('-').map(Number);
-  let estimation = Date.UTC(an, mois - 1, jour, 0, 0);
-  for (let passe = 0; passe < 2; passe++) {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    }).formatToParts(new Date(estimation));
-    const lu = (t: string) => Number(parts.find((p) => p.type === t)?.value);
-    const obtenu = Date.UTC(lu('year'), lu('month') - 1, lu('day'), lu('hour') % 24, lu('minute'));
-    const ecart = Date.UTC(an, mois - 1, jour, 0, 0) - obtenu;
-    if (ecart === 0) break;
-    estimation += ecart;
-  }
-  return new Date(estimation);
-}
-
 /**
  * Sens ENTRANT (Google → site), version détaillée : contrairement à
  * `getBusyPeriods` (API `freebusy`), celle-ci lit les ÉVÉNEMENTS de l'agenda
@@ -372,9 +354,9 @@ function minuitEst(date: string): Date {
  *
  * Événements « toute la journée » (`start.date` / `end.date`, sans heure) :
  * traités comme occupant tout l'intervalle, de minuit à minuit heure de
- * l'Est (voir `minuitEst`) — un événement personnel d'une journée entière
- * (vacances, absence...) doit avertir sur tous les créneaux de ce jour-là,
- * pas être ignoré faute d'heure précise.
+ * l'Est (`instantEst(date)`, voir src/lib/fuseau.ts) — un événement
+ * personnel d'une journée entière (vacances, absence...) doit avertir sur
+ * tous les créneaux de ce jour-là, pas être ignoré faute d'heure précise.
  */
 export async function getEvenementsOccupes(
   practitionerId: string,
@@ -403,12 +385,12 @@ export async function getEvenementsOccupes(
       const start = item.start?.dateTime
         ? new Date(item.start.dateTime)
         : item.start?.date
-          ? minuitEst(item.start.date)
+          ? instantEst(item.start.date)
           : null;
       const end = item.end?.dateTime
         ? new Date(item.end.dateTime)
         : item.end?.date
-          ? minuitEst(item.end.date)
+          ? instantEst(item.end.date)
           : null;
       if (!start || !end) continue;
 
