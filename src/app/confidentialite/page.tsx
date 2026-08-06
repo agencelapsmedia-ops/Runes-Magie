@@ -5,7 +5,8 @@ import RuneDivider from '@/components/ui/RuneDivider';
 import { BOUTIQUE_ADDRESS, BOUTIQUE_PHONE, SITE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  title: 'Politique de confidentialité | Runes & Magie',
+  // Le suffixe « | Runes & Magie » est ajouté par le gabarit du layout racine.
+  title: 'Politique de confidentialité',
   description:
     'Comment Runes & Magie recueille, utilise et protège vos renseignements personnels, conformément à la Loi 25 (Québec).',
   alternates: { canonical: `${SITE_URL}/confidentialite` },
