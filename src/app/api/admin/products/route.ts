@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         sku: product.sku,
         category: product.category,
         description: product.description,
+        stockQuantity: product.stockQuantity,
       });
       cloverSyncStatus = cloverId ? 'synced' : 'queued';
     }

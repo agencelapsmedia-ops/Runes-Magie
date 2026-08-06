@@ -43,6 +43,11 @@ interface CreatePayload {
   category: string;
   description?: string;
   hidden?: boolean;
+  /**
+   * Quantité en stock à transmettre après la création. `null`/`undefined` = le
+   * produit n'a pas de stock suivi, on ne touche pas à l'inventaire Clover.
+   */
+  stockQuantity?: number | null;
 }
 
 interface UpdatePayload {
@@ -131,11 +136,50 @@ export async function tryCreateInClover(payload: CreatePayload): Promise<string 
       );
     }
 
+    // Le stock est un appel SÉPARÉ chez Clover (endpoint /item_stocks) : la
+    // création d'un item ne le transporte pas. Sans cette étape, tout produit
+    // pousse vers Clover y arrive sans quantité et doit être ressaisi à la main.
+    // Un échec ici ne doit pas invalider la création, qui a réussi : on met en
+    // file d'attente et le cron de reprise s'en chargera.
+    if (payload.stockQuantity != null) {
+      await trySetStockInClover(payload.productId, created.id, payload.stockQuantity);
+    }
+
     return created.id;
   } catch (err) {
     console.error('[clover-queue] CREATE échouée → mise en queue', { productId: payload.productId, err });
     await queueOperation('CREATE', payload.productId, payload, err);
     return null;
+  }
+}
+
+/**
+ * Envoie la quantité en stock d'un produit vers Clover.
+ *
+ * Le stock vit sur un endpoint distinct de l'item (`/item_stocks`) : créer ou
+ * modifier un article ne transmet jamais sa quantité. Cette fonction comble
+ * cet écart, et met l'opération en file d'attente si Clover refuse — le cron
+ * de reprise sait déjà traiter l'action `STOCK_SET`.
+ *
+ * @returns true si le stock est bien arrivé dans Clover.
+ */
+export async function trySetStockInClover(
+  productId: string,
+  cloverId: string,
+  stockCount: number,
+): Promise<boolean> {
+  try {
+    const { setCloverItemStock } = await import('@/lib/clover');
+    await setCloverItemStock(cloverId, stockCount);
+    await prisma.product.update({
+      where: { id: productId },
+      data: { cloverSyncedAt: new Date() },
+    });
+    return true;
+  } catch (err) {
+    console.error('[clover-queue] STOCK_SET échouée → mise en queue', { productId, cloverId, err });
+    await queueOperation('STOCK_SET', productId, { cloverId, stockCount }, err);
+    return false;
   }
 }
 

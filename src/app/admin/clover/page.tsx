@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import CloverSyncButton from './CloverSyncButton';
+import PushStocksButton from './PushStocksButton';
 import PushOrphansButton from './PushOrphansButton';
 import PushOrphanCategoriesButton from './PushOrphanCategoriesButton';
 import PushAllSkusButton from './PushAllSkusButton';
@@ -9,10 +10,15 @@ import QueuePanel from './QueuePanel';
 export default async function CloverAdminPage() {
   const isConfigured = Boolean(process.env.CLOVER_MERCHANT_ID && process.env.CLOVER_API_TOKEN);
 
-  const [productsTotal, productsSynced, orphansCount, categoriesTotal, categoriesSynced, recentLogs, queueCounts] = await Promise.all([
+  const [productsTotal, productsSynced, orphansCount, produitsAvecStock, categoriesTotal, categoriesSynced, recentLogs, queueCounts] = await Promise.all([
     prisma.product.count(),
     prisma.product.count({ where: { cloverId: { not: null } } }),
     prisma.product.count({ where: { syncToClover: true, cloverId: null } }),
+    // Produits deja dans Clover dont la quantite peut y etre transmise.
+    prisma.product.findMany({
+      where: { cloverId: { not: null }, stockQuantity: { not: null } },
+      select: { stockQuantity: true },
+    }),
     prisma.category.count(),
     prisma.category.count({ where: { cloverCategoryId: { not: null } } }),
     prisma.cloverSyncLog.findMany({
@@ -26,6 +32,7 @@ export default async function CloverAdminPage() {
   ]);
 
   const orphanCategoriesCount = categoriesTotal - categoriesSynced;
+  const unitesTotal = produitsAvecStock.reduce((n, p) => n + (p.stockQuantity ?? 0), 0);
 
   const queueByStatus: Record<string, number> = {};
   for (const c of queueCounts) {
@@ -81,6 +88,14 @@ export default async function CloverAdminPage() {
 
       {/* Produits orphelins (non poussés vers Clover) */}
       {isConfigured && <PushOrphansButton orphanCount={orphansCount} />}
+
+      {/* Quantites en stock : Clover les gere sur un endpoint distinct de l'article */}
+      {isConfigured && (
+        <PushStocksButton
+          produitsAvecStock={produitsAvecStock.length}
+          unitesTotal={unitesTotal}
+        />
+      )}
 
       {/* Catégories orphelines (non poussées vers Clover) */}
       {isConfigured && <PushOrphanCategoriesButton orphanCount={orphanCategoriesCount} />}

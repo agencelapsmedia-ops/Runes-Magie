@@ -38,6 +38,7 @@ export async function POST(req: Request) {
       sku: true,
       category: true,
       description: true,
+      stockQuantity: true,
     },
     orderBy: { createdAt: 'asc' },
     ...(limit ? { take: limit } : {}),
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
       sku: p.sku,
       category: p.category,
       description: p.description,
+      stockQuantity: p.stockQuantity,
     });
     results.push({
       productId: p.id,
