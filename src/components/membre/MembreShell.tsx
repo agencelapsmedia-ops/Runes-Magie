@@ -14,6 +14,7 @@ export interface MembreUser {
 const NAV_ITEMS = [
   { href: '/compte', label: 'Tableau de bord', icon: '🏠', exact: true },
   { href: '/compte/formations', label: 'Mes formations', icon: '🎓' },
+  { href: '/compte/evenements', label: 'Mes événements', icon: '🔥' },
   { href: '/compte/merestegere', label: 'Le Merestegere', icon: '📖' },
   { href: '/compte/veillees', label: 'Les Veillées de Noctura', icon: '🌙' },
   { href: '/compte/achats', label: 'Achats & factures', icon: '🛒' },

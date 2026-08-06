@@ -10,6 +10,12 @@ const CARDS = [
     desc: 'Reprenez vos cours là où vous les avez laissés.',
   },
   {
+    href: '/compte/evenements',
+    emoji: '🔥',
+    title: 'Mes événements',
+    desc: 'Vos inscriptions aux rituels, veillées et célébrations.',
+  },
+  {
     href: '/compte/merestegere',
     emoji: '📖',
     title: 'Le Merestegere',
