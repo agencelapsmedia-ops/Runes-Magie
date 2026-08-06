@@ -32,6 +32,19 @@ interface Cliente {
 
 /** Cliente retenue pour ce rendez-vous : `id` vaut null si elle vient d'être saisie. */
 interface ClienteRetenue {
+  /**
+   * Identité de la PERSONNE, indépendante des champs affichés.
+   *
+   * `fiche:<id>` pour une cliente déjà en base — son identifiant EST son identité.
+   * `saisie:<n>` pour une cliente tapée à la main : l'identité est la saisie
+   * elle-même, et elle ne change que lorsqu'une NOUVELLE saisie est démarrée
+   * (bouton « + Nouvelle cliente »), jamais lorsqu'on corrige celle en cours.
+   *
+   * C'est la seule chose que la feuille compare pour décider si on a changé de
+   * personne : ni le nom, ni le téléphone, ni le courriel — ce sont précisément
+   * les champs qu'elle revient corriger.
+   */
+  cle: string;
   id: string | null;
   firstName: string;
   lastName: string;
@@ -188,6 +201,16 @@ export default function FeuilleRendezVous({
   const [nvCourriel, setNvCourriel] = useState('');
   const [erreurNouvelle, setErreurNouvelle] = useState<string | null>(null);
   const [cliente, setCliente] = useState<ClienteRetenue | null>(null);
+  /**
+   * Numéro de la saisie manuelle en cours. Il n'avance que sur un geste explicite
+   * (« + Nouvelle cliente » / « Effacer et saisir une autre personne ») : tant qu'il
+   * ne bouge pas, re-soumettre le formulaire modifie la saisie en cours au lieu de
+   * changer de personne.
+   */
+  const [numeroSaisie, setNumeroSaisie] = useState(1);
+  const cleSaisie = `saisie:${numeroSaisie}`;
+  /** La saisie manuelle en cours est-elle déjà la personne retenue ? */
+  const saisieRetenue = cliente !== null && cliente.cle === cleSaisie;
 
   /* --- Étape 2 : le soin --------------------------------------------- */
   const [soin, setSoin] = useState<Soin | null>(null);
@@ -242,6 +265,8 @@ export default function FeuilleRendezVous({
     setRecherche(''); setResultats([]); setRechercheEnCours(false);
     setNouvelleDepliee(false);
     setNvPrenom(''); setNvNom(''); setNvTelephone(''); setNvCourriel(''); setErreurNouvelle(null);
+    // Une réouverture est une nouvelle personne : la saisie repart avec une identité neuve.
+    setNumeroSaisie((n) => n + 1);
     setCliente(null);
     setSoin(null); setTousLesSoins(false);
     setJour(dateInitiale && ecartEnJours(jourDepart, dateInitiale) >= 0 && ecartEnJours(jourDepart, dateInitiale) <= 13
@@ -369,60 +394,78 @@ export default function FeuilleRendezVous({
     setEtape((e) => (e - 1) as 1 | 2 | 3 | 4);
   }
 
-  function choisirCliente(c: Cliente | ClienteRetenue) {
-    const identifiant = c.id ?? null;
-
-    /*
-     * Deux questions différentes, donc deux tests différents.
-     *
-     * Les états jetables — adresse refusée, avertissement d'agenda, message
-     * d'erreur — parlaient de la cliente précédente. Au moindre doute on les
-     * jette : ils ne coûtent rien à reconstituer, et un exemplaire périmé bloque
-     * un bouton. On ne les garde donc que si la MÊME fiche identifiée est
-     * re-choisie (là, l'adresse refusée l'est toujours : la lui faire oublier
-     * lui ferait taper « Créer » pour un refus certain).
-     *
-     * La note, elle, est un texte qu'elle a écrit : l'effacer est une perte
-     * sèche, sans retour en arrière possible. On ne l'efface donc que sur PREUVE
-     * qu'il s'agit d'une autre personne — deux fiches identifiées, différentes.
-     * Sans identifiant (« + Nouvelle cliente »), aucune preuve n'existe : se
-     * fonder sur le nom ou le téléphone rejouerait exactement le défaut qu'on
-     * corrige, puisque ce sont les champs qu'elle revient corriger. Dans le
-     * doute on garde — la note reste affichée à l'étape 4, juste au-dessus du
-     * bouton, et l'effacer est un geste qu'elle maîtrise.
-     */
-    const memeFicheIdentifiee = cliente !== null && identifiant !== null && cliente.id === identifiant;
-    const autreFicheProuvee =
-      cliente !== null && cliente.id !== null && identifiant !== null && cliente.id !== identifiant;
-
-    if (!memeFicheIdentifiee) {
+  /**
+   * Retenir une personne pour ce rendez-vous.
+   *
+   * Une seule question est posée, et elle porte sur `cle` : est-ce la MÊME
+   * personne que celle déjà retenue ? On ne cherche plus à deviner l'identité à
+   * partir du nom ou du téléphone — ce sont les champs qu'elle revient corriger,
+   * aucun critère fondé dessus ne peut tenir.
+   *
+   * Personne différente → on jette tout ce qui parlait de la précédente : la
+   * note (un texte clinique ne doit jamais franchir la frontière entre deux
+   * personnes, encore moins partir dans l'événement Google de quelqu'un d'autre)
+   * et les états capables de bloquer un bouton ou d'afficher un avertissement
+   * mensonger (adresse refusée, avertissement d'agenda, message d'erreur).
+   *
+   * Même personne (re-tap sur la même fiche, ou correction de la saisie en
+   * cours) → on ne jette rien : ni le texte écrit, ni le garde-fou de l'adresse
+   * refusée, qui vaut toujours puisque l'adresse appartient toujours à une autre
+   * fiche.
+   */
+  function retenirPersonne(personne: ClienteRetenue) {
+    const memePersonne = cliente !== null && cliente.cle === personne.cle;
+    if (!memePersonne) {
       setCourrielRefuse(null);
       setAvertissementAgenda(null);
       setErreur(null);
-    }
-    if (autreFicheProuvee) {
       setNotes('');
       setNotesDepliees(false);
     }
-    setCliente({
-      id: identifiant,
-      firstName: c.firstName,
-      lastName: c.lastName,
-      email: c.email ?? '',
-      phone: c.phone ?? '',
-    });
+    setCliente(personne);
     setRecherche('');
     setResultats([]);
     setEtape(2);
   }
 
+  /** Une fiche déjà en base : son identifiant EST son identité. */
+  function choisirFiche(c: Cliente) {
+    retenirPersonne({
+      cle: `fiche:${c.id}`,
+      id: c.id,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      email: c.email ?? '',
+      phone: c.phone ?? '',
+    });
+  }
+
+  /**
+   * Démarrer une saisie manuelle pour une AUTRE personne : le formulaire repart
+   * vide et change d'identité. C'est le seul geste qui fait d'une saisie manuelle
+   * une nouvelle personne — tout le reste est une correction de celle en cours.
+   */
+  function demarrerNouvelleSaisie() {
+    setNumeroSaisie((n) => n + 1);
+    setNvPrenom(''); setNvNom(''); setNvTelephone(''); setNvCourriel('');
+    setErreurNouvelle(null);
+    setNouvelleDepliee(true);
+  }
+
+  /**
+   * « Continuer » du formulaire de saisie. Il porte la clé de la saisie en cours :
+   * re-soumettre après avoir corrigé une coquille redonne la même clé, donc rien
+   * n'est effacé ; après « + Nouvelle cliente » la clé a changé, donc c'est bien
+   * un changement de personne.
+   */
   function validerNouvelleCliente() {
     if (!nvPrenom.trim() || !nvNom.trim() || !nvTelephone.trim()) {
       setErreurNouvelle('Prénom, nom et téléphone sont nécessaires.');
       return;
     }
     setErreurNouvelle(null);
-    choisirCliente({
+    retenirPersonne({
+      cle: cleSaisie,
       id: null,
       firstName: nvPrenom.trim(),
       lastName: nvNom.trim(),
@@ -663,7 +706,7 @@ export default function FeuilleRendezVous({
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {resultats.map((c) => (
-                      <button key={c.id} type="button" onClick={() => choisirCliente(c)} style={carte(false)}>
+                      <button key={c.id} type="button" onClick={() => choisirFiche(c)} style={carte(false)}>
                         <strong>{c.firstName} {c.lastName}</strong>
                         <span style={{ display: 'block', fontSize: '0.8rem', color: GRIS }}>
                           {c.phone || 'sans téléphone'}{c.email ? ` · ${c.email}` : ' · sans courriel'}
@@ -682,7 +725,7 @@ export default function FeuilleRendezVous({
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {clientesRecentes.map((c) => (
-                        <button key={c.id} type="button" onClick={() => choisirCliente(c)} style={carte(false)}>
+                        <button key={c.id} type="button" onClick={() => choisirFiche(c)} style={carte(false)}>
                           <strong>{c.firstName} {c.lastName}</strong>
                           <span style={{ display: 'block', fontSize: '0.8rem', color: GRIS }}>
                             {c.phone || 'sans téléphone'}{c.email ? ` · ${c.email}` : ' · sans courriel'}
@@ -697,7 +740,14 @@ export default function FeuilleRendezVous({
               <div style={{ marginTop: '16px', borderTop: `1px solid ${BORDURE}`, paddingTop: '8px' }}>
                 <button
                   type="button"
-                  onClick={() => setNouvelleDepliee((v) => !v)}
+                  onClick={() => {
+                    // « + Nouvelle cliente » veut dire « une autre personne ». Si la
+                    // saisie en cours est déjà la personne retenue, on repart donc à
+                    // vide avec une nouvelle identité plutôt que de rouvrir la sienne.
+                    if (nouvelleDepliee) { setNouvelleDepliee(false); return; }
+                    if (saisieRetenue) { demarrerNouvelleSaisie(); return; }
+                    setNouvelleDepliee(true);
+                  }}
                   style={{
                     ...TAPABLE,
                     width: '100%',
@@ -713,8 +763,24 @@ export default function FeuilleRendezVous({
                   {nouvelleDepliee ? '− Nouvelle cliente' : '+ Nouvelle cliente'}
                 </button>
 
+                {/* Revenir sur la saisie déjà retenue sans changer de personne. */}
+                {!nouvelleDepliee && saisieRetenue && cliente && (
+                  <button
+                    type="button"
+                    onClick={() => setNouvelleDepliee(true)}
+                    style={{ ...lienDiscret, display: 'flex', width: '100%', textAlign: 'left' }}
+                  >
+                    Modifier la saisie : {cliente.firstName} {cliente.lastName}
+                  </button>
+                )}
+
                 {nouvelleDepliee && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+                    <p style={{ fontSize: '0.8rem', color: GRIS, margin: 0 }}>
+                      {saisieRetenue
+                        ? 'Tu corriges la saisie en cours : rien de ce qui est déjà écrit n’est perdu.'
+                        : 'Cliente qui n’a pas encore de fiche.'}
+                    </p>
                     <label>
                       <span style={etiquetteChamp}>Prénom</span>
                       <input value={nvPrenom} onChange={(e) => setNvPrenom(e.target.value)} style={champ} />
@@ -762,6 +828,19 @@ export default function FeuilleRendezVous({
                     >
                       Continuer
                     </button>
+
+                    {/* Le geste qui dit « ce n'est plus la même personne » : le
+                        formulaire repart vide, et la note écrite pour la précédente
+                        ne la suivra pas. */}
+                    {saisieRetenue && (
+                      <button
+                        type="button"
+                        onClick={demarrerNouvelleSaisie}
+                        style={{ ...lienDiscret, display: 'flex', width: '100%', textAlign: 'left' }}
+                      >
+                        Effacer et saisir une autre personne
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
