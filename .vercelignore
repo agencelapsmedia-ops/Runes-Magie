@@ -1,0 +1,11 @@
+# Les fichiers .env locaux ne doivent JAMAIS partir en production : `vercel --prod`
+# televerse le dossier local, et un .env present ecrase la configuration definie
+# dans Vercel. C'est ce qui forcait l'expediteur des courriels sur un domaine non
+# verifie chez Resend, malgre une configuration Vercel correcte.
+.env
+.env.*
+!.env.example
+
+.superpowers
+node_modules
+.next
