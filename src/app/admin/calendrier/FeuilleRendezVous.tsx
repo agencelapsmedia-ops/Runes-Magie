@@ -232,6 +232,8 @@ export default function FeuilleRendezVous({
   const envoiRef = useRef(false); // verrou immédiat : un double tap ne passe pas
   const [erreur, setErreur] = useState<string | null>(null);
   const [avertissementAgenda, setAvertissementAgenda] = useState<string | null>(null);
+  /** Adresse refusée par la route (déjà prise par une autre fiche) : à corriger sur place. */
+  const [courrielRefuse, setCourrielRefuse] = useState<string | null>(null);
 
   /* --- Remise à zéro à chaque ouverture ------------------------------ */
   useEffect(() => {
@@ -249,7 +251,7 @@ export default function FeuilleRendezVous({
     setAutreHeureDepliee(false); setAutreHeure('');
     setMode('IN_PERSON'); setPaiement('CASH');
     setNotesDepliees(false); setNotes('');
-    setErreur(null); setAvertissementAgenda(null);
+    setErreur(null); setAvertissementAgenda(null); setCourrielRefuse(null);
     envoiRef.current = false; setEnvoi(false);
   }, [ouverte, jourDepart, dateInitiale]);
 
@@ -324,7 +326,10 @@ export default function FeuilleRendezVous({
   /* --- Ce qu'il manque avant de pouvoir envoyer ---------------------- */
   const telephoneManquant = !(cliente?.phone ?? '').trim();
   const courrielManquant = paiement !== 'CASH' && !/\S+@\S+/.test((cliente?.email ?? '').trim());
-  const complementRequis = telephoneManquant || courrielManquant;
+  /** Elle a resoumis la même adresse déjà prise : la route la refuserait encore. */
+  const courrielEncoreRefuse =
+    courrielRefuse !== null && (cliente?.email ?? '').trim().toLowerCase() === courrielRefuse;
+  const complementRequis = telephoneManquant || courrielManquant || courrielEncoreRefuse;
 
   const fermer = useCallback(() => {
     if (envoiRef.current) return; // pas de fermeture au milieu d'un envoi
@@ -414,6 +419,11 @@ export default function FeuilleRendezVous({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           practitionerId,
+          // Cliente déjà en base (recherche ou dernières clientes) : on désigne SON
+          // compte. Sans cela, la route ne déduplique que par courriel — ajouter un
+          // courriel à une cliente qui n'en avait pas créerait une seconde fiche.
+          // Cliente saisie à la main : pas d'identifiant, la route la crée comme avant.
+          ...(cliente.id ? { clientId: cliente.id } : {}),
           client: {
             firstName: cliente.firstName,
             lastName: cliente.lastName,
@@ -433,6 +443,14 @@ export default function FeuilleRendezVous({
         if (res.status === 409 && data.code === 'AGENDA_PERSONNEL') {
           // Avertissement, pas un refus : elle seule sait si l'événement se déplace.
           setAvertissementAgenda(data.etiquette ?? 'Événement personnel');
+          return;
+        }
+        if (res.status === 409 && data.code === 'COURRIEL_DEJA_UTILISE') {
+          // Le courriel saisi appartient à une autre fiche : rien à voir avec l'heure,
+          // on reste à l'étape 4 pour qu'elle corrige l'adresse sur place. Le champ
+          // réapparaît et « Créer » reste inerte tant que l'adresse n'a pas changé.
+          setErreur(data.error ?? 'Ce courriel appartient déjà à une autre fiche.');
+          setCourrielRefuse(cliente.email.trim().toLowerCase());
           return;
         }
         setErreur(data.error ?? 'Une erreur est survenue.');
@@ -989,7 +1007,7 @@ export default function FeuilleRendezVous({
               </div>
 
               {/* Ce qu'il manque pour que la route accepte : demandé ICI, sans rien reprendre */}
-              {complementRequis && (
+              {(complementRequis || courrielRefuse !== null) && (
                 <div
                   style={{
                     border: `1px solid ${OR}`,
@@ -1002,10 +1020,12 @@ export default function FeuilleRendezVous({
                     gap: '10px',
                   }}
                 >
-                  {courrielManquant && (
+                  {(courrielManquant || courrielRefuse !== null) && (
                     <label>
                       <span style={{ ...etiquetteChamp, color: '#92400E' }}>
-                        Un courriel est nécessaire pour ce mode de paiement.
+                        {courrielRefuse !== null
+                          ? 'Corrige le courriel : celui-ci appartient à une autre fiche.'
+                          : 'Un courriel est nécessaire pour ce mode de paiement.'}
                       </span>
                       <input
                         type="email"
