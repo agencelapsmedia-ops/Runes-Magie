@@ -14,9 +14,13 @@
 import { google } from 'googleapis';
 import { prisma } from '@/lib/db';
 import { BOUTIQUE_LOCATION } from '@/lib/constants';
+import { FUSEAU_EST, instantEst } from '@/lib/fuseau';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
-const TIMEZONE = 'America/Toronto';
+// Pointe sur la constante partagée avec creneaux.ts (voir src/lib/fuseau.ts) :
+// une seule source de vérité pour le fuseau, sans changer les usages
+// existants de TIMEZONE plus bas dans ce fichier.
+const TIMEZONE = FUSEAU_EST;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.runesetmagie.ca';
 
 function getOAuthClient() {
@@ -309,5 +313,93 @@ export async function getBusyPeriods(
   } catch (err) {
     console.error('[Google Calendar] échec lecture free/busy', { practitionerId, err });
     return [];
+  }
+}
+
+export interface PeriodeOccupee {
+  start: string;
+  end: string;
+  /** Titre de l'événement Google, tel quel (peut être vide). */
+  titre: string;
+}
+
+export interface ResultatOccupation {
+  /** false si l'agenda n'a pas pu être consulté (non connectée, non
+   *  configuré, erreur réseau…) : dans ce cas on ne peut RIEN affirmer sur
+   *  l'agenda, `periodes` est vide par précaution mais ne doit pas être lu
+   *  comme « rien d'occupé ». */
+  consulte: boolean;
+  periodes: PeriodeOccupee[];
+}
+
+/**
+ * Sens ENTRANT (Google → site), version détaillée : contrairement à
+ * `getBusyPeriods` (API `freebusy`), celle-ci lit les ÉVÉNEMENTS de l'agenda
+ * (`events.list`) et renvoie donc leur TITRE — nécessaire pour avertir la
+ * praticienne de façon exploitable (elle doit pouvoir juger si l'événement
+ * personnel est déplaçable). `freebusy` ne donne jamais de titre, quel que
+ * soit le scope OAuth ; ce n'est pas une limite de code, c'est une limite de
+ * cette API-là.
+ *
+ * Distingue aussi explicitement « agenda consulté, rien d'occupé » de
+ * « agenda injoignable » via `consulte` — `getBusyPeriods` renvoie [] dans
+ * les deux cas, ce qui empêche d'avertir la praticienne quand son agenda
+ * n'a pas pu être vérifié. Ici, `consulte: false` couvre : praticienne non
+ * connectée, Google non configuré, et toute erreur réseau/API.
+ *
+ * Filtre ce que `freebusy` filtrait pour nous : les événements annulés
+ * (`status: 'cancelled'`) et ceux marqués « disponible » côté Google
+ * (`transparency: 'transparent'`) — ni l'un ni l'autre ne bloquent
+ * réellement l'agenda.
+ *
+ * Événements « toute la journée » (`start.date` / `end.date`, sans heure) :
+ * traités comme occupant tout l'intervalle, de minuit à minuit heure de
+ * l'Est (`instantEst(date)`, voir src/lib/fuseau.ts) — un événement
+ * personnel d'une journée entière (vacances, absence...) doit avertir sur
+ * tous les créneaux de ce jour-là, pas être ignoré faute d'heure précise.
+ */
+export async function getEvenementsOccupes(
+  practitionerId: string,
+  from: Date,
+  to: Date,
+): Promise<ResultatOccupation> {
+  try {
+    const calendar = await getCalendarForPractitioner(practitionerId);
+    if (!calendar) return { consulte: false, periodes: [] };
+
+    const res = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: from.toISOString(),
+      timeMax: to.toISOString(),
+      timeZone: TIMEZONE,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const items = res.data.items ?? [];
+    const periodes: PeriodeOccupee[] = [];
+    for (const item of items) {
+      if (item.status === 'cancelled') continue;
+      if (item.transparency === 'transparent') continue;
+
+      const start = item.start?.dateTime
+        ? new Date(item.start.dateTime)
+        : item.start?.date
+          ? instantEst(item.start.date)
+          : null;
+      const end = item.end?.dateTime
+        ? new Date(item.end.dateTime)
+        : item.end?.date
+          ? instantEst(item.end.date)
+          : null;
+      if (!start || !end) continue;
+
+      periodes.push({ start: start.toISOString(), end: end.toISOString(), titre: item.summary ?? '' });
+    }
+
+    return { consulte: true, periodes };
+  } catch (err) {
+    console.error('[Google Calendar] échec lecture des événements', { practitionerId, err });
+    return { consulte: false, periodes: [] };
   }
 }

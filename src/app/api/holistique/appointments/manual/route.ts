@@ -5,7 +5,7 @@ import { findOrCreateHolisticClient, isInternalEmail } from '@/lib/holistic-clie
 import { signSetPasswordToken } from '@/lib/holistic-password-token';
 import { createHolisticPaymentLink } from '@/lib/holistic-stripe';
 import { createDailyRoomForAppointment } from '@/lib/daily-co';
-import { createCalendarEventForAppointment, getBusyPeriods } from '@/lib/google-calendar';
+import { createCalendarEventForAppointment, getEvenementsOccupes } from '@/lib/google-calendar';
 import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2-sync';
 import {
   buildBookingEmailData,
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
     const body = await req.json();
-    const { practitionerId, client, offeringId, startsAt, mode, paymentMode, notes } = body ?? {};
+    const { practitionerId, client, clientId, offeringId, startsAt, mode, paymentMode, notes, forcerMalgreAgenda } = body ?? {};
 
     // Auth : admin ou propriétaire (n'importe quelle praticienne) OU praticienne (elle-même uniquement)
     const isAdmin = user.role === 'ADMIN' || user.isOwner === true;
@@ -90,27 +90,116 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Ce créneau chevauche un autre rendez-vous.' }, { status: 409 });
     }
 
-    // Conflit avec l'agenda Google (best-effort — ignoré si non connectée)
+    // Conflit avec l'agenda Google. Contrairement au conflit ci-dessus, celui-ci
+    // n'est PAS bloquant si la praticienne a explicitement choisi de passer outre :
+    // seule elle sait si l'événement personnel est déplaçable. Le refus renvoie
+    // l'intitulé pour que l'interface puisse le lui montrer.
+    // Si l'agenda n'a pas pu être consulté (non connectée, Google injoignable…),
+    // `getEvenementsOccupes` renvoie `periodes: []` : on ne bloque jamais dans ce
+    // cas, comme avant.
     try {
-      const busy = await getBusyPeriods(practitionerId, start, end);
-      const overlaps = busy.some((b) => new Date(b.start) < end && new Date(b.end) > start);
-      if (overlaps) {
+      const { periodes } = await getEvenementsOccupes(practitionerId, start, end);
+      const chevauche = periodes.find((p) => new Date(p.start) < end && new Date(p.end) > start);
+      if (chevauche && forcerMalgreAgenda !== true) {
         return NextResponse.json(
-          { error: 'Ce créneau est occupé dans l\'agenda Google de la praticienne.' },
+          {
+            error: 'Ce créneau est occupé dans l\'agenda Google de la praticienne.',
+            code: 'AGENDA_PERSONNEL',
+            etiquette: chevauche.titre || 'Événement personnel',
+          },
           { status: 409 },
         );
       }
     } catch (err) {
-      console.error('[rdv manuel] vérif Google free/busy échouée (non-bloquant)', err);
+      console.error('[rdv manuel] vérif agenda Google échouée (non-bloquant)', err);
     }
 
-    // Retrouve ou crée le compte cliente
-    const { user: clientUser, created } = await findOrCreateHolisticClient({
-      firstName: client.firstName,
-      lastName: client.lastName,
-      phone: client.phone,
-      email: email || null,
-    });
+    // Le compte cliente.
+    //
+    // Deux chemins. Avec `clientId` (la feuille mobile l'envoie dès que la cliente
+    // a été choisie dans la recherche ou dans les dernières clientes), on emploie
+    // CE compte-là. Sans lui (saisie manuelle, formulaire d'ordinateur), on garde
+    // le comportement historique : recherche par courriel puis création.
+    //
+    // Pourquoi ce chemin existe : `findOrCreateHolisticClient` ne déduplique que
+    // par courriel, et une cliente enregistrée sans courriel porte une adresse
+    // interne dérivée de son téléphone. Ajouter un vrai courriel à cette cliente
+    // (nécessaire pour Interac / lien Stripe) ne retrouvait donc aucun compte et
+    // en créait un second : la fiche se dédoublait et son historique se scindait.
+    let clientUser: { id: string; hashedPassword: string };
+    let created: boolean;
+
+    if (typeof clientId === 'string' && clientId.trim()) {
+      const existante = await prisma.holisticUser.findUnique({ where: { id: clientId.trim() } });
+      // Un identifiant fourni mais introuvable est une erreur : se rabattre sur la
+      // création dupliquerait précisément ce qu'on cherche à éviter.
+      if (!existante || existante.role !== 'CLIENT') {
+        return NextResponse.json({ error: 'Cliente introuvable.' }, { status: 404 });
+      }
+      created = false;
+      clientUser = existante;
+
+      // Cliente enregistrée sans courriel + vrai courriel fourni → on renseigne son
+      // adresse, sinon le lien Stripe ou les instructions Interac n'ont nulle part
+      // où aller. Une adresse réelle déjà en place n'est jamais écrasée.
+      if (email && isInternalEmail(existante.email)) {
+        const proprietaire = await prisma.holisticUser.findUnique({
+          where: { email: email.toLowerCase() },
+          select: { id: true, firstName: true, lastName: true },
+        });
+        if (proprietaire && proprietaire.id !== existante.id) {
+          // `email` est unique : la mise à jour échouerait. On refuse en nommant la
+          // fiche concernée plutôt que de fusionner deux comptes (irréversible) ou
+          // de rattacher le rendez-vous à quelqu'un d'autre.
+          return NextResponse.json(
+            {
+              error: `Ce courriel appartient déjà à la fiche de ${proprietaire.firstName} ${proprietaire.lastName}. `
+                + 'Choisis cette fiche dans la recherche, ou emploie une autre adresse.',
+              code: 'COURRIEL_DEJA_UTILISE',
+            },
+            { status: 409 },
+          );
+        }
+        try {
+          clientUser = await prisma.holisticUser.update({
+            where: { id: existante.id },
+            data: { email: email.toLowerCase() },
+          });
+        } catch (err) {
+          // Filet : la vérification ci-dessus et la mise à jour ne sont pas atomiques.
+          // Plutôt qu'une erreur Prisma brute (« Unique constraint failed… »), on
+          // renvoie le même message en français, actionnable.
+          console.error('[rdv manuel] mise à jour du courriel cliente refusée', err);
+          return NextResponse.json(
+            {
+              error: 'Ce courriel appartient déjà à une autre fiche. '
+                + 'Choisis cette fiche dans la recherche, ou emploie une autre adresse.',
+              code: 'COURRIEL_DEJA_UTILISE',
+            },
+            { status: 409 },
+          );
+        }
+      }
+
+      // Cliente enregistrée sans téléphone + numéro tapé à l'étape 4 (obligatoire,
+      // voir la validation plus haut) → on l'enregistre, même prudence que pour le
+      // courriel : un numéro déjà présent n'est jamais écrasé.
+      if (!existante.phone) {
+        clientUser = await prisma.holisticUser.update({
+          where: { id: existante.id },
+          data: { phone: client.phone.trim() },
+        });
+      }
+    } else {
+      const trouve = await findOrCreateHolisticClient({
+        firstName: client.firstName,
+        lastName: client.lastName,
+        phone: client.phone,
+        email: email || null,
+      });
+      clientUser = trouve.user;
+      created = trouve.created;
+    }
 
     // Notes enrichies (même format que le parcours public → parsé par buildBookingEmailData / Google)
     const enrichedNotes = [
