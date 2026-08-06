@@ -74,8 +74,33 @@ Trois pièces indépendantes, chacune utile seule :
 | **A. Coquille adaptative** | Le menu se rétracte sous 1024 px | **Toutes** les pages admin |
 | **B. Agenda mobile** | Vue liste du jour, bouton + au pouce | L'agenda |
 | **C. Créneaux libres** | API serveur des heures disponibles | La création, et la page publique plus tard |
+| **D. Installation sur l'écran d'accueil** | Icône, plein écran, session persistante | Tout le site, et l'admin en particulier |
 
-L'ordre de construction est A → C → B : la coquille débloque tout, l'API alimente l'interface.
+L'ordre de construction est A → C → B → D : la coquille débloque tout, l'API alimente
+l'interface, le manifeste habille le résultat.
+
+---
+
+## 4 bis. Pièce D — installation sur l'écran d'accueil
+
+Le site **n'a pas de manifeste d'application** : impossible de l'installer. Les icônes
+existent pourtant déjà (`public/apple-touch-icon.png`, `src/app/icon.png`).
+
+**À ajouter :**
+- `src/app/manifest.ts` (route de manifeste Next.js) : nom, nom court, couleur de thème
+  (`#2D1B4E`), couleur de fond (`#0A0A12`), `display: 'standalone'`, `start_url: '/admin'`,
+  et les icônes existantes.
+- Métadonnées dans `src/app/layout.tsx` : `themeColor`, `appleWebApp` (titre et style de la
+  barre d'état) — nécessaires pour que iOS respecte le plein écran.
+
+**Ce que ça change pour Noctura :** *Partager → Sur l'écran d'accueil* lui donne une icône
+Runes & Magie, l'ouverture **sans la barre d'adresse du navigateur** (environ 15 % de hauteur
+d'écran regagnée, décisif sur un agenda), un accès en un tap, et une session qui persiste.
+
+**Point de vigilance** : `start_url` pointe vers `/admin`, ce qui sert Noctura mais serait
+inadapté si une visiteuse installait le site. Retenu quand même : le manifeste est ici un
+outil de travail pour l'équipe, pas une fonctionnalité destinée au public. À revoir le jour
+où l'on voudrait proposer l'installation aux clientes.
 
 ---
 
