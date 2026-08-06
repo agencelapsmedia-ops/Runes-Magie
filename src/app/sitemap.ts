@@ -18,11 +18,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/a-propos',
     '/runes-vikings',
     '/contact',
+    '/evenements',
+    '/confidentialite',
   ].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
-    priority: path === '' ? 1 : 0.7,
+    priority: path === '' ? 1 : path === '/confidentialite' ? 0.2 : 0.7,
   }));
 
   let offeringRoutes: MetadataRoute.Sitemap = [];

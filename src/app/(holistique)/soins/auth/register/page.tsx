@@ -401,8 +401,18 @@ function RegisterPageInner() {
                   className="mt-1 h-4 w-4 accent-violet-royal flex-shrink-0"
                 />
                 <span className="font-philosopher text-xs leading-relaxed text-parchemin/70">
-                  J&apos;accepte les conditions générales et la politique de confidentialité.
-                  Mes données sont collectées conformément à la Loi 25 (Québec) et à la LCAP.
+                  J&apos;accepte les conditions générales et la{' '}
+                  <Link
+                    href="/confidentialite"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    // Empêche le clic sur le lien de cocher/décocher la case parente
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-turquoise-cristal underline underline-offset-2 hover:text-or-ancien transition-colors"
+                  >
+                    politique de confidentialité
+                  </Link>
+                  . Mes données sont collectées conformément à la Loi 25 (Québec) et à la LCAP.
                   <span className="text-magenta-rituel"> *</span>
                 </span>
               </label>
