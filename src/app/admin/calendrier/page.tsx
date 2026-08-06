@@ -57,6 +57,24 @@ export default async function CalendrierAdminPage() {
     return m ? m[1].trim() : 'Consultation';
   };
 
+  // Comparaison textuelle robuste (casse, espaces multiples) entre le nom extrait
+  // des notes et le nom de l'offering — ce sont deux saisies indépendantes du même
+  // texte, jamais un identifiant partagé.
+  const normaliserNomSoin = (n: string) => n.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  // Fréquence de chaque soin, par praticienne, comptée sur les rendez-vous déjà
+  // chargés ci-dessus — sans requête supplémentaire. `Offering` n'a pas de relation
+  // vers `HolisticAppointment` (le soin d'un RDV v2 est retrouvé par texte dans les
+  // notes), mais les noms des offerings correspondent aux noms extraits par
+  // `serviceFromNotes`, ce qui suffit à compter.
+  const frequenceSoinParPraticienne = new Map<string, Map<string, number>>();
+  for (const a of appointments) {
+    const nom = normaliserNomSoin(serviceFromNotes(a.notes));
+    const parNom = frequenceSoinParPraticienne.get(a.practitionerId) ?? new Map<string, number>();
+    parNom.set(nom, (parNom.get(nom) ?? 0) + 1);
+    frequenceSoinParPraticienne.set(a.practitionerId, parNom);
+  }
+
   // Objets 100 % sérialisables pour le client component (Dates → ISO).
   const rdvs = appointments.map((a) => ({
     id: a.id,
@@ -79,22 +97,28 @@ export default async function CalendrierAdminPage() {
     name: `${p.user.firstName} ${p.user.lastName}`.trim(),
   }));
 
-  // Options du modal de création (praticienne + ses soins actifs).
-  const practitionerOptions = practitioners.map((p) => ({
-    id: p.id,
-    name: `${p.user.firstName} ${p.user.lastName}`.trim(),
-    offerings: p.offerings,
-  }));
+  // Options du modal de création (praticienne + ses soins actifs), triées par
+  // fréquence d'usage (les plus demandés d'abord) à partir des rendez-vous déjà
+  // chargés ci-dessus — départage alphabétique, et un soin jamais rencontré dans
+  // les notes finit simplement en fin de liste (fréquence 0), il ne disparaît pas.
+  const practitionerOptions = practitioners.map((p) => {
+    const frequences = frequenceSoinParPraticienne.get(p.id) ?? new Map<string, number>();
+    const offeringsTriees = [...p.offerings].sort((a, b) => {
+      const freqA = frequences.get(normaliserNomSoin(a.name)) ?? 0;
+      const freqB = frequences.get(normaliserNomSoin(b.name)) ?? 0;
+      if (freqA !== freqB) return freqB - freqA;
+      return a.name.localeCompare(b.name, 'fr');
+    });
+    return {
+      id: p.id,
+      name: `${p.user.firstName} ${p.user.lastName}`.trim(),
+      offerings: offeringsTriees,
+    };
+  });
 
   // Praticienne principale pour la feuille de création mobile (Task 7) : à ce
   // jour une seule praticienne est APPROVED, on retient donc la première —
   // même convention que ManualAppointmentButton (practitioners[0]).
-  //
-  // Tri des soins par fréquence (demandé par le brief) : `Offering` n'a pas de
-  // relation vers `HolisticAppointment` (le soin d'un RDV v2 est retrouvé par
-  // texte dans les notes, voir `serviceFromNotes` ci-dessus) — aucun compte de
-  // rendez-vous n'est donc disponible côté Prisma. On retombe sur le tri déjà
-  // fait par la requête ci-dessus (`orderBy: { name: 'asc' }`).
   const practitionerPrincipale = practitionerOptions[0] ?? null;
 
   // Dernières clientes de la praticienne principale — même forme que
