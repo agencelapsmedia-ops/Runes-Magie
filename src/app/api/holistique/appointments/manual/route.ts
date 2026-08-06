@@ -5,7 +5,7 @@ import { findOrCreateHolisticClient, isInternalEmail } from '@/lib/holistic-clie
 import { signSetPasswordToken } from '@/lib/holistic-password-token';
 import { createHolisticPaymentLink } from '@/lib/holistic-stripe';
 import { createDailyRoomForAppointment } from '@/lib/daily-co';
-import { createCalendarEventForAppointment, getBusyPeriods } from '@/lib/google-calendar';
+import { createCalendarEventForAppointment, getEvenementsOccupes } from '@/lib/google-calendar';
 import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2-sync';
 import {
   buildBookingEmailData,
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
     const body = await req.json();
-    const { practitionerId, client, offeringId, startsAt, mode, paymentMode, notes } = body ?? {};
+    const { practitionerId, client, offeringId, startsAt, mode, paymentMode, notes, forcerMalgreAgenda } = body ?? {};
 
     // Auth : admin ou propriétaire (n'importe quelle praticienne) OU praticienne (elle-même uniquement)
     const isAdmin = user.role === 'ADMIN' || user.isOwner === true;
@@ -90,18 +90,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Ce créneau chevauche un autre rendez-vous.' }, { status: 409 });
     }
 
-    // Conflit avec l'agenda Google (best-effort — ignoré si non connectée)
+    // Conflit avec l'agenda Google. Contrairement au conflit ci-dessus, celui-ci
+    // n'est PAS bloquant si la praticienne a explicitement choisi de passer outre :
+    // seule elle sait si l'événement personnel est déplaçable. Le refus renvoie
+    // l'intitulé pour que l'interface puisse le lui montrer.
+    // Si l'agenda n'a pas pu être consulté (non connectée, Google injoignable…),
+    // `getEvenementsOccupes` renvoie `periodes: []` : on ne bloque jamais dans ce
+    // cas, comme avant.
     try {
-      const busy = await getBusyPeriods(practitionerId, start, end);
-      const overlaps = busy.some((b) => new Date(b.start) < end && new Date(b.end) > start);
-      if (overlaps) {
+      const { periodes } = await getEvenementsOccupes(practitionerId, start, end);
+      const chevauche = periodes.find((p) => new Date(p.start) < end && new Date(p.end) > start);
+      if (chevauche && forcerMalgreAgenda !== true) {
         return NextResponse.json(
-          { error: 'Ce créneau est occupé dans l\'agenda Google de la praticienne.' },
+          {
+            error: 'Ce créneau est occupé dans l\'agenda Google de la praticienne.',
+            code: 'AGENDA_PERSONNEL',
+            etiquette: chevauche.titre || 'Événement personnel',
+          },
           { status: 409 },
         );
       }
     } catch (err) {
-      console.error('[rdv manuel] vérif Google free/busy échouée (non-bloquant)', err);
+      console.error('[rdv manuel] vérif agenda Google échouée (non-bloquant)', err);
     }
 
     // Retrouve ou crée le compte cliente
