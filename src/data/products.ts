@@ -1,5 +1,8 @@
 export type Category =
   | 'cristaux'
+  // Regroupe les oracles et les tarots : ce sont deux formes de cartes
+  // divinatoires, distinguees par le filtre de sous-categorie.
+  | 'cartes-divinatoires'
   | 'runes'
   | 'tarot'
   | 'oracle'
@@ -85,6 +88,12 @@ export const categorySubcategories: Record<Category, Subcategory[]> = {
     { id: 'des', name: 'Dés' },
     { id: 'mobilier-bains-lavabos', name: 'Mobilier/bains/lavabos' },
   ],
+  // Les identifiants doivent correspondre EXACTEMENT au champ `subcategory`
+  // des produits en base : le filtre compare `p.subcategory === sub.id`.
+  'cartes-divinatoires': [
+    { id: 'oracle', name: 'Oracle' },
+    { id: 'tarot', name: 'Tarot' },
+  ],
   runes: [],
   tarot: [],
   oracle: [],
@@ -107,6 +116,13 @@ export const categories: {
     icon: 'diamond',
     description:
       'Pierres et cristaux naturels choisis pour leurs vibrations uniques et leurs vertus de guerison ancestrale.',
+  },
+  {
+    id: 'cartes-divinatoires',
+    name: 'Cartes divinatoires',
+    icon: 'cards',
+    description:
+      "Oracles et tarots choisis pour leur puissance symbolique et la justesse de leur guidance.",
   },
   {
     id: 'runes',

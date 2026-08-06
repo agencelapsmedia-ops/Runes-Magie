@@ -14,6 +14,7 @@ import PhoneButton from '@/components/ui/PhoneButton';
 
 const categoryLabels: Record<Category, string> = {
   cristaux: 'Cristaux',
+  'cartes-divinatoires': 'Cartes divinatoires',
   runes: 'Runes',
   tarot: 'Tarot',
   oracle: 'Oracles',
@@ -26,6 +27,7 @@ const categoryLabels: Record<Category, string> = {
 
 const categoryColors: Record<Category, string> = {
   cristaux: 'bg-violet-mystique/80 text-blanc-lune',
+  'cartes-divinatoires': 'bg-pourpre-sorciere/80 text-blanc-lune',
   runes: 'bg-or-ancien/80 text-noir-nuit',
   tarot: 'bg-pourpre-sorciere/80 text-blanc-lune',
   oracle: 'bg-indigo-500/80 text-blanc-lune',
