@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { instantEst } from '@/lib/fuseau';
 
 /**
  * FeuilleRendezVous — création d'un rendez-vous au téléphone, en quatre temps.
@@ -508,10 +509,19 @@ export default function FeuilleRendezVous({
   /** « Autre heure » : hors des disponibilités déclarées, pour les exceptions. */
   function validerAutreHeure() {
     if (!autreHeure) return;
-    const instant = new Date(autreHeure); // valeur d'un datetime-local = heure locale du téléphone
+    const date = autreHeure.slice(0, 10);
+    const heure = autreHeure.slice(11, 16);
+    // Ancré explicitement sur America/Toronto (voir src/lib/fuseau.ts) : une chaîne
+    // sans fuseau du genre « 2026-08-20T14:00 » ne doit jamais être passée à
+    // `new Date()`, sans quoi l'instant dépendrait du réglage du téléphone.
+    const instant = instantEst(date, heure);
     if (Number.isNaN(instant.getTime())) return;
+    // Le récapitulatif de l'étape 4 lit `jour`, pas `autreHeure` : sans ce setJour,
+    // il continuerait d'afficher la date de la rangée des 14 jours au lieu de celle
+    // qu'elle vient de choisir ici.
+    setJour(date);
     choisirCreneau({
-      debut: autreHeure.slice(11, 16),
+      debut: heure,
       debutIso: instant.toISOString(),
       disponible: true,
     });
