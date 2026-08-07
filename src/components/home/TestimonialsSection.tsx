@@ -130,7 +130,7 @@ export default function TestimonialsSection() {
         {/* Section title */}
         <div className="text-center mb-4">
           <h2 className="font-cinzel-decorative text-3xl md:text-4xl lg:text-5xl font-bold tracking-wide text-gradient-gold">
-            Paroles Enchant&eacute;es
+            Murmures des Clients
           </h2>
           <p className="mt-4 text-parchemin-vieilli text-lg md:text-xl italic font-philosopher">
             Ce que nos visiteurs murmurent &agrave; propos de leur exp&eacute;rience
