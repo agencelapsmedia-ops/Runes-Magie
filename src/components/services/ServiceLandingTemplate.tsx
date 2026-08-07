@@ -476,7 +476,7 @@ export default function ServiceLandingTemplate({ offering, canEdit }: ServiceLan
 
   return (
     <ArcaneEditorProvider
-      offeringId={offering.id}
+      endpoint={`/api/admin/offerings/${offering.id}/landing`}
       updatedAt={offering.updatedAt}
       seo={{
         slug: offering.slug,

@@ -8,61 +8,48 @@ import { uploadImage, listImages } from '@/lib/supabase';
 import { analyzeSeo, scoreLabel, type SeoCheckStatus } from '@/lib/seo-analysis';
 import { FONTS, FONT_KEYS, FONT_FIELDS, TITLE_FONT_FIELDS } from '@/lib/service-landing';
 
-type ColumnField = 'name' | 'description' | 'longDescription' | 'imageUrl' | 'features';
-type LandingTextField =
-  | 'eyebrow'
-  | 'subtitle'
-  | 'intro'
-  | 'sanctuaryTitle'
-  | 'sanctuaryText'
-  | 'recognitionTitle'
-  | 'recognitionIntro'
-  | 'recognitionFinalText'
-  | 'recognitionPortalText'
-  | 'pillarsTitle'
-  | 'processTitle'
-  | 'faqTitle'
-  | 'finalTitle'
-  | 'finalText'
-  | 'ctaLabel'
-  | 'imageAlt'
-  | 'faqImageAlt'
-  | 'backgroundUrl'
-  | 'characterUrl'
-  | 'faqImageUrl';
-type FontField = 'titleFont' | 'labelFont' | 'bodyFont';
-type TitleFontField =
-  | 'heroTitleFont'
-  | 'sanctuaryTitleFont'
-  | 'recognitionTitleFont'
-  | 'pillarsTitleFont'
-  | 'processTitleFont'
-  | 'faqTitleFont'
-  | 'finalTitleFont';
-type EditableField =
-  | ColumnField
-  | LandingTextField
-  | FontField
-  | TitleFontField
-  | 'steps'
-  | 'faqs'
-  | 'pillarRunes'
-  | 'pillarIcons'
-  | 'benefits'
-  | 'recognitionItems';
+/**
+ * Nature d'un champ éditable. Elle décide de deux choses : l'éditeur affiché
+ * dans le pupitre (sélecteur de police, médiathèque, zone de texte…) et la
+ * forme envoyée au serveur.
+ *
+ * Les pages de services ne la déclarent pas — elle est déduite du nom du champ
+ * par les ensembles hérités ci-dessous, ce qui laisse leur comportement
+ * inchangé. Les gabarits de pages, eux, la déclarent explicitement : c'est ce
+ * qui permet à ce pupitre d'éditer n'importe quel modèle sans connaître ses
+ * champs à l'avance.
+ */
+export type TypeChamp =
+  | 'texte' // chaîne libre
+  | 'police' // sélecteur de police
+  | 'image' // médiathèque + téléversement
+  | 'lignes' // liste : une entrée par ligne
+  | 'icones' // liste d'URL alignée sur des libellés (lignes vides conservées)
+  | 'etapes' // paires « titre || texte », numérotées automatiquement
+  | 'faqs'; // paires « question || réponse »
 
-/** Champs qui pointent vers une police → sélecteur visuel FontPicker. */
-const FONT_FIELD_SET: ReadonlySet<EditableField> = new Set([...FONT_FIELDS, ...TITLE_FONT_FIELDS]);
+/** Un nom de champ quelconque : le pupitre ignore quel modèle il édite. */
+type EditableField = string;
 
-/** Champs qui pointent vers une image → sélecteur visuel + médiathèque. */
-const IMAGE_FIELDS: ReadonlySet<EditableField> = new Set([
+/* ── Déduction héritée, pour les pages de services (aucun `kind` fourni) ── */
+
+const CHAMPS_POLICE: ReadonlySet<string> = new Set([...FONT_FIELDS, ...TITLE_FONT_FIELDS]);
+
+const CHAMPS_IMAGE: ReadonlySet<string> = new Set([
   'imageUrl',
   'backgroundUrl',
   'characterUrl',
   'faqImageUrl',
 ]);
 
-const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
+const CHAMPS_LISTE: ReadonlySet<string> = new Set([
+  'features',
+  'benefits',
+  'recognitionItems',
+  'pillarRunes',
+]);
+
+const CHAMPS_MULTILIGNE: ReadonlySet<string> = new Set([
   'features',
   'benefits',
   'recognitionItems',
@@ -78,13 +65,34 @@ const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set([
   'finalText',
 ]);
 
-interface EditTarget {
+export interface EditTarget {
   field: EditableField;
   label: string;
   value: string | string[];
   helper?: string;
   /** Libellés (ex. noms des piliers) pour les éditeurs ligne-à-ligne comme `pillarIcons`. */
   items?: string[];
+  /** Nature du champ. Omise → déduite du nom (compatibilité pages de services). */
+  kind?: TypeChamp;
+  /** Zone de saisie haute. Omise → déduite du nom. */
+  multiligne?: boolean;
+}
+
+function typeChamp(target: EditTarget): TypeChamp {
+  if (target.kind) return target.kind;
+  const f = target.field;
+  if (CHAMPS_POLICE.has(f)) return 'police';
+  if (CHAMPS_IMAGE.has(f)) return 'image';
+  if (CHAMPS_LISTE.has(f)) return 'lignes';
+  if (f === 'pillarIcons') return 'icones';
+  if (f === 'steps') return 'etapes';
+  if (f === 'faqs') return 'faqs';
+  return 'texte';
+}
+
+function estMultiligne(target: EditTarget): boolean {
+  if (typeof target.multiligne === 'boolean') return target.multiligne;
+  return CHAMPS_MULTILIGNE.has(target.field);
 }
 
 /** Données fournies au panneau SEO (calculées côté serveur dans le template). */
@@ -111,7 +119,13 @@ export interface SeoPanelData {
 }
 
 interface ArcaneEditorProviderProps {
-  offeringId: string;
+  /**
+   * Route qui reçoit le PATCH des modifications. L'éditeur ne sait rien du
+   * modèle qu'il édite : c'est ce qui lui permet de servir aussi bien une
+   * page de service (`/api/admin/offerings/<id>/landing`) qu'une page du
+   * site (`/api/admin/site-pages/<slug>`).
+   */
+  endpoint: string;
   targets: EditTarget[];
   seo?: SeoPanelData;
   /** Horodatage ISO de l'offrande au rendu de la page — verrou optimiste anti-écrasement. */
@@ -138,44 +152,41 @@ const ROW_SEP = '\u001e';
 const splitRows = (draft: string) =>
   draft.split(ROW_SEP).map((row) => row.trim()).filter(Boolean);
 
-/** Construit le corps de la requête PATCH selon le type de champ. */
-function buildPayload(field: EditableField, draft: string): Record<string, unknown> {
-  if (field === 'features') {
-    return { features: LINES(draft) };
+/** Construit le corps de la requête PATCH selon la nature du champ. */
+function buildPayload(target: EditTarget, draft: string): Record<string, unknown> {
+  const field = target.field;
+  switch (typeChamp(target)) {
+    case 'lignes':
+      return { [field]: LINES(draft) };
+
+    case 'icones': {
+      // Une URL par ligne, alignée aux libellés : on garde les lignes vides
+      // (icône absente), mais on retire les lignes vides finales pour éviter
+      // les entrées superflues.
+      const icons = draft.split('\n').map((line) => line.trim());
+      while (icons.length && !icons[icons.length - 1]) icons.pop();
+      return { [field]: icons };
+    }
+
+    case 'etapes':
+      return {
+        [field]: splitRows(draft).map((line, index) => {
+          const [title, text] = splitPair(line);
+          return { number: String(index + 1).padStart(2, '0'), title, text };
+        }),
+      };
+
+    case 'faqs':
+      return {
+        [field]: splitRows(draft).map((line) => {
+          const [question, answer] = splitPair(line);
+          return { question, answer };
+        }),
+      };
+
+    default:
+      return { [field]: draft };
   }
-  if (field === 'benefits') {
-    return { benefits: LINES(draft) };
-  }
-  if (field === 'recognitionItems') {
-    return { recognitionItems: LINES(draft) };
-  }
-  if (field === 'pillarRunes') {
-    return { pillarRunes: LINES(draft) };
-  }
-  if (field === 'pillarIcons') {
-    // Une URL par ligne, alignée aux piliers : on garde les lignes vides (icône absente),
-    // mais on retire les lignes vides finales pour éviter les entrées superflues.
-    const icons = draft.split('\n').map((line) => line.trim());
-    while (icons.length && !icons[icons.length - 1]) icons.pop();
-    return { pillarIcons: icons };
-  }
-  if (field === 'steps') {
-    return {
-      steps: splitRows(draft).map((line, index) => {
-        const [title, text] = splitPair(line);
-        return { number: String(index + 1).padStart(2, '0'), title, text };
-      }),
-    };
-  }
-  if (field === 'faqs') {
-    return {
-      faqs: splitRows(draft).map((line) => {
-        const [question, answer] = splitPair(line);
-        return { question, answer };
-      }),
-    };
-  }
-  return { [field]: draft };
 }
 
 /**
@@ -686,11 +697,11 @@ function CharCount({ len, min, max }: { len: number; min: number; max: number })
  * Réservé à l'admin (rendu seulement par le provider quand `canEdit`).
  */
 function SeoPanel({
-  offeringId,
+  endpoint,
   seo,
   onClose,
 }: {
-  offeringId: string;
+  endpoint: string;
   seo: SeoPanelData;
   onClose: () => void;
 }) {
@@ -730,7 +741,7 @@ function SeoPanel({
     setSaving(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
+      const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ metaTitle, metaDescription, focusKeyword, ogImage }),
@@ -933,7 +944,7 @@ function SeoPanel({
  * boutons ✦ et rend le pupitre coulissant. Les boutons appellent `openEditor(field)`
  * via le contexte React (plus de pont `window`).
  */
-export default function ArcaneEditorProvider({ offeringId, targets, seo, updatedAt, children }: ArcaneEditorProviderProps) {
+export default function ArcaneEditorProvider({ endpoint, targets, seo, updatedAt, children }: ArcaneEditorProviderProps) {
   const router = useRouter();
   const [activeField, setActiveField] = useState<EditableField | null>(null);
   const [draft, setDraft] = useState('');
@@ -997,11 +1008,11 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, updated
     setError('');
 
     try {
-      const payload = buildPayload(activeTarget.field, draft);
+      const payload = buildPayload(activeTarget, draft);
       const lockStamp = freshUpdatedAt ?? updatedAt;
       if (lockStamp) payload.expectedUpdatedAt = lockStamp;
 
-      const res = await fetch(`/api/admin/offerings/${offeringId}/landing`, {
+      const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1051,7 +1062,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, updated
       </div>
 
       {seo && seoOpen && (
-        <SeoPanel offeringId={offeringId} seo={seo} onClose={() => setSeoOpen(false)} />
+        <SeoPanel endpoint={endpoint} seo={seo} onClose={() => setSeoOpen(false)} />
       )}
 
       {activeTarget && (
@@ -1076,16 +1087,16 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, updated
               </p>
             </div>
 
-            {FONT_FIELD_SET.has(activeTarget.field) ? (
+            {typeChamp(activeTarget) === 'police' ? (
               <FontPicker draft={draft} setDraft={setDraft} />
-            ) : activeTarget.field === 'pillarIcons' ? (
+            ) : typeChamp(activeTarget) === 'icones' ? (
               <PillarIconsEditor
                 draft={draft}
                 setDraft={setDraft}
                 items={activeTarget.items ?? []}
                 helper={activeTarget.helper}
               />
-            ) : activeTarget.field === 'steps' ? (
+            ) : typeChamp(activeTarget) === 'etapes' ? (
               <PairListEditor
                 key="steps"
                 draft={draft}
@@ -1095,7 +1106,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, updated
                 addLabel="Ajouter une étape"
                 helper="La numérotation (01, 02…) est automatique. Astuce : dans le texte, appuie sur Entrée pour créer un nouveau paragraphe."
               />
-            ) : activeTarget.field === 'faqs' ? (
+            ) : typeChamp(activeTarget) === 'faqs' ? (
               <PairListEditor
                 key="faqs"
                 draft={draft}
@@ -1105,7 +1116,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, updated
                 addLabel="Ajouter une question"
                 helper="Astuce : dans la réponse, appuie sur Entrée pour créer un nouveau paragraphe."
               />
-            ) : IMAGE_FIELDS.has(activeTarget.field) ? (
+            ) : typeChamp(activeTarget) === 'image' ? (
               <ImageFieldEditor draft={draft} setDraft={setDraft} helper={activeTarget.helper} />
             ) : (
               <>
@@ -1115,7 +1126,7 @@ export default function ArcaneEditorProvider({ offeringId, targets, seo, updated
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  rows={MULTILINE_FIELDS.has(activeTarget.field) ? 12 : 5}
+                  rows={estMultiligne(activeTarget) ? 12 : 5}
                   className="mt-3 min-h-40 resize-y rounded-sm border border-[#D4AF37]/35 bg-black/35 p-4 font-cormorant text-lg leading-relaxed text-parchemin outline-none transition focus:border-[#FF4FD8] focus:shadow-[0_0_22px_rgba(255,0,184,0.24)]"
                 />
                 {activeTarget.helper && (

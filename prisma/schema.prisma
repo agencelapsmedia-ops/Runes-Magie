@@ -643,6 +643,34 @@ model HomeSlider {
   @@index([sortOrder])
 }
 
+// ════════════════════════════════════════════════════════════════
+// PAGES ÉDITORIALES DU SITE — éditées en ligne par l'admin
+//  Même éditeur que les pages de services (ArcaneEditorProvider) : textes,
+//  images et polices se modifient directement sur la page publique.
+//  `template` désigne le gabarit qui rend la page et détermine les champs
+//  autorisés dans `content` — voir src/lib/pages/registre.ts.
+//  `content` ne contient que les VALEURS PERSONNALISÉES ; tout champ absent
+//  retombe sur le texte par défaut du gabarit.
+//  `isSystem` protège les pages structurelles d'une suppression accidentelle.
+// ════════════════════════════════════════════════════════════════
+model SitePage {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  template        String   @default("standard")
+  content         Json     @default("{}")
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean  @default(true)
+  isSystem        Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([sortOrder])
+}
+
 // Table de liaison many-to-many entre Offering et Practitioner.
 // Permet à plusieurs praticien·ne·s d'offrir le même service.
 // Le `practitionerId` sur Offering reste le "propriétaire/primaire".

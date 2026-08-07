@@ -12,6 +12,7 @@
     "db:backfill": "tsx prisma/scripts/backfill-unified.ts",
     "db:verify": "tsx prisma/scripts/verify-backfill.ts",
     "db:seed:categories": "tsx prisma/scripts/seed-categories.ts",
+    "db:seed:pages": "tsx prisma/scripts/seed-site-pages.ts",
     "db:migrate:isbn-to-sku": "tsx prisma/scripts/migrate-isbn-to-sku.ts"
   },
   "dependencies": {
