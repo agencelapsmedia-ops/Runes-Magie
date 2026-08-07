@@ -37,8 +37,12 @@
    (c'est exactement le scope demandé par le code, voir `src/lib/google-calendar.ts`).
 5. **Étape « Utilisateurs tests »** : ajouter l'adresse Gmail de **chaque praticienne**
    qui va connecter son agenda (en mode « test », seuls les comptes listés ici
-   peuvent autoriser l'app — voir §7 pour passer en production).
+   peuvent autoriser l'app).
 6. **Enregistrer**.
+
+> ⚠️ **Ne pas rester en mode « test ».** Passer en production dès maintenant :
+> voir §7. En mode test, Google **révoque le jeton au bout de 7 jours** et la
+> synchro s'arrête en silence.
 
 ## 4. Créer les identifiants OAuth 2.0
 
@@ -84,19 +88,62 @@ Après ajout des variables → **redéployer** (un nouveau push sur `main` suffi
    → l'événement doit apparaître dans son Google Agenda avec le bon titre, l'adresse
    (présentiel) ou le lien vidéo (virtuel). Annuler le RDV → l'événement disparaît.
 
-## 7. Passer de « test » à « production » (quand prêt)
+## 7. Publier l'application — ⚠️ obligatoire, pas optionnel
 
-Tant que l'app reste en mode **test** sur l'écran de consentement, seules les
-adresses listées en **utilisateurs tests** peuvent connecter leur agenda, et
-Google affiche un avertissement « application non vérifiée » (cliquer
-« Paramètres avancés → Continuer » pour passer).
+**Le mode « test » fait expirer le jeton de rafraîchissement au bout de 7 jours.**
+C'est une règle de Google, pas un réglage : passé ce délai, Google répond
+`invalid_grant`, la synchro s'arrête, et **rien ne le signalait avant août 2026**
+(voir « Ce qui s'est passé » plus bas).
 
-Pour ouvrir à toutes les praticiennes sans avertissement :
-- Écran de consentement OAuth → **Publier l'application**.
-- Le scope `calendar` étant « sensible », Google peut demander une **vérification**
-  (logo, page de confidentialité, vidéo de démonstration). Tant qu'il y a peu de
-  praticiennes, **rester en mode test + les ajouter comme utilisateurs tests** est
-  le plus simple et suffit.
+Correctif permanent :
+
+1. **API et services → Écran de consentement OAuth** (dans le **bon projet** :
+   celui dont le numéro est le préfixe du `GOOGLE_CLIENT_ID`, avant le tiret).
+2. Si l'état affiché est **« Test »** → bouton **« Publier l'application »** →
+   confirmer **« Confirmer »**. L'état passe à **« En production »**.
+3. La praticienne doit ensuite **se reconnecter** (§8) : publier ne ressuscite
+   pas un jeton déjà mort, ça empêche seulement les prochains d'expirer.
+
+**Ce que « publier sans vérification Google » implique :**
+
+- Google affiche « Google n'a pas validé cette application » au moment de
+  connecter l'agenda → cliquer **« Paramètres avancés » → « Continuer vers… »**.
+  C'est un avertissement, pas un blocage.
+- Limite de **100 utilisateurs** pour une app publiée non vérifiée. On en a 4.
+  Aucun impact.
+- La vérification Google (logo, page de confidentialité, vidéo de démo) ne
+  devient nécessaire que pour dépasser 100 comptes connectés.
+
+**Ce qui s'est passé (juillet 2026) :** l'app était restée en mode test. Le jeton
+de Noctura, obtenu le 9 juillet, a été révoqué par Google dans la fenêtre du
+14–19 juillet. Pendant **trois semaines**, tous les RDV confirmés ont cessé
+d'apparaître dans son agenda sans le moindre signal — l'interface affichait
+toujours « connecté ». Le bandeau d'alerte du §9 a été ajouté pour ça.
+
+## 8. Reconnecter l'agenda d'une praticienne
+
+Après un refus de jeton (bandeau rouge sur son tableau de bord) :
+
+1. `/soins/dashboard/praticien` → **Déconnecter Google Agenda** (vide le jeton mort).
+2. **Connecter Google Agenda** → choisir son compte → « Paramètres avancés →
+   Continuer » si l'avertissement s'affiche → autoriser l'accès au calendrier.
+3. Le rattrapage est **automatique** : `syncFutureConfirmedAppointments` pousse
+   tous les RDV futurs déjà confirmés qui n'ont pas encore d'événement.
+
+## 9. Surveillance de l'état du lien
+
+`verifierConnexionGoogle()` (dans `src/lib/google-calendar.ts`) redemande un jeton
+d'accès à Google au plus toutes les 30 minutes et consigne le verdict dans
+`Practitioner.googleSyncError` / `googleSyncCheckedAt`. Le bandeau du tableau de
+bord lit ces champs : il distingue « connectée » de « connectée un jour, mais
+Google n'en veut plus ». Les pannes passagères (réseau, quota) ne condamnent pas
+le lien — seul `invalid_grant` / `unauthorized_client` le fait.
+
+Diagnostic en ligne de commande (lecture seule, tous les comptes d'un coup) :
+
+```bash
+npx tsx scripts/_diag-google-agenda.ts
+```
 
 ---
 
@@ -110,6 +157,10 @@ Pour ouvrir à toutes les praticiennes sans avertissement :
   `prompt: 'consent'` + `access_type: 'offline'`. Si une praticienne avait déjà
   autorisé sans refresh token, elle peut révoquer l'accès dans
   <https://myaccount.google.com/permissions> puis se reconnecter.
+- **`invalid_grant` / « Google a refusé l'autorisation enregistrée »** : le jeton
+  est mort. **Cause n° 1 : l'app est repassée ou restée en mode « test » (§7).**
+  Vérifier l'état de publication AVANT de reconnecter, sinon ça recasse dans
+  7 jours. Puis reconnecter (§8).
 - **L'événement ne se crée pas** : la praticienne est-elle bien connectée
   (bandeau vert) ? Les logs serveur Vercel `[Google Calendar]` indiquent la cause.
 
