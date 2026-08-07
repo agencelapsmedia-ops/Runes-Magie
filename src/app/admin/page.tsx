@@ -2,10 +2,16 @@
 
 import Link from 'next/link';
 
+// Un module par entrée du menu latéral — mêmes runes, même ordre. Sur téléphone
+// le menu est replié derrière le bouton hamburger : ces cartes sont alors le
+// seul chemin visible vers les outils, donc elles doivent tous les couvrir.
 const modules = [
   { rune: 'ᚤ', label: 'Boutique', href: '/admin/boutique', desc: 'Commandes, inventaire, catégories et caisse Clover.', sub: 'Hub e-commerce' },
   { rune: 'ᚹ', label: 'Soins & Cours', href: '/admin/services', desc: 'Calendrier, services, praticiennes, formations et revenus.', sub: 'Hub holistique' },
-  { rune: 'ᛗ', label: 'CRM / Clients', href: '/admin/crm', desc: 'Clients, infolettre, conversations du chat et to-do du projet.', sub: 'CRM & suivi' },
+  { rune: 'ᛗ', label: 'CRM / Clients', href: '/admin/crm', desc: 'Clients, infolettre et conversations du chat.', sub: 'CRM & suivi' },
+  { rune: 'ᛏ', label: 'To-do liste', href: '/admin/todo', desc: 'Tâches du projet en colonnes, avec notes, fichiers et priorités.', sub: 'Suivi & organisation' },
+  { rune: 'ᛝ', label: 'Événements', href: '/admin/evenements', desc: 'Ateliers, cercles et rituels : dates, places et inscriptions.', sub: 'Agenda public' },
+  { rune: 'ᛒ', label: 'Publications', href: '/admin/publications', desc: 'Publications Facebook et Instagram, immédiates ou programmées.', sub: 'Réseaux sociaux' },
   { rune: 'ᛟ', label: 'Site', href: '/admin/site', desc: 'Menu de navigation, sliders et structure du site public.', sub: 'Navigation & pages' },
 ];
 
@@ -88,20 +94,26 @@ export default function AdminDashboardPage() {
       <p className="font-cinzel text-xs tracking-[0.3em] text-violet-profond/60 uppercase mb-4">
         Modules
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Deux colonnes dès le téléphone : à une seule, les sept modules
+          imposaient un long défilement pour atteindre les derniers. La carte se
+          replie en colonne sous 640 px — rune au-dessus du texte — parce qu'une
+          rune de 6xl posée à côté du titre ne lui laisse plus rien à 170 px. */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {modules.map((m) => (
           <Link
             key={m.href}
             href={m.href}
-            className="group flex items-start gap-5 bg-charbon-mystere border border-violet-royal/40 rounded-xl p-8 transition-all duration-300 hover:border-or-ancien/60 hover:shadow-[0_0_25px_rgba(201,168,76,0.18)]"
+            className="group flex flex-col sm:flex-row items-start gap-2 sm:gap-5 bg-charbon-mystere border border-violet-royal/40 rounded-xl p-4 sm:p-8 transition-all duration-300 hover:border-or-ancien/60 hover:shadow-[0_0_25px_rgba(201,168,76,0.18)]"
           >
-            <span className="text-6xl text-or-ancien select-none leading-none">{m.rune}</span>
-            <div>
-              <h3 className="font-cinzel text-2xl text-parchemin group-hover:text-or-ancien transition-colors">
+            <span className="text-4xl sm:text-6xl text-or-ancien select-none leading-none">{m.rune}</span>
+            <div className="min-w-0">
+              <h3 className="font-cinzel text-base sm:text-2xl text-parchemin group-hover:text-or-ancien transition-colors">
                 {m.label}
               </h3>
-              <p className="font-cormorant text-base text-parchemin-vieilli/70 mt-1">{m.desc}</p>
-              <span className="font-cinzel text-[0.6rem] tracking-[0.2em] uppercase text-turquoise-cristal/70 mt-3 block">
+              <p className="font-cormorant text-xs sm:text-base text-parchemin-vieilli/70 mt-1 line-clamp-2 sm:line-clamp-none">
+                {m.desc}
+              </p>
+              <span className="font-cinzel text-[0.5rem] sm:text-[0.6rem] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-turquoise-cristal/70 mt-2 sm:mt-3 block">
                 {m.sub}
               </span>
             </div>

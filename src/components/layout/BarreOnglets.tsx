@@ -47,8 +47,14 @@ export default function BarreOnglets() {
   const pathname = usePathname() ?? '/';
   const { utilisateur } = useSessionUtilisateur();
 
-  // Le back-office a sa propre navigation : la barre publique n'y a pas sa place.
-  if (pathname.startsWith('/admin')) return null;
+  // La barre reste visible dans le back-office. Elle en était exclue au motif
+  // que « l'admin a sa propre navigation » — sauf que sur téléphone cette
+  // navigation-là est repliée derrière un bouton hamburger : on se retrouvait
+  // donc sans aucune sortie visible. Le `<body>` réserve déjà les 76 px du bas
+  // sur toutes les pages, l'admin comprise, alors l'espace existait et restait
+  // simplement vide. Seule la page de connexion en est dispensée : on n'y
+  // propose pas de naviguer ailleurs.
+  if (pathname === '/admin/login') return null;
 
   const espace = espacePrincipal(utilisateur);
   // Icône de l'espace : la rune pour une praticienne (même signe que le ᛟ de

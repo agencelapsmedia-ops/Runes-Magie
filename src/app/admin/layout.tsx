@@ -109,14 +109,15 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       <div
         onClick={() => setMenuOuvert(false)}
         aria-hidden="true"
-        className={`lg:hidden fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 ${
+        className={`lg:hidden fixed inset-0 z-[95] bg-black/60 transition-opacity duration-300 ${
           menuOuvert ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
 
-      {/* Sidebar */}
+      {/* Sidebar — z au-dessus de la barre d'onglets (z-90), sinon celle-ci
+          flotterait par-dessus le panneau ouvert et son voile. */}
       <aside
-        className={`fixed inset-y-0 left-0 w-64 flex flex-col z-50 transition-transform duration-300 ${
+        className={`fixed inset-y-0 left-0 w-64 flex flex-col z-[100] transition-transform duration-300 ${
           menuOuvert ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 lg:z-30`}
         style={{ background: 'linear-gradient(180deg, #2D1B4E 0%, #1A1A2E 100%)' }}
