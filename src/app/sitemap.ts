@@ -19,7 +19,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/runes-vikings',
     '/contact',
     '/evenements',
+    '/ceremonies',
     '/confidentialite',
+    // '/temple' reste hors sitemap tant que la page est une coquille (noindex).
   ].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: now,

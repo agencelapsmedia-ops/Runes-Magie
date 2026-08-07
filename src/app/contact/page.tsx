@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 const subjectOptions = [
   "Renseignement general",
   "Reservation de service",
+  "Ceremonie ou animation privee",
   "Question sur un produit",
   "Autre",
 ];
