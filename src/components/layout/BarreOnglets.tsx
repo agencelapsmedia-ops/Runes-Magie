@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import IconeCategorie from '@/components/ui/IconeCategorie';
+import {
+  useSessionUtilisateur,
+  espacePrincipal,
+  aAccesAdmin,
+} from '@/lib/session-utilisateur';
 
 /**
  * Barre d'onglets fixe en bas d'écran, sur téléphone seulement.
@@ -14,23 +19,54 @@ import IconeCategorie from '@/components/ui/IconeCategorie';
  * `<main>` porte `relative z-10`, ce qui crée un contexte d'empilement et
  * piégerait un élément `fixed` rendu à l'intérieur. Si un jour ce composant
  * devait vivre dans une page, il faudrait le passer par `createPortal`.
+ *
+ * Le dernier onglet suit le rôle. À sa création la barre envoyait tout le monde
+ * vers `/compte`, l'espace membre CLIENT : sur téléphone, la praticienne
+ * propriétaire n'avait donc plus ni son espace ni l'administration, alors
+ * qu'elle y avait toujours droit côté serveur. Les écrans étroits raccourcissent
+ * les libellés, ils ne rétrogradent personne.
  */
 
-const ONGLETS = [
+interface Onglet {
+  cle: string;
+  label: string;
+  icone: string;
+  href?: string;
+  exact?: boolean;
+  action?: 'chat';
+}
+
+const ONGLETS_COMMUNS: Onglet[] = [
   { cle: 'accueil', label: 'Accueil', icone: 'lune', href: '/', exact: true },
   { cle: 'boutique', label: 'Boutique', icone: 'sac', href: '/boutique' },
   { cle: 'reservation', label: 'Réservation', icone: 'calendrier', href: '/seances' },
-  { cle: 'messages', label: 'Messages', icone: 'bulle', action: 'chat' as const },
-  { cle: 'compte', label: 'Compte', icone: 'personne', href: '/compte' },
+  { cle: 'messages', label: 'Messages', icone: 'bulle', action: 'chat' },
 ];
 
 export default function BarreOnglets() {
   const pathname = usePathname() ?? '/';
+  const { utilisateur } = useSessionUtilisateur();
 
   // Le back-office a sa propre navigation : la barre publique n'y a pas sa place.
   if (pathname.startsWith('/admin')) return null;
 
-  const estActif = (onglet: (typeof ONGLETS)[number]) => {
+  const espace = espacePrincipal(utilisateur);
+  // Icône de l'espace : la rune pour une praticienne (même signe que le ᛟ de
+  // son en-tête), la silhouette pour une cliente ou une visiteuse.
+  const iconeEspace = utilisateur?.role === 'PRACTITIONER' ? 'rune' : 'personne';
+
+  const onglets: Onglet[] = [
+    ...ONGLETS_COMMUNS,
+    { cle: 'espace', label: espace.label, icone: iconeEspace, href: espace.href },
+  ];
+
+  // Sixième onglet réservé à qui administre réellement le site — en pratique
+  // la propriétaire seule. Les autres gardent une barre à cinq onglets.
+  if (aAccesAdmin(utilisateur)) {
+    onglets.push({ cle: 'admin', label: 'Admin', icone: 'etoile', href: '/admin' });
+  }
+
+  const estActif = (onglet: Onglet) => {
     if (!onglet.href) return false;
     if (onglet.exact) return pathname === onglet.href;
     return pathname === onglet.href || pathname.startsWith(`${onglet.href}/`);
@@ -43,7 +79,7 @@ export default function BarreOnglets() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="flex items-stretch justify-around">
-        {ONGLETS.map((onglet) => {
+        {onglets.map((onglet) => {
           const actif = estActif(onglet);
           const contenu = (
             <>

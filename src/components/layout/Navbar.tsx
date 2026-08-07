@@ -8,12 +8,12 @@ import { signOut } from 'next-auth/react';
 import MobileMenu from './MobileMenu';
 import GhostCaracal from '@/components/hero/GhostCaracal';
 import { DEFAULT_HEADER_LINKS, type MenuLink } from '@/lib/menu-defaults';
-
-interface SessionUser {
-  email?: string;
-  name?: string;
-  role?: string;
-}
+import {
+  useSessionUtilisateur,
+  espacePrincipal,
+  aAccesAdmin,
+  oublierSession,
+} from '@/lib/session-utilisateur';
 
 // Le menu est charg\u00E9 dynamiquement depuis /api/menu (g\u00E9r\u00E9 dans l'admin).
 // DEFAULT_HEADER_LINKS sert d'\u00E9tat initial et de repli si la base est indisponible.
@@ -25,8 +25,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount] = useState(0);
   const [ghostTrigger, setGhostTrigger] = useState(0);
-  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const { utilisateur: sessionUser, charge: sessionLoaded } = useSessionUtilisateur();
   const [navLinks, setNavLinks] = useState<MenuLink[]>(DEFAULT_HEADER_LINKS);
 
   // Charge le menu géré dans l'admin (/api/menu) ; repli sur les liens par défaut.
@@ -43,42 +42,15 @@ export default function Navbar() {
     };
   }, []);
 
-  // Charge la session côté client pour adapter le bouton « Connexion »
-  useEffect(() => {
-    async function loadSession() {
-      try {
-        const res = await fetch('/api/holistique/auth/me', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setSessionUser(data.user ?? null);
-        } else {
-          setSessionUser(null);
-        }
-      } catch {
-        // ignore — pas connecté
-      } finally {
-        setSessionLoaded(true);
-      }
-    }
-    loadSession();
-  }, [pathname]); // recharge quand on change de page (utile après login/logout)
+  // Destination du bouton selon le rôle (règle partagée : session-utilisateur.ts).
+  const espace = espacePrincipal(sessionUser);
+  const dashboardHref = sessionUser ? espace.href : '/soins/auth/login';
+  const dashboardLabel = sessionUser ? espace.label : 'Se Connecter';
 
-  // Détermine la destination du bouton selon le rôle
-  const dashboardHref = sessionUser
-    ? sessionUser.role === 'PRACTITIONER'
-      ? '/soins/dashboard/praticien'
-      : sessionUser.role === 'ADMIN'
-      ? '/admin'
-      : '/compte'
-    : '/soins/auth/login';
-
-  const dashboardLabel = sessionUser
-    ? sessionUser.role === 'PRACTITIONER'
-      ? 'Mon espace'
-      : sessionUser.role === 'ADMIN'
-      ? 'Admin'
-      : 'Mon compte'
-    : 'Se Connecter';
+  // La praticienne propriétaire administre le site sans porter le rôle ADMIN :
+  // son accès vient de `isOwner`. Sans ce test, l'entrée « Administration »
+  // n'apparaissait nulle part sur le site principal, ni mobile ni desktop.
+  const montrerAdmin = aAccesAdmin(sessionUser) && espace.href !== '/admin';
 
   const handleConnexion = useCallback(
     (e: React.MouseEvent) => {
@@ -98,7 +70,7 @@ export default function Navbar() {
   const handleLogout = useCallback(async () => {
     // Déconnexion déterministe : on vide l'UI tout de suite, on attend que le
     // cookie de session soit réellement effacé, puis on recharge la page (état frais).
-    setSessionUser(null);
+    oublierSession();
     await signOut({ redirect: false });
     window.location.href = '/';
   }, []);
@@ -207,6 +179,18 @@ export default function Navbar() {
                   </svg>
                   {dashboardLabel}
                 </button>
+              )}
+
+              {/* Administration — propriétaire (isOwner) ou rôle ADMIN */}
+              {sessionLoaded && montrerAdmin && (
+                <Link
+                  href="/admin"
+                  title="Administration"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-or-ancien/90 font-cinzel text-[0.7rem] uppercase tracking-[0.12em] transition-colors duration-300 hover:text-or-clair"
+                >
+                  <span aria-hidden>✦</span>
+                  Administration
+                </Link>
               )}
 
               {/* Bouton « Rejoindre le Clan » — CTA principal (masqué si déjà connecté) */}

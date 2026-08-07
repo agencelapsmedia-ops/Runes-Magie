@@ -1,38 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-
-interface SessionUser {
-  email?: string;
-  name?: string;
-  role?: string;
-  isOwner?: boolean;
-}
+import {
+  useSessionUtilisateur,
+  espacePrincipal,
+  aAccesAdmin,
+  oublierSession,
+} from '@/lib/session-utilisateur';
 
 export default function UserNav() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadSession() {
-      try {
-        const res = await fetch('/api/holistique/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user ?? null);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadSession();
-  }, []);
+  const { utilisateur: user, charge } = useSessionUtilisateur();
+  const loading = !charge;
 
   if (loading) {
     return (
@@ -56,24 +35,12 @@ export default function UserNav() {
 
   // Connecté : bouton Tableau de bord (selon rôle) + petit lien Déconnexion
   const firstName = user.name?.split(' ')[0] ?? '';
-  const dashboardHref =
-    user.role === 'PRACTITIONER'
-      ? '/soins/dashboard/praticien'
-      : user.role === 'ADMIN'
-      ? '/admin'
-      : '/soins/dashboard/client';
-
-  const dashboardLabel =
-    user.role === 'PRACTITIONER'
-      ? 'Mon espace praticien'
-      : user.role === 'ADMIN'
-      ? 'Administration'
-      : 'Mon compte';
+  const espace = espacePrincipal(user);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
       <Link
-        href={dashboardHref}
+        href={espace.href}
         title={firstName ? `Connecté en tant que ${firstName}` : undefined}
         style={{
           display: 'inline-flex',
@@ -93,12 +60,16 @@ export default function UserNav() {
         }}
       >
         <span style={{ fontSize: '0.85rem' }}>ᛟ</span>
-        <span className="hidden sm:inline">{dashboardLabel}</span>
-        <span className="sm:hidden">Mon compte</span>
+        {/* Un écran étroit raccourcit le libellé, il ne rétrograde personne :
+            les deux formes désignent la même destination. Auparavant le mobile
+            affichait « Mon compte » en dur, ce qui faisait passer la
+            praticienne pour une cliente ordinaire. */}
+        <span className="hidden sm:inline">{espace.labelLong}</span>
+        <span className="sm:hidden">{espace.label}</span>
       </Link>
 
-      {/* Propriétaire : accès direct à l'administration, sans re-connexion */}
-      {user.isOwner && (
+      {/* Propriétaire ou admin : accès direct à l'administration, sans re-connexion */}
+      {aAccesAdmin(user) && (
         <Link
           href="/admin"
           title="Administration"
@@ -120,13 +91,18 @@ export default function UserNav() {
           }}
         >
           <span style={{ fontSize: '0.85rem' }}>✦</span>
+          {/* Sur mobile ce lien n'était qu'une étoile nue, indéchiffrable. */}
           <span className="hidden sm:inline">Administration</span>
+          <span className="sm:hidden">Admin</span>
         </Link>
       )}
 
       <button
         type="button"
-        onClick={() => signOut({ callbackUrl: '/soins' })}
+        onClick={() => {
+          oublierSession();
+          signOut({ callbackUrl: '/soins' });
+        }}
         title="Se déconnecter"
         style={{
           background: 'transparent',

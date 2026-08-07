@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
+import {
+  useSessionUtilisateur,
+  espacePrincipal,
+  aAccesAdmin,
+  oublierSession,
+} from '@/lib/session-utilisateur';
 
 interface NavLink {
   label: string;
@@ -16,12 +22,6 @@ interface MobileMenuProps {
   currentPath: string;
 }
 
-interface SessionUser {
-  email?: string;
-  name?: string;
-  role?: string;
-}
-
 export default function MobileMenu({
   isOpen,
   onClose,
@@ -29,29 +29,10 @@ export default function MobileMenu({
   currentPath,
 }: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
-
-  // Charge l'état de session pour afficher le bon bouton (Connexion vs Dashboard)
-  useEffect(() => {
-    if (!isOpen) return;
-    async function loadSession() {
-      try {
-        const res = await fetch('/api/holistique/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setSessionUser(data.user ?? null);
-        } else {
-          setSessionUser(null);
-        }
-      } catch {
-        setSessionUser(null);
-      } finally {
-        setSessionLoaded(true);
-      }
-    }
-    loadSession();
-  }, [isOpen]);
+  // La requête est partagée avec la Navbar qui nous monte : pas d'appel en plus.
+  const { utilisateur: sessionUser, charge: sessionLoaded } = useSessionUtilisateur();
+  const espace = espacePrincipal(sessionUser);
+  const montrerAdmin = aAccesAdmin(sessionUser) && espace.href !== '/admin';
 
   // Fermer avec la touche Escape
   useEffect(() => {
@@ -201,26 +182,31 @@ export default function MobileMenu({
                 </p>
               </div>
               <Link
-                href={
-                  sessionUser.role === 'PRACTITIONER'
-                    ? '/soins/dashboard/praticien'
-                    : sessionUser.role === 'ADMIN'
-                    ? '/admin'
-                    : '/soins/dashboard/client'
-                }
+                href={espace.href}
                 onClick={onClose}
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-turquoise-cristal/40 text-turquoise-cristal font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-turquoise-cristal/15"
               >
-                ᛟ {sessionUser.role === 'PRACTITIONER'
-                  ? 'Mon espace praticien'
-                  : sessionUser.role === 'ADMIN'
-                  ? 'Administration'
-                  : 'Mon compte'}
+                ᛟ {espace.labelLong}
               </Link>
+
+              {/* Administration — propriétaire (isOwner) ou rôle ADMIN. Ce menu
+                  ne testait que le rôle : la propriétaire, qui est PRACTITIONER,
+                  n'y voyait jamais l'entrée alors qu'elle y a droit. */}
+              {montrerAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded border border-or-ancien/40 text-or-ancien font-cinzel text-sm tracking-wider transition-all duration-300 hover:bg-or-ancien/15"
+                >
+                  ✦ Administration
+                </Link>
+              )}
+
               <button
                 type="button"
                 onClick={() => {
                   onClose();
+                  oublierSession();
                   signOut({ callbackUrl: '/' });
                 }}
                 className="flex items-center justify-center w-full px-4 py-3 rounded border border-transparent text-parchemin/50 font-cinzel text-xs tracking-wider transition-all duration-300 hover:text-or-ancien hover:border-or-ancien/20"
