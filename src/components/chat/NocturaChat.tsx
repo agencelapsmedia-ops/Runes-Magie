@@ -81,6 +81,18 @@ export default function NocturaChat() {
     }
   }, [loadHistory]);
 
+  // L'onglet « Messages » de la barre du bas ouvre le chat. Un évènement plutôt
+  // qu'un contexte partagé : six lignes ici, et la barre n'a rien à savoir du
+  // fonctionnement interne du chat.
+  useEffect(() => {
+    const ouvrir = () => {
+      setOpen(true);
+      void loadHistory();
+    };
+    window.addEventListener('noctura:ouvrir', ouvrir);
+    return () => window.removeEventListener('noctura:ouvrir', ouvrir);
+  }, [setOpen, loadHistory]);
+
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: ChatMsg = { id: nextId(), role: 'user', content: text };
     setMessages((prev) => [...prev, userMsg]);

@@ -20,6 +20,12 @@ const cards = [
     href: '/admin/site/sliders',
     desc: 'Carrousels de l’accueil : titre libre + catégories à afficher.',
   },
+  {
+    rune: 'ᛥ',
+    label: 'Tuiles de l’accueil',
+    href: '/admin/site/tuiles',
+    desc: 'Les cartes de l’accueil et la bande Boutique : titre, image, icône, lien.',
+  },
 ];
 
 export default function SiteHubPage() {

@@ -36,7 +36,7 @@ export default function CartDrawer() {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-noir-nuit/70 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[92] bg-noir-nuit/70 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsOpen(false)}
@@ -48,7 +48,7 @@ export default function CartDrawer() {
         role="dialog"
         aria-modal="true"
         aria-label="Panier"
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-md flex flex-col
+        className={`fixed top-0 right-0 z-[93] h-full w-full max-w-md flex flex-col
           bg-charbon-mystere border-l border-violet-royal/40
           shadow-[−4px_0_30px_rgba(107,63,160,0.2)]
           transition-transform duration-300 ease-out

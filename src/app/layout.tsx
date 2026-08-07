@@ -7,6 +7,7 @@ import FloatingRunes from "@/components/effects/FloatingRunes";
 import { CartProvider } from "@/components/cart/CartProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
 import NocturaChat from "@/components/chat/NocturaChat";
+import BarreOnglets from "@/components/layout/BarreOnglets";
 import {
   SITE_URL,
   SITE_LOGO_URL,
@@ -109,7 +110,15 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-noir-nuit text-parchemin">
+      {/*
+        Échelle d'empilement du site, à garder cohérente :
+        fonds animés (0) < <main> (10) < navbar (50) < barre d'onglets (90)
+        < bulle de chat (91) < panier (92 / 93) < fenêtre de chat (96).
+        Le padding bas laisse respirer le pied de page au-dessus de la barre
+        d'onglets — il est posé sur <body> et non sur <main>, car <Footer> est
+        en dehors de <main>.
+      */}
+      <body className="min-h-full flex flex-col bg-noir-nuit text-parchemin pb-[76px] lg:pb-0">
         <CartProvider>
           <StarryBackground />
           <FloatingRunes />
@@ -120,6 +129,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <BarreOnglets />
         </CartProvider>
       </body>
     </html>

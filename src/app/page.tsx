@@ -1,7 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import HeroCarousel from '@/components/hero/HeroCarousel';
+import HeroCompact from '@/components/hero/HeroCompact';
 import MistEffect from '@/components/hero/MistEffect';
+import HomeTileGrid from '@/components/home/HomeTileGrid';
+import BoutiqueBand from '@/components/home/BoutiqueBand';
+import { getHomeTiles } from '@/lib/home-tiles';
 import SectionTitle from '@/components/ui/SectionTitle';
 import RuneDivider from '@/components/ui/RuneDivider';
 import ProductCard from '@/components/boutique/ProductCard';
@@ -43,12 +46,21 @@ export default async function HomePage() {
     take: 8,
   });
   const sliderGroups = await getHomeSliders();
+  const { cartes, bande } = await getHomeTiles();
   return (
     <>
       {/* ═══════════════════ HERO ═══════════════════ */}
       <section className="relative -mt-18 lg:-mt-20">
-        <HeroCarousel />
+        <HeroCompact />
         <MistEffect />
+      </section>
+
+      {/* ═══════════════════ GRILLE « APPLICATION » ═══════════════════
+          Neuf destinations lisibles d'un coup d'œil, remplaçant les deux
+          boutons du hero. Contenu piloté depuis /admin/site/tuiles. */}
+      <section className="relative z-10 -mt-6 pb-4 lg:-mt-10">
+        <HomeTileGrid tuiles={cartes} />
+        {bande && <BoutiqueBand tuile={bande} />}
       </section>
 
       {/* ═══════════════════ SERVICES ═══════════════════ */}

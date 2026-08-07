@@ -644,6 +644,36 @@ model HomeSlider {
 }
 
 // ════════════════════════════════════════════════════════════════
+// TUILES DE L'ACCUEIL — gérées dans /admin/site/tuiles
+//  Les cartes de la grille « application » de la page d'accueil, plus la bande
+//  Boutique pleine largeur. Titre, image, icône et lien sont modifiables sans
+//  redéploiement : c'est la raison d'être de cette table.
+//  variant : CARTE (tuile de la grille) | BANDE (bandeau pleine largeur).
+//  chips   : BANDE seulement — pastilles rondes [{ label, href?, iconKey? }].
+//  imageFocus : point d'ancrage du recadrage (plusieurs visuels ont leur sujet
+//  sur un côté ; un recadrage centré les couperait).
+// ════════════════════════════════════════════════════════════════
+model HomeTile {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title      String
+  subtitle   String   @default("")
+  iconKey    String   @default("etoile")
+  imageUrl   String   @default("")
+  imageAlt   String   @default("")
+  imageFocus String   @default("center")
+  href       String
+  variant    String   @default("CARTE")
+  chips      Json?
+  sortOrder  Int      @default(0)
+  isVisible  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// ════════════════════════════════════════════════════════════════
 // PAGES ÉDITORIALES DU SITE — éditées en ligne par l'admin
 //  Même éditeur que les pages de services (ArcaneEditorProvider) : textes,
 //  images et polices se modifient directement sur la page publique.
