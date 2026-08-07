@@ -416,13 +416,6 @@ function RegisterPageInner() {
                   <span className="text-magenta-rituel"> *</span>
                 </span>
               </label>
-
-              {/* Mention légale */}
-              <p className="text-[10px] text-parchemin/40 font-cormorant italic leading-relaxed pt-2">
-                Responsable du traitement&nbsp;: Annabelle Dionne — Runes &amp; Magie,
-                info@runesetmagie.com. Vos informations sont conservées de manière confidentielle.
-                Aucune revente à des tiers.
-              </p>
             </div>
 
             {/* Bouton d'inscription */}

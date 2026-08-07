@@ -70,7 +70,7 @@ function LoginPageInner() {
             ᚨ
           </div>
           <h1
-            className="font-cinzel-decorative text-2xl sm:text-3xl font-bold mb-2"
+            className="font-cinzel-decorative text-2xl sm:text-3xl font-bold uppercase tracking-[0.12em] mb-1"
             style={{
               background: 'linear-gradient(135deg, var(--or-ancien), var(--or-clair))',
               WebkitBackgroundClip: 'text',
@@ -78,10 +78,16 @@ function LoginPageInner() {
               backgroundClip: 'text',
             }}
           >
-            Espace Holistique
+            L&apos;Espace Membre
           </h1>
+          <p
+            className="font-cinzel text-xs uppercase tracking-[0.25em] mb-3"
+            style={{ color: 'rgba(201, 168, 76, 0.55)' }}
+          >
+            Du Juste de Voie
+          </p>
           <p className="font-cormorant italic text-parchemin/50 text-lg">
-            Reconnectez-vous à votre chemin de guérison
+            Reconnectez avec votre essence ancestrale.
           </p>
         </div>
 
