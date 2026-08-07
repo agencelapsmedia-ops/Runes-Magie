@@ -101,6 +101,14 @@ export default function Navbar() {
     };
   }, [mobileMenuOpen]);
 
+  // Le back-office porte son propre en-tête (logo dans le panneau latéral,
+  // bouton hamburger sur téléphone). Cette barre-ci est `fixed top-0 z-50` et
+  // recouvrait entièrement celui de l'admin, `top-0 h-14 z-40` : sur téléphone
+  // le hamburger était invisible ET incliquable, ce qui enfermait la
+  // propriétaire sur le tableau de bord. Deux en-têtes au même endroit, il faut
+  // en retirer un — et le site public n'a rien à faire par-dessus l'admin.
+  if (pathname?.startsWith('/admin')) return null;
+
   return (
     <>
       <nav

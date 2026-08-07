@@ -8,6 +8,7 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
 import NocturaChat from "@/components/chat/NocturaChat";
 import BarreOnglets from "@/components/layout/BarreOnglets";
+import ZonePrincipale from "@/components/layout/ZonePrincipale";
 import {
   SITE_URL,
   SITE_LOGO_URL,
@@ -125,9 +126,7 @@ export default function RootLayout({
           <Navbar />
           <CartDrawer />
           <NocturaChat />
-          <main className="relative z-10 flex-1 min-h-screen pt-18 lg:pt-20">
-            {children}
-          </main>
+          <ZonePrincipale>{children}</ZonePrincipale>
           <Footer />
           <BarreOnglets />
         </CartProvider>
