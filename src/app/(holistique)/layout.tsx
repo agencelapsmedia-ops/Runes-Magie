@@ -60,7 +60,7 @@ export default function HolistiqueLayout({ children }: { children: ReactNode }) 
             &copy; {new Date().getFullYear()} Runes & Magie — Soins Holistiques. Tous droits réservés.
           </p>
           <p className="font-cormorant italic text-xs text-parchemin/25 mt-1">
-            Plateforme de soins énergétiques certifiés au Québec
+            Plateforme de soins énergétiques au Québec
           </p>
         </div>
       </footer>

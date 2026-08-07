@@ -50,13 +50,13 @@ export default async function PraticiensPage() {
         }}
       >
         <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', letterSpacing: '0.3em', fontSize: '0.8rem', marginBottom: '16px', opacity: 0.8 }}>
-          ᚨ PRATICIENS CERTIFIÉS ᚨ
+          ᚨ NOS PRATICIENS ᚨ
         </p>
         <h1 style={{ fontFamily: 'var(--font-cinzel-decorative)', fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 700, background: 'linear-gradient(135deg, var(--or-ancien), var(--or-clair), var(--or-ancien))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '16px' }}>
           Nos Praticiens
         </h1>
         <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'var(--parchemin-vieilli)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
-          Des praticiens certifiés, soigneusement sélectionnés pour vous accompagner sur votre chemin de guérison
+          Soigneusement sélectionnés pour vous accompagner sur votre chemin
         </p>
       </section>
 

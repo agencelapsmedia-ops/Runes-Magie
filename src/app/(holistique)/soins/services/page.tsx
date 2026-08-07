@@ -24,7 +24,7 @@ const TYPE_DESCRIPTIONS: Record<string, string> = {
 
 export const metadata = {
   title: 'Nos Services & Soins — Runes & Magie',
-  description: 'Découvrez tous les soins, formations, cérémonies et consultations proposés par les praticien·ne·s certifié·e·s de Runes & Magie.',
+  description: 'Découvrez tous les soins, formations, cérémonies et consultations proposés par les praticien·ne·s de Runes & Magie.',
 };
 
 export default async function ServicesPage() {

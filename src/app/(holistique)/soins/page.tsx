@@ -76,7 +76,7 @@ const STEPS = [
     rune: 'ᚢ',
     title: 'Choisissez votre praticien',
     description:
-      'Parcourez les profils de nos thérapeutes certifiés. Filtrez par spécialité, disponibilité et tarif pour trouver l\'accompagnant qui résonne avec votre chemin.',
+      'Parcourez les profils de nos praticien·ne·s. Filtrez par spécialité, disponibilité et tarif pour trouver l\'accompagnant qui résonne avec votre chemin.',
   },
   {
     rune: 'ᛏ',
@@ -147,12 +147,11 @@ export default async function SoinsPage() {
           </h1>
 
           <p className="font-cinzel text-base sm:text-lg text-parchemin/80 tracking-widest uppercase mb-6">
-            Connectez-vous avec des praticiens certifiés au Québec
+            Connectez-vous avec nos praticien&middot;ne&middot;s au Québec
           </p>
 
           <p className="font-cormorant italic text-xl sm:text-2xl text-parchemin/60 max-w-2xl mx-auto leading-relaxed mb-10">
-            Reiki, naturopathie, coaching spirituel, cristallothérapie — des thérapeutes certifiés
-            pour guider votre chemin de guérison
+            Des accompagnements mystiques et énergétiques pour cheminer à votre rythme
           </p>
 
           {/* CTA */}
@@ -313,7 +312,7 @@ export default async function SoinsPage() {
               Nos Praticiens
             </h2>
             <p className="font-philosopher text-parchemin/50 italic">
-              Des guides certifiés pour accompagner votre chemin
+              Des guides pour accompagner votre chemin
             </p>
           </div>
 

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Séances | Runes & Magie',
   description:
-    'Nos soins et consultations : séances individuelles avec nos praticien·ne·s certifié·e·s.',
+    'Nos soins et consultations : séances individuelles avec nos praticien·ne·s.',
 };
 
 export default async function SeancesPage() {
