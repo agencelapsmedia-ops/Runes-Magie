@@ -1,4 +1,5 @@
 import { CHAMPS_CEREMONIES } from './ceremonies';
+import { CHAMPS_HERBORISTERIE } from './herboristerie';
 
 /**
  * Registre des gabarits de pages éditoriales.
@@ -18,6 +19,7 @@ export interface GabaritPage {
 
 export const GABARITS: Record<string, GabaritPage> = {
   ceremonies: { champs: new Set<string>(CHAMPS_CEREMONIES as readonly string[]) },
+  herboristerie: { champs: new Set<string>(CHAMPS_HERBORISTERIE as readonly string[]) },
 };
 
 export function trouverGabarit(nom: string): GabaritPage | null {

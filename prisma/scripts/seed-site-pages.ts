@@ -22,6 +22,15 @@ const PAGES = [
     // Page structurelle : liée depuis l'accueil, ne doit pas disparaître par accident.
     isSystem: true,
   },
+  {
+    slug: 'herboristerie',
+    title: 'Herboristerie',
+    template: 'herboristerie',
+    metaDescription:
+      'L’herboristerie chez Runes & Magie : l’approche, les plantes alliées, la consultation, les formations et les herbes et encens de la boutique.',
+    sortOrder: 20,
+    isSystem: true,
+  },
 ];
 
 async function main() {

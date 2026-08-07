@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/contact',
     '/evenements',
     '/ceremonies',
+    '/herboristerie',
     '/confidentialite',
     // '/temple' reste hors sitemap tant que la page est une coquille (noindex).
   ].map((path) => ({

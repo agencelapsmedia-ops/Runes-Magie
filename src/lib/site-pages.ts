@@ -19,6 +19,7 @@ export const PUBLIC_PAGES: SitePage[] = [
   { label: 'Nos services & soins', href: '/soins/services' },
   { label: 'Praticiens', href: '/soins/praticiens' },
   { label: 'Cérémonies & animations privées', href: '/ceremonies' },
+  { label: 'Herboristerie', href: '/herboristerie' },
   { label: 'Événements', href: '/evenements' },
   { label: 'Runes Vikings', href: '/runes-vikings' },
   { label: 'À Propos', href: '/a-propos' },
