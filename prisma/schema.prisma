@@ -375,6 +375,13 @@ model Practitioner {
   googleRefreshToken        String?
   googleCalendarEmail       String?
   googleCalendarConnectedAt DateTime?
+  // Santé réelle du lien Google. `googleCalendarConnectedAt` ne dit que
+  // « elle s'est connectée un jour » : un jeton révoqué ou expiré reste en
+  // base et l'interface continuait d'afficher « connecté » pendant que plus
+  // rien ne se synchronisait. Ces deux champs disent l'état d'aujourd'hui.
+  // null = lien sain ; sinon, cause du dernier refus de Google.
+  googleSyncError           String?
+  googleSyncCheckedAt       DateTime?
   certificationUrls  String[]               @default([])
   insuranceUrl       String?
   insuranceNumber    String?

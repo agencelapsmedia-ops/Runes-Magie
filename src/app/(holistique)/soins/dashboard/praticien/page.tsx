@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
+import { verifierConnexionGoogle } from '@/lib/google-calendar';
 import Button from '@/components/ui/Button';
 import StripeConnectBanner from './StripeConnectBanner';
 import GoogleCalendarBanner from './GoogleCalendarBanner';
@@ -130,6 +131,12 @@ export default async function PraticienDashboardPage() {
   }
 
   const practitionerStatus = practitioner.status;
+
+  // Santé réelle du lien Google Agenda. Un jeton expiré ou révoqué reste en
+  // base : sans cette vérification, le bandeau afficherait « connecté » pendant
+  // que plus aucun rendez-vous ne rejoint l'agenda. Espacée d'une demi-heure
+  // pour ne pas appeler Google à chaque affichage du tableau de bord.
+  const googleSyncError = await verifierConnexionGoogle(practitionerId, 30);
 
   // --- PENDING state: waiting for approval ---
   if (practitionerStatus === 'PENDING') {
@@ -404,6 +411,7 @@ export default async function PraticienDashboardPage() {
         <GoogleCalendarBanner
           connected={!!practitioner.googleCalendarConnectedAt}
           googleEmail={practitioner.googleCalendarEmail}
+          syncError={googleSyncError}
         />
 
         {/* Bandeau modifications en attente */}

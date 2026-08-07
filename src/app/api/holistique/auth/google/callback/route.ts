@@ -40,6 +40,10 @@ export async function GET(req: Request) {
       googleRefreshToken: tokens.refreshToken,
       googleCalendarEmail: tokens.email,
       googleCalendarConnectedAt: new Date(),
+      // Nouveau jeton : le lien repart sain. Sans cette remise à zéro, le
+      // bandeau d'alerte resterait affiché après une reconnexion réussie.
+      googleSyncError: null,
+      googleSyncCheckedAt: new Date(),
     },
   });
 

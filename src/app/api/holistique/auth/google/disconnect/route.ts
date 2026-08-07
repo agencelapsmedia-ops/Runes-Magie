@@ -20,6 +20,9 @@ export async function POST() {
       googleRefreshToken: null,
       googleCalendarEmail: null,
       googleCalendarConnectedAt: null,
+      // Déconnexion volontaire : ce n'est pas une panne, pas d'alerte à garder.
+      googleSyncError: null,
+      googleSyncCheckedAt: null,
     },
   });
   return NextResponse.json({ ok: true });

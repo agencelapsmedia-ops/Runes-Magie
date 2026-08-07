@@ -6,9 +6,16 @@ import { useSearchParams } from 'next/navigation';
 interface Props {
   connected: boolean;
   googleEmail: string | null;
+  /**
+   * Cause du dernier refus de Google, ou null si le lien est sain. Distingue
+   * « connectée » de « connectée un jour, mais Google n'en veut plus » — un
+   * jeton expiré reste en base, et le bandeau affichait « connecté » pendant
+   * que plus rien ne se synchronisait.
+   */
+  syncError?: string | null;
 }
 
-export default function GoogleCalendarBanner({ connected, googleEmail }: Props) {
+export default function GoogleCalendarBanner({ connected, googleEmail, syncError }: Props) {
   const searchParams = useSearchParams();
   const googleStatus = searchParams.get('google'); // 'connected' | 'error' | 'denied' | null
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +59,104 @@ export default function GoogleCalendarBanner({ connected, googleEmail }: Props) 
         setError('Impossible de joindre le serveur.');
       }
     });
+  }
+
+  // Connectée, mais Google refuse le jeton → alerte franche.
+  // C'est l'état qui manquait : pendant trois semaines, des rendez-vous ont
+  // été pris sans jamais rejoindre l'agenda, et rien ne le signalait.
+  if (connected && syncError) {
+    return (
+      <div
+        role="alert"
+        style={{
+          background: 'rgba(196, 29, 110, 0.10)',
+          border: '1px solid rgba(196, 29, 110, 0.5)',
+          borderRadius: '8px',
+          padding: '18px 22px',
+          marginTop: '16px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '14px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span style={{ fontSize: '1.4rem', lineHeight: 1 }} aria-hidden>
+          ⚠️
+        </span>
+        <div style={{ flex: 1, minWidth: '260px' }}>
+          <p
+            style={{
+              fontFamily: 'var(--font-cinzel)',
+              color: '#f87171',
+              fontSize: '0.85rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              margin: '0 0 6px',
+            }}
+          >
+            Ton Google Agenda n&apos;est plus relié
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: '0.95rem',
+              lineHeight: 1.55,
+              fontFamily: 'var(--font-cormorant)',
+              color: 'var(--parchemin)',
+              opacity: 0.85,
+            }}
+          >
+            {syncError}{' '}
+            <strong style={{ color: '#f87171' }}>
+              Tes rendez-vous confirmés ne s&apos;ajoutent plus à ton agenda
+            </strong>{' '}
+            et tes événements personnels ne bloquent plus tes disponibilités.
+            {googleEmail ? ` Compte concerné : ${googleEmail}.` : ''}
+          </p>
+          <p
+            style={{
+              marginTop: '8px',
+              marginBottom: 0,
+              fontSize: '0.9rem',
+              fontStyle: 'italic',
+              fontFamily: 'var(--font-cormorant)',
+              color: 'var(--parchemin)',
+              opacity: 0.6,
+            }}
+          >
+            Reconnecte-toi : les rendez-vous à venir déjà confirmés seront
+            replacés dans ton agenda automatiquement.
+          </p>
+          {error && (
+            <p style={{ marginTop: '8px', fontSize: '0.85rem', color: '#f87171', fontFamily: 'var(--font-cormorant)' }}>
+              {error}
+            </p>
+          )}
+        </div>
+        {/* Route d'API, pas une page : le consentement OAuth exige une vraie
+            navigation du navigateur, que <Link> ne ferait pas. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a
+          href="/api/holistique/auth/google/connect"
+          style={{
+            padding: '12px 22px',
+            background: 'linear-gradient(to right, var(--violet-royal), var(--violet-profond))',
+            border: '1px solid var(--or-ancien)',
+            color: 'var(--or-ancien)',
+            fontFamily: 'var(--font-cinzel)',
+            fontSize: '0.8rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            borderRadius: '4px',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            alignSelf: 'center',
+          }}
+        >
+          Reconnecter
+        </a>
+      </div>
+    );
   }
 
   // Connecté → bandeau turquoise + bouton déconnecter
@@ -209,6 +314,9 @@ export default function GoogleCalendarBanner({ connected, googleEmail }: Props) 
             </p>
           )}
         </div>
+        {/* Route d'API, pas une page : le consentement OAuth exige une vraie
+            navigation du navigateur, que <Link> ne ferait pas. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/api/holistique/auth/google/connect"
           style={{

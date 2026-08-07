@@ -40,6 +40,93 @@ export function isGoogleCalendarConfigured(): boolean {
   );
 }
 
+/**
+ * Google a-t-il refusé le jeton lui-même (par opposition à une panne réseau
+ * ou à un quota) ? `invalid_grant` couvre le jeton expiré, révoqué depuis le
+ * compte Google, ou invalidé par un changement de mot de passe.
+ */
+function estRefusDeJeton(err: unknown): boolean {
+  const e = err as { response?: { data?: { error?: string } }; message?: string };
+  const code = e?.response?.data?.error ?? '';
+  if (code === 'invalid_grant' || code === 'unauthorized_client') return true;
+  return typeof e?.message === 'string' && e.message.includes('invalid_grant');
+}
+
+/**
+ * Consigne l'état du lien Google sur la fiche de la praticienne.
+ * `cause` null = lien sain. Best-effort : n'interrompt jamais l'appelant.
+ */
+async function noterEtatGoogle(practitionerId: string, cause: string | null): Promise<void> {
+  try {
+    await prisma.practitioner.update({
+      where: { id: practitionerId },
+      data: { googleSyncError: cause, googleSyncCheckedAt: new Date() },
+    });
+  } catch (err) {
+    console.error('[Google Calendar] impossible de consigner l\'état du lien', { practitionerId, err });
+  }
+}
+
+/**
+ * À appeler depuis les blocs `catch` des opérations Google : si l'échec vient
+ * d'un refus du jeton, le lien est marqué rompu pour que l'interface cesse
+ * d'afficher « connecté ». Les pannes passagères (réseau, quota) sont ignorées :
+ * elles ne veulent pas dire que la connexion est morte.
+ */
+async function signalerEchecGoogle(practitionerId: string, err: unknown): Promise<void> {
+  if (!estRefusDeJeton(err)) return;
+  await noterEtatGoogle(
+    practitionerId,
+    'Google a refusé l\'autorisation enregistrée (jeton expiré ou révoqué).',
+  );
+}
+
+/**
+ * Vérifie que le jeton stocké est toujours accepté par Google, en demandant un
+ * jeton d'accès. Espacé dans le temps : au-delà de `maxAgeMinutes`, on
+ * redemande ; sinon on renvoie le dernier verdict connu, sans appeler Google.
+ *
+ * Sert au bandeau du tableau de bord : c'est le seul moyen de distinguer
+ * « connectée » de « connectée un jour, mais Google n'en veut plus ».
+ *
+ * @returns la cause du refus, ou null si le lien est sain (ou non configuré).
+ */
+export async function verifierConnexionGoogle(
+  practitionerId: string,
+  maxAgeMinutes = 30,
+): Promise<string | null> {
+  if (!isGoogleCalendarConfigured()) return null;
+
+  const practitioner = await prisma.practitioner.findUnique({
+    where: { id: practitionerId },
+    select: { googleRefreshToken: true, googleSyncError: true, googleSyncCheckedAt: true },
+  });
+  if (!practitioner?.googleRefreshToken) return null; // pas connectée : pas une panne
+
+  const age = practitioner.googleSyncCheckedAt
+    ? Date.now() - practitioner.googleSyncCheckedAt.getTime()
+    : Infinity;
+  if (age < maxAgeMinutes * 60_000) return practitioner.googleSyncError;
+
+  const oauth2 = getOAuthClient();
+  oauth2.setCredentials({ refresh_token: practitioner.googleRefreshToken });
+  try {
+    await oauth2.getAccessToken();
+    await noterEtatGoogle(practitionerId, null);
+    return null;
+  } catch (err) {
+    if (!estRefusDeJeton(err)) {
+      // Panne passagère : on ne condamne pas le lien, et on ne met pas à jour
+      // l'horodatage pour retenter au prochain affichage.
+      console.error('[Google Calendar] vérification du lien impossible', { practitionerId, err });
+      return practitioner.googleSyncError;
+    }
+    const cause = 'Google a refusé l\'autorisation enregistrée (jeton expiré ou révoqué).';
+    await noterEtatGoogle(practitionerId, cause);
+    return cause;
+  }
+}
+
 /** URL de consentement Google vers laquelle rediriger la praticienne. */
 export function getGoogleAuthUrl(state: string): string {
   const oauth2 = getOAuthClient();
@@ -275,6 +362,7 @@ export async function syncFutureConfirmedAppointments(
     return { synced, total: appts.length };
   } catch (err) {
     console.error('[Google Calendar] échec rattrapage RDV', { practitionerId, err });
+    await signalerEchecGoogle(practitionerId, err);
     return { synced: 0, total: 0 };
   }
 }
@@ -312,6 +400,7 @@ export async function getBusyPeriods(
       .map((b) => ({ start: b.start, end: b.end }));
   } catch (err) {
     console.error('[Google Calendar] échec lecture free/busy', { practitionerId, err });
+    await signalerEchecGoogle(practitionerId, err);
     return [];
   }
 }
@@ -400,6 +489,7 @@ export async function getEvenementsOccupes(
     return { consulte: true, periodes };
   } catch (err) {
     console.error('[Google Calendar] échec lecture des événements', { practitionerId, err });
+    await signalerEchecGoogle(practitionerId, err);
     return { consulte: false, periodes: [] };
   }
 }
