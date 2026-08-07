@@ -337,6 +337,9 @@ model HolisticUser {
   lastName          String
   phone             String?
   locale            String                 @default("fr")
+  // Photo de profil. URL publique Supabase (bucket products, dossier membres).
+  // Traitée par le navigateur avant téléversement : carrée, 512 px, WebP < 200 Ko.
+  avatarUrl         String?
   // Décharge électronique LCCJTI
   dischargeSignedAt DateTime?
   dischargeIp       String?

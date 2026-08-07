@@ -9,6 +9,7 @@ export interface MembreUser {
   firstName: string;
   lastName: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 const NAV_ITEMS = [
@@ -28,6 +29,26 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
 
 function initials(user: MembreUser): string {
   return `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase() || '✦';
+}
+
+/** Photo de profil si la personne en a posé une, initiales sinon. */
+function Avatar({ user, taille }: { user: MembreUser; taille: 'sm' | 'md' }) {
+  const dimensions = taille === 'md' ? 'h-10 w-10 text-sm' : 'h-8 w-8 text-xs';
+  return (
+    <span
+      className={`flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full font-cinzel text-or-ancien ${dimensions}`}
+      style={{ background: 'rgba(74, 45, 122, 0.5)', border: '1px solid rgba(74, 45, 122, 0.7)' }}
+    >
+      {user.avatarUrl ? (
+        // Image Supabase déjà à sa taille finale (512 px) : l'optimiseur de
+        // Next n'apporterait rien pour un avatar de 32 à 40 px.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials(user)
+      )}
+    </span>
+  );
 }
 
 function NavLinks({
@@ -87,12 +108,7 @@ function SidebarContent({
         className="mx-5 mb-4 flex items-center gap-3 rounded-sm px-3 py-3"
         style={{ background: 'rgba(74, 45, 122, 0.18)', border: '1px solid rgba(74, 45, 122, 0.35)' }}
       >
-        <span
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-cinzel text-sm text-or-ancien"
-          style={{ background: 'rgba(74, 45, 122, 0.5)', border: '1px solid rgba(74, 45, 122, 0.7)' }}
-        >
-          {initials(user)}
-        </span>
+        <Avatar user={user} taille="md" />
         <div className="min-w-0">
           <p className="truncate font-cinzel text-xs text-parchemin">
             {user.firstName} {user.lastName}
@@ -167,12 +183,7 @@ export default function MembreShell({
         <span className="flex-1 truncate font-cinzel text-xs uppercase tracking-widest text-parchemin/80">
           {currentLabel}
         </span>
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-full font-cinzel text-xs text-or-ancien"
-          style={{ background: 'rgba(74, 45, 122, 0.5)', border: '1px solid rgba(74, 45, 122, 0.7)' }}
-        >
-          {initials(user)}
-        </span>
+        <Avatar user={user} taille="sm" />
       </header>
 
       {/* ── Drawer mobile ── */}

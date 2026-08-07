@@ -9,7 +9,7 @@ export default async function ProfilPage() {
   const member = sessionUserId
     ? await prisma.holisticUser.findUnique({
         where: { id: sessionUserId },
-        select: { firstName: true, lastName: true, email: true, phone: true },
+        select: { firstName: true, lastName: true, email: true, phone: true, avatarUrl: true },
       })
     : null;
 
@@ -23,6 +23,7 @@ export default async function ProfilPage() {
           lastName: member?.lastName ?? '',
           email: member?.email ?? '',
           phone: member?.phone ?? '',
+          avatarUrl: member?.avatarUrl ?? '',
         }}
       />
     </div>

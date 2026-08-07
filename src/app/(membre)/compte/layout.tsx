@@ -19,7 +19,7 @@ export default async function CompteLayout({ children }: { children: React.React
   const member = sessionUserId
     ? await prisma.holisticUser.findUnique({
         where: { id: sessionUserId },
-        select: { firstName: true, lastName: true, email: true },
+        select: { firstName: true, lastName: true, email: true, avatarUrl: true },
       })
     : null;
 
