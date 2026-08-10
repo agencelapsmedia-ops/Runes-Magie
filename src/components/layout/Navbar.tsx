@@ -6,12 +6,12 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import MobileMenu from './MobileMenu';
+import AccountMenu from './AccountMenu';
 import GhostCaracal from '@/components/hero/GhostCaracal';
 import { DEFAULT_HEADER_LINKS, type MenuLink } from '@/lib/menu-defaults';
 import {
   useSessionUtilisateur,
   espacePrincipal,
-  aAccesAdmin,
   oublierSession,
 } from '@/lib/session-utilisateur';
 
@@ -23,6 +23,7 @@ export default function Navbar() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [cartCount] = useState(0);
   const [ghostTrigger, setGhostTrigger] = useState(0);
   const { utilisateur: sessionUser, charge: sessionLoaded } = useSessionUtilisateur();
@@ -47,10 +48,9 @@ export default function Navbar() {
   const dashboardHref = sessionUser ? espace.href : '/soins/auth/login';
   const dashboardLabel = sessionUser ? espace.label : 'Se Connecter';
 
-  // La praticienne propriétaire administre le site sans porter le rôle ADMIN :
-  // son accès vient de `isOwner`. Sans ce test, l'entrée « Administration »
-  // n'apparaissait nulle part sur le site principal, ni mobile ni desktop.
-  const montrerAdmin = aAccesAdmin(sessionUser) && espace.href !== '/admin';
+  // L'entrée « Administration » vit désormais dans AccountMenu, qui applique
+  // lui-même `aAccesAdmin` : la praticienne propriétaire y a droit sans porter
+  // le rôle ADMIN. La règle reste dans session-utilisateur.ts, jamais recopiée.
 
   const handleConnexion = useCallback(
     (e: React.MouseEvent) => {
@@ -84,9 +84,10 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Fermer le menu mobile lors du changement de page
+  // Fermer les menus lors du changement de page
   useEffect(() => {
     setMobileMenuOpen(false);
+    setAccountMenuOpen(false);
   }, [pathname]);
 
   // Bloquer le scroll du body quand le menu mobile est ouvert
@@ -128,7 +129,7 @@ export default function Navbar() {
             {/* Logo */}
             <Link
               href="/"
-              className="flex items-center gap-3 group"
+              className="flex shrink-0 items-center gap-2 lg:gap-3 group"
               aria-label="Runes & Magie - Accueil"
             >
               <div className="relative h-12 w-10 flex items-center justify-center transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(201,168,76,0.5)]">
@@ -140,13 +141,16 @@ export default function Navbar() {
                   className="h-full w-auto object-contain"
                 />
               </div>
-              <span className="font-cinzel-decorative text-base sm:text-lg font-bold text-gradient-gold">
+              {/* Masqué entre 1024 et 1280 px : c'est exactement là que les cinq
+                  liens du menu manquaient de place. Le logo et l'aria-label du
+                  lien parent gardent l'identification. */}
+              <span className="font-cinzel-decorative text-base sm:text-lg font-bold text-gradient-gold whitespace-nowrap hidden sm:inline lg:hidden xl:inline">
                 Runes & Magie
               </span>
             </Link>
 
             {/* Navigation desktop */}
-            <div className="hidden lg:flex lg:items-center lg:gap-0.5">
+            <div className="hidden min-w-0 lg:flex lg:items-center lg:gap-0 xl:gap-0.5">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -155,7 +159,7 @@ export default function Navbar() {
                     href={link.href}
                     target={link.openInNewTab ? '_blank' : undefined}
                     rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className={`group font-cinzel relative px-3.5 py-2 text-[0.8rem] font-medium uppercase tracking-[0.12em] transition-colors duration-300 ${
+                    className={`group font-cinzel relative whitespace-nowrap px-2.5 xl:px-3.5 py-2 text-[0.72rem] xl:text-[0.8rem] font-medium uppercase tracking-[0.08em] xl:tracking-[0.12em] transition-colors duration-300 ${
                       isActive
                         ? 'text-or-clair'
                         : 'text-parchemin/85 hover:text-or-clair'
@@ -174,61 +178,50 @@ export default function Navbar() {
             </div>
 
             {/* Actions droites */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Bouton Se Connecter / Dashboard — adaptatif selon état de session */}
-              {sessionLoaded && (
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 xl:gap-3">
+              {/* Visiteur : bouton de connexion (avec l'animation caracal) */}
+              {sessionLoaded && !sessionUser && (
                 <button
                   onClick={handleConnexion}
-                  title={sessionUser ? `Connecté en tant que ${sessionUser.name ?? sessionUser.email}` : 'Se connecter'}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-parchemin/80 font-cinzel text-[0.7rem] uppercase tracking-[0.12em] transition-colors duration-300 hover:text-or-clair"
+                  title="Se connecter"
+                  className="hidden sm:flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-parchemin/80 font-cinzel text-[0.7rem] uppercase tracking-[0.12em] whitespace-nowrap transition-colors duration-300 hover:text-or-clair"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                   </svg>
                   {dashboardLabel}
                 </button>
               )}
 
-              {/* Administration — propriétaire (isOwner) ou rôle ADMIN */}
-              {sessionLoaded && montrerAdmin && (
-                <Link
-                  href="/admin"
-                  title="Administration"
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-or-ancien/90 font-cinzel text-[0.7rem] uppercase tracking-[0.12em] transition-colors duration-300 hover:text-or-clair"
-                >
-                  <span aria-hidden>✦</span>
-                  Administration
-                </Link>
-              )}
-
               {/* Bouton « Rejoindre le Clan » — CTA principal (masqué si déjà connecté) */}
               {sessionLoaded && !sessionUser && (
                 <Link
                   href="/soins/auth/register"
-                  className="hidden sm:inline-flex items-center rounded-md bg-gradient-to-r from-or-ancien to-or-clair px-4 py-2 font-cinzel text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-charbon-mystere border border-or-clair/60 transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_18px_rgba(201,168,76,0.5)] active:scale-[0.98]"
+                  className="hidden sm:inline-flex shrink-0 items-center rounded-md bg-gradient-to-r from-or-ancien to-or-clair px-3 xl:px-4 py-2 font-cinzel text-[0.7rem] font-semibold uppercase tracking-[0.1em] xl:tracking-[0.12em] whitespace-nowrap text-charbon-mystere border border-or-clair/60 transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_18px_rgba(201,168,76,0.5)] active:scale-[0.98]"
                 >
                   Rejoindre le Clan
                 </Link>
               )}
 
-              {/* Bouton Déconnexion (visible uniquement si connecté) */}
+              {/* Connecté : « Mon espace », « ✦ Administration » et « Déconnexion »
+                  repliés en un seul déclencheur. Voir AccountMenu.tsx — c'est ce
+                  qui libère la place qui manquait entre 1024 et 1280 px. */}
               {sessionLoaded && sessionUser && (
-                <button
-                  onClick={handleLogout}
-                  className="hidden sm:flex items-center px-3 py-1.5 text-parchemin/50 hover:text-or-ancien font-cinzel text-[0.65rem] uppercase tracking-wider transition-colors duration-300"
-                  title="Se déconnecter"
-                >
-                  Déconnexion
-                </button>
+                <AccountMenu
+                  utilisateur={sessionUser}
+                  onLogout={handleLogout}
+                  open={accountMenuOpen}
+                  onOpenChange={setAccountMenuOpen}
+                />
               )}
 
               {/* Séparateur vertical discret */}
-              <span aria-hidden className="hidden sm:block h-5 w-px bg-or-ancien/25" />
+              <span aria-hidden className="hidden sm:block h-5 w-px shrink-0 bg-or-ancien/25" />
 
               {/* Icone panier */}
               <Link
                 href="/panier"
-                className="relative p-2 text-parchemin/80 transition-colors duration-300 hover:text-or-clair"
+                className="relative shrink-0 p-2 text-parchemin/80 transition-colors duration-300 hover:text-or-clair"
                 aria-label={`Panier (${cartCount} articles)`}
               >
                 <svg
@@ -255,8 +248,15 @@ export default function Navbar() {
               {/* Hamburger mobile */}
               <button
                 type="button"
-                className="lg:hidden p-2 text-parchemin/80 transition-colors duration-300 hover:text-or-clair"
-                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden shrink-0 p-2 text-parchemin/80 transition-colors duration-300 hover:text-or-clair"
+                onClick={() => {
+                  // Entre 640 et 1024 px les deux menus coexistent, et le menu
+                  // mobile est en z-[60] : sans cette fermeture, le panneau du
+                  // compte resterait ouvert sous le calque, invisible mais
+                  // toujours focalisable au clavier.
+                  setAccountMenuOpen(false);
+                  setMobileMenuOpen(true);
+                }}
                 aria-label="Ouvrir le menu"
                 aria-expanded={mobileMenuOpen}
               >
