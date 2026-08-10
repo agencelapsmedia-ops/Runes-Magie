@@ -58,7 +58,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="font-cormorant text-base leading-relaxed text-parchemin/60 mt-4 max-w-xs">
-              Boutique-&eacute;cole de sorcellerie d&eacute;di&eacute;e aux runes vikings,
+              &Eacute;cole de magie d&eacute;di&eacute;e aux runes vikings,
               &agrave; la magie ancestrale et aux arts mystiques. D&eacute;couvrez votre
               chemin spirituel avec Annabelle Dionne.
             </p>

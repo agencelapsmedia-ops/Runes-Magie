@@ -18,12 +18,12 @@ import {
 } from "@/lib/constants";
 
 const SITE_DESCRIPTION =
-  "Boutique-école de sorcellerie dédiée aux runes vikings, à la magie ancestrale et aux arts mystiques. Découvrez votre chemin spirituel avec Annabelle Dionne — Noctura Anna.";
+  "École de magie dédiée aux runes vikings, à la magie ancestrale et aux arts mystiques. Découvrez votre chemin spirituel avec Annabelle Dionne — Noctura Anna.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Runes & Magie | Boutique-École de Sorcellerie",
+    default: "Runes & Magie | École de Magie",
     // Les sous-pages fournissent juste leur titre ; le suffixe est ajouté ici.
     template: "%s | Runes & Magie",
   },
@@ -47,13 +47,13 @@ export const metadata: Metadata = {
     locale: "fr_CA",
     siteName: BOUTIQUE_NAME,
     url: SITE_URL,
-    title: "Runes & Magie | Boutique-École de Sorcellerie",
+    title: "Runes & Magie | École de Magie",
     description: SITE_DESCRIPTION,
     images: [{ url: SITE_LOGO_URL, alt: BOUTIQUE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Runes & Magie | Boutique-École de Sorcellerie",
+    title: "Runes & Magie | École de Magie",
     description: SITE_DESCRIPTION,
     images: [SITE_LOGO_URL],
   },
