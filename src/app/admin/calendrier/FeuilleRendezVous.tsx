@@ -691,7 +691,10 @@ export default function FeuilleRendezVous({
           </div>
         </div>
 
-        <div style={{ padding: '16px' }}>
+        {/* Marge basse généreuse : le menu flottant du bas (barre d'onglets
+            mobile) recouvre la fin de la feuille — sans elle, le dernier
+            bouton (« Continuer », « Confirmer »…) est inatteignable. */}
+        <div style={{ padding: '16px 16px calc(104px + env(safe-area-inset-bottom))' }}>
           {/* ---------------------------------------------------------- */}
           {/* Étape 1 — la cliente                                        */}
           {/* ---------------------------------------------------------- */}
@@ -704,50 +707,10 @@ export default function FeuilleRendezVous({
                 style={{ ...champ, marginBottom: '12px' }}
               />
 
-              {recherche.trim().length >= 2 ? (
-                <div>
-                  {rechercheEnCours && resultats.length === 0 && (
-                    <p style={{ fontSize: '0.85rem', color: GRIS_CLAIR, margin: '0 0 10px' }}>Recherche…</p>
-                  )}
-                  {!rechercheEnCours && resultats.length === 0 && (
-                    <p style={{ fontSize: '0.85rem', color: GRIS, margin: '0 0 10px' }}>
-                      Aucune cliente trouvée. Utilise « Nouvelle cliente » plus bas.
-                    </p>
-                  )}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {resultats.map((c) => (
-                      <button key={c.id} type="button" onClick={() => choisirFiche(c)} style={carte(false)}>
-                        <strong>{c.firstName} {c.lastName}</strong>
-                        <span style={{ display: 'block', fontSize: '0.8rem', color: GRIS }}>
-                          {c.phone || 'sans téléphone'}{c.email ? ` · ${c.email}` : ' · sans courriel'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p style={{ ...sousTitre, margin: '0 0 8px' }}>Dernières clientes</p>
-                  {clientesRecentes.length === 0 ? (
-                    <p style={{ fontSize: '0.85rem', color: GRIS, margin: '0 0 10px' }}>
-                      Aucune cliente récente. Cherche par nom ou crée une nouvelle fiche.
-                    </p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {clientesRecentes.map((c) => (
-                        <button key={c.id} type="button" onClick={() => choisirFiche(c)} style={carte(false)}>
-                          <strong>{c.firstName} {c.lastName}</strong>
-                          <span style={{ display: 'block', fontSize: '0.8rem', color: GRIS }}>
-                            {c.phone || 'sans téléphone'}{c.email ? ` · ${c.email}` : ' · sans courriel'}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div style={{ marginTop: '16px', borderTop: `1px solid ${BORDURE}`, paddingTop: '8px' }}>
+              {/* En tête de liste : sur téléphone, la liste des dernières clientes
+                  remplit l'écran et le menu flottant du bas masquait ce bouton
+                  quand il vivait sous la liste. */}
+              <div style={{ marginBottom: '12px', borderBottom: `1px solid ${BORDURE}`, paddingBottom: '8px' }}>
                 {/* Ce bouton ouvre et referme, rien de plus : rouvrir un panneau ne
                     jette jamais son contenu. Le seul chemin destructeur est le lien
                     ci-dessous, dont l'intitulé annonce ce qu'il efface. Le libellé dit
@@ -862,6 +825,50 @@ export default function FeuilleRendezVous({
                   </div>
                 )}
               </div>
+
+              {recherche.trim().length >= 2 ? (
+                <div>
+                  {rechercheEnCours && resultats.length === 0 && (
+                    <p style={{ fontSize: '0.85rem', color: GRIS_CLAIR, margin: '0 0 10px' }}>Recherche…</p>
+                  )}
+                  {!rechercheEnCours && resultats.length === 0 && (
+                    <p style={{ fontSize: '0.85rem', color: GRIS, margin: '0 0 10px' }}>
+                      Aucune cliente trouvée. Utilise « + Nouvelle cliente » juste au-dessus.
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {resultats.map((c) => (
+                      <button key={c.id} type="button" onClick={() => choisirFiche(c)} style={carte(false)}>
+                        <strong>{c.firstName} {c.lastName}</strong>
+                        <span style={{ display: 'block', fontSize: '0.8rem', color: GRIS }}>
+                          {c.phone || 'sans téléphone'}{c.email ? ` · ${c.email}` : ' · sans courriel'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p style={{ ...sousTitre, margin: '0 0 8px' }}>Dernières clientes</p>
+                  {clientesRecentes.length === 0 ? (
+                    <p style={{ fontSize: '0.85rem', color: GRIS, margin: '0 0 10px' }}>
+                      Aucune cliente récente. Cherche par nom ou crée une nouvelle fiche.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {clientesRecentes.map((c) => (
+                        <button key={c.id} type="button" onClick={() => choisirFiche(c)} style={carte(false)}>
+                          <strong>{c.firstName} {c.lastName}</strong>
+                          <span style={{ display: 'block', fontSize: '0.8rem', color: GRIS }}>
+                            {c.phone || 'sans téléphone'}{c.email ? ` · ${c.email}` : ' · sans courriel'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           )}
 
