@@ -274,7 +274,8 @@ export async function POST(req: Request) {
   // 2 modes de paiement supportés :
   //  - Stripe Connect prêt : split auto au moment du paiement (65 % praticienne, 35 % plateforme)
   //  - Stripe Connect pas prêt : encaisse tout sur le compte plateforme, redistribution manuelle plus tard
-  const usesStripeConnect = !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
+  // La propriétaire (isOwner) encaisse toujours 100 % sur le compte principal — jamais de Connect.
+  const usesStripeConnect = !practitioner.isOwner && !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
 
   // Description claire selon acompte ou total
   const itemDescription = usesDeposit

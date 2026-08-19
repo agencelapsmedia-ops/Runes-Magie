@@ -401,11 +401,13 @@ export default async function PraticienDashboardPage() {
           )}
         </nav>
 
-        {/* Bandeau Stripe Connect (toujours affiché — soit ✓ vert, soit CTA configuration) */}
-        <StripeConnectBanner
-          stripeAccountReady={practitioner.stripeAccountReady}
-          hasStripeAccount={!!practitioner.stripeAccountId}
-        />
+        {/* Bandeau Stripe Connect — jamais pour la propriétaire (elle encaisse sur le compte principal) */}
+        {!practitioner.isOwner && (
+          <StripeConnectBanner
+            stripeAccountReady={practitioner.stripeAccountReady}
+            hasStripeAccount={!!practitioner.stripeAccountId}
+          />
+        )}
 
         {/* Bandeau Google Agenda (connexion OAuth par praticienne) */}
         <GoogleCalendarBanner

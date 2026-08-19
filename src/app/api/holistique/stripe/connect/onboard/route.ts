@@ -52,6 +52,15 @@ export async function POST() {
     return NextResponse.json({ error: 'Praticien·ne introuvable.' }, { status: 404 });
   }
 
+  // La propriétaire encaisse 100 % des paiements directement sur le compte Stripe
+  // principal de Runes & Magie — aucun compte Connect ne doit lui être rattaché.
+  if (practitioner.isOwner) {
+    return NextResponse.json(
+      { error: 'La propriétaire encaisse directement sur le compte Stripe principal — aucun compte Stripe Express requis.' },
+      { status: 403 },
+    );
+  }
+
   // Réutilise l'account existant ou en crée un nouveau
   let stripeAccountId = practitioner.stripeAccountId;
 

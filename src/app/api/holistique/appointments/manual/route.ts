@@ -288,6 +288,7 @@ export async function POST(req: Request) {
             stripeAccountId: practitioner.stripeAccountId,
             stripeAccountReady: practitioner.stripeAccountReady,
             commissionPct: practitioner.commissionPct,
+            isOwner: practitioner.isOwner,
           },
           amountCad: amountTotal,
           productName: `${offering.name} — ${practitioner.user.firstName} ${practitioner.user.lastName}`.trim(),

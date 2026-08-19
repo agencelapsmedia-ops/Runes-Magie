@@ -60,6 +60,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         stripeAccountId: appt.practitioner.stripeAccountId,
         stripeAccountReady: appt.practitioner.stripeAccountReady,
         commissionPct: appt.practitioner.commissionPct,
+        isOwner: appt.practitioner.isOwner,
       },
       amountCad,
       productName: emailData.serviceName,

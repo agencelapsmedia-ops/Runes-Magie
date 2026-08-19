@@ -90,7 +90,8 @@ export async function POST(
 
     // Calcule le split pour Stripe Connect si applicable
     const practitioner = appointment.practitioner;
-    const usesStripeConnect = !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
+    // La propriétaire (isOwner) encaisse toujours 100 % sur le compte principal — jamais de Connect.
+    const usesStripeConnect = !practitioner.isOwner && !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
     const commissionRate =
       (practitioner.commissionPct ?? parseFloat(process.env.COMMISSION_RATE || '35')) / 100;
     const commissionOnRemainder = remainingAmount * commissionRate;

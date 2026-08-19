@@ -13,14 +13,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03
 export async function createHolisticPaymentLink(params: {
   appointmentId: string;
   v2BookingId?: string | null;
-  practitioner: { stripeAccountId: string | null; stripeAccountReady: boolean; commissionPct: number };
+  practitioner: { stripeAccountId: string | null; stripeAccountReady: boolean; commissionPct: number; isOwner?: boolean };
   amountCad: number;
   productName: string;
   description: string;
   returnBase: string;
 }): Promise<string | null> {
   const { appointmentId, v2BookingId, practitioner, amountCad, productName, description, returnBase } = params;
-  const usesStripeConnect = !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
+  // La propriétaire (isOwner) encaisse toujours 100 % sur le compte principal — jamais de Connect.
+  const usesStripeConnect = !practitioner.isOwner && !!(practitioner.stripeAccountId && practitioner.stripeAccountReady);
   const commissionRate = (practitioner.commissionPct ?? parseFloat(process.env.COMMISSION_RATE || '35')) / 100;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
