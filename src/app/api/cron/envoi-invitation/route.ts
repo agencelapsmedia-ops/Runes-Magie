@@ -25,7 +25,7 @@ export const maxDuration = 60;
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.FROM_EMAIL || 'Runes & Magie <noreply@runesetmagie.ca>';
-const SUJET = 'Noctura vous invite — le passage du Feu, samedi';
+const SUJET = 'Noctura vous invite — Rituel des Justes de voix, samedi';
 
 function estAutorise(req: Request): boolean {
   const secret =
@@ -45,22 +45,23 @@ function html(lienDesabonnement: string): string {
     <p style="color:rgba(245,240,232,0.5);font-size:12px;margin:4px 0 0;letter-spacing:3px;">BOUTIQUE-ECOLE DE SORCELLERIE</p>
   </div>
   <div style="background:#1A1A2E;border:1px solid rgba(74,45,122,0.4);border-radius:8px;padding:32px;">
-    <p style="color:#2EC4B6;font-size:12px;letter-spacing:2px;margin:0 0 8px;text-transform:uppercase;">Sabbat de Lughnasadh</p>
-    <h2 style="color:#C9A84C;margin:0 0 8px;font-size:24px;line-height:1.3;">Le passage du Feu</h2>
+    <p style="color:#2EC4B6;font-size:12px;letter-spacing:2px;margin:0 0 8px;text-transform:uppercase;">Temple des Arcanes</p>
+    <h2 style="color:#C9A84C;margin:0 0 8px;font-size:24px;line-height:1.3;">Rituel des Justes de voix</h2>
     <p style="color:#E8DCC8;font-style:italic;margin:0 0 24px;">avec Noctura et Odalguir</p>
     <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:16px;margin:0 0 24px;">
-      <p style="margin:4px 0;color:#C9A84C;font-size:17px;"><strong>Samedi 8 août, de 13 h à 14 h 30</strong></p>
-      <p style="margin:4px 0;color:#E8DCC8;">Le Temple — Boutique Runes &amp; Magie <em>(sous-sol)</em></p>
+      <p style="margin:4px 0;color:#C9A84C;font-size:17px;"><strong>Samedi 22 août, de 13 h à 14 h 30</strong></p>
+      <p style="margin:4px 0;color:#E8DCC8;">Le Temple des Arcanes — Boutique Runes &amp; Magie <em>(sous-sol)</em></p>
       <p style="margin:4px 0;color:#E8DCC8;">149 rue Saint-Eustache, Saint-Eustache</p>
-      <p style="margin:12px 0 0;color:#2EC4B6;font-size:15px;letter-spacing:1px;"><strong>C'EST GRATUIT — 15 places seulement</strong></p>
+      <p style="margin:12px 0 0;color:#2EC4B6;font-size:15px;letter-spacing:1px;"><strong>ENTRÉE GRATUITE POUR TOUS — 25 places</strong></p>
     </div>
-    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Venez célébrer le passage du Feu cet été et apposer votre intention pour manifester votre meilleur futur dans la Toile.</p>
-    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Nous ferons un rituel inspiré du sabbat de Lughnasadh avec les 4 éléments de la Nature et à l'aide de la Magie Naturelle. Nous explorerons l'élément sacré du Feu et ses concepts, et nous invoquerons l'énergie de la <strong style="color:#C9A84C;">Déesse Sekhmet</strong>, divinité égyptienne à tête de lionne, afin de nous instiller de cet archétype de force, de protection et de volonté jusqu'à Samhain.</p>
-    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Nous aborderons votre lien avec cet élément : comment il vous affecte au quotidien, comment il peut nourrir votre <em>Ka</em> — votre énergie vitale, votre feu spirituel — et comment il influence vos relations et votre bien-être.</p>
-    <p style="color:#E8DCC8;line-height:1.7;margin:0 0 28px;font-style:italic;">Guidance personnelle et partages ouverts sont également au menu.</p>
+    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Le Temple des Arcanes vous accueille dans son ambiance feutrée d'époque, avec ses murs de pierre ancestraux, au sous-sol de la Tourelle du vieux Saint-Eustache (1903) — un lieu rempli de magie et de bienveillance, inclusif et ouvert d'esprit pour tous.</p>
+    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Le rituel consiste en une cérémonie des 4 éléments et l'invocation de la <strong style="color:#C9A84C;">déesse Nekhbeth</strong>, divinité égyptienne à tête de vautour blanc, associée à la protection divine, à la transmutation des ombres, aux cycles vie-mort-renaissance ainsi qu'aux femmes enceintes et à leurs enfants. Noctura guide l'assemblée dans une méditation afin de canaliser les messages de Nekhbeth, au son d'une musique enchanteresse.</p>
+    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Nous enverrons ensuite l'intention de chacun dans la <em>Toile du Wyrd</em> afin de la manifester dans la réalité, puis chacun sera libre de partager son expérience, ses visions et le message personnel reçu.</p>
+    <p style="color:#E8DCC8;line-height:1.7;margin:0 0 28px;font-style:italic;">Apportez votre intention à l'intérieur de vous — pour la semaine, ou jusqu'au prochain sabbat (Mabon, 19 septembre). Cette cérémonie a lieu aux deux semaines, le samedi à 13 h au Temple.</p>
     <div style="text-align:center;margin:28px 0;">
-      <a href="https://www.runesetmagie.ca/evenements/rituel-de-lughnasadh" style="display:inline-block;padding:16px 36px;background:linear-gradient(to right,#4A2D7A,#2D1B4E);border:1px solid #C9A84C;border-radius:4px;color:#C9A84C;font-family:Georgia,serif;font-size:15px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;">Réserver ma place</a>
+      <a href="https://www.runesetmagie.ca/evenements/rituel-des-justes-de-voix" style="display:inline-block;padding:16px 36px;background:linear-gradient(to right,#4A2D7A,#2D1B4E);border:1px solid #C9A84C;border-radius:4px;color:#C9A84C;font-family:Georgia,serif;font-size:15px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;">Réserver ma place</a>
     </div>
+    <p style="color:#E8DCC8;line-height:1.7;margin:0 0 16px;text-align:center;font-style:italic;">Rallume ton feu intérieur, tout est possible, nous te voyons…<br>— Noctura &amp; Odalguir )O(</p>
     <p style="color:rgba(245,240,232,0.6);font-size:13px;text-align:center;margin:0;">Vous préférez le téléphone ? Appelez Noctura au <a href="tel:+15143487705" style="color:#C9A84C;text-decoration:none;">(514) 348-7705</a>.</p>
   </div>
   <div style="text-align:center;margin-top:32px;color:rgba(245,240,232,0.4);font-size:13px;">
