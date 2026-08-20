@@ -42,6 +42,7 @@ interface BookingEmailData {
   remainingAmount: number;
   totalAmount: number;
   dailyRoomUrl?: string | null;
+  paymentMode?: string | null; // null = Stripe (site) ; 'INTERAC' | 'CASH' | 'STRIPE_LINK' pour les autres parcours
 }
 
 /**
@@ -179,11 +180,23 @@ export async function sendBookingNotificationToPractitioner(data: BookingEmailDa
         ${data.notes ? `<p style="margin: 12px 0 4px; color: #E8DCC8;"><strong>Notes du client :</strong><br><em>${data.notes}</em></p>` : ''}
       </div>
 
+      ${data.paymentMode === 'INTERAC' ? `
+      <div style="background: rgba(201, 168, 76, 0.12); border: 1px solid rgba(201, 168, 76, 0.5); border-radius: 6px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0 0 8px; color: #C9A84C; font-size: 15px; line-height: 1.5;">
+          ⏳ <strong>Paiement par virement Interac — ${data.totalAmount.toFixed(2)} $ EN ATTENTE</strong>
+        </p>
+        <p style="margin: 0; color: #E8DCC8; font-size: 14px; line-height: 1.6;">
+          Le virement n'a <strong>PAS encore été confirmé</strong>. Tu dois :<br>
+          1. Vérifier dans ton compte bancaire que le virement Interac de <strong>${data.totalAmount.toFixed(2)} $</strong> a bien été reçu et accepté.<br>
+          2. Confirmer la réception dans ton pupitre pour approuver le rendez-vous.<br>
+          Sans confirmation, la réservation sera <strong>annulée automatiquement après 30 minutes</strong> et le créneau remis en disponibilité.
+        </p>
+      </div>` : `
       <div style="background: rgba(46, 196, 182, 0.1); border: 1px solid rgba(46, 196, 182, 0.3); border-radius: 6px; padding: 16px; margin: 16px 0;">
         <p style="margin: 0; color: #E8DCC8; font-size: 14px; line-height: 1.5;">
           💰 <strong>${data.depositAmount.toFixed(2)} $</strong> d'acompte reçu (${data.totalAmount.toFixed(2)} $ au total, dont ${data.remainingAmount.toFixed(2)} $ à facturer à la fin de la séance).
         </p>
-      </div>
+      </div>`}
 
       <div style="text-align: center; margin: 24px 0 8px;">
         <a href="${dashboardUrl}" style="display: inline-block; padding: 12px 28px; background: linear-gradient(135deg, #4A2D7A, #2D1B4E); color: #C9A84C; text-decoration: none; border-radius: 4px; font-size: 14px;">
@@ -208,7 +221,9 @@ export async function sendBookingNotificationToPractitioner(data: BookingEmailDa
     await resend.emails.send({
       from: FROM,
       to: data.practitionerEmail,
-      subject: `Nouveau RDV — ${data.clientFirstName} le ${formatMontrealDateTime(data.startsAt)}`,
+      subject: data.paymentMode === 'INTERAC'
+        ? `⏳ Nouveau RDV (Interac À VÉRIFIER) — ${data.clientFirstName} le ${formatMontrealDateTime(data.startsAt)}`
+        : `Nouveau RDV — ${data.clientFirstName} le ${formatMontrealDateTime(data.startsAt)}`,
       html,
     });
   } catch (err) {
@@ -283,6 +298,7 @@ export async function buildBookingEmailData(appointmentId: string): Promise<Book
     remainingAmount: appt.remainingAmount ?? 0,
     totalAmount: appt.totalAmount ?? 0,
     dailyRoomUrl: appt.dailyRoomUrl ?? null,
+    paymentMode: appt.paymentMode ?? null,
   };
 }
 
