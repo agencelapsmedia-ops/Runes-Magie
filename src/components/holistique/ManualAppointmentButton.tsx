@@ -57,7 +57,7 @@ export default function ManualAppointmentButton({
   const [email, setEmail] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [mode, setMode] = useState<'IN_PERSON' | 'VIRTUAL'>('IN_PERSON');
-  const [paymentMode, setPaymentMode] = useState<'CASH' | 'STRIPE_LINK' | 'INTERAC'>('CASH');
+  const [paymentMode, setPaymentMode] = useState<'CASH' | 'STRIPE_LINK' | 'INTERAC'>('STRIPE_LINK');
   const [notes, setNotes] = useState('');
 
   const offerings = useMemo(
@@ -111,7 +111,7 @@ export default function ManualAppointmentButton({
 
   function reset() {
     setOfferingId(''); setFirstName(''); setLastName(''); setPhone(''); setEmail('');
-    setStartsAt(''); setMode('IN_PERSON'); setPaymentMode('CASH'); setNotes('');
+    setStartsAt(''); setMode('IN_PERSON'); setPaymentMode('STRIPE_LINK'); setNotes('');
     setClientSearch(''); setClientHits([]);
     setError(null); setInfo(null);
   }
@@ -123,8 +123,8 @@ export default function ManualAppointmentButton({
       setError('Remplis la praticienne, le soin, la cliente (prénom, nom, téléphone) et la date.');
       return;
     }
-    if (!hasEmail && paymentMode !== 'CASH') {
-      setError('Sans courriel, seul le paiement comptant est possible.');
+    if (!hasEmail) {
+      setError('Un courriel est requis pour envoyer le paiement (carte ou virement Interac).');
       return;
     }
     startTransition(async () => {
@@ -258,11 +258,7 @@ export default function ManualAppointmentButton({
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      // Sans courriel, seul le comptant est possible → on y revient.
-                      if (!e.target.value.trim() && paymentMode !== 'CASH') setPaymentMode('CASH');
-                    }}
+                    onChange={(e) => setEmail(e.target.value)}
                     style={field}
                   />
                 </label>
@@ -281,21 +277,26 @@ export default function ManualAppointmentButton({
 
               <div style={label}>Paiement
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', fontWeight: 400 }}>
-                  <button type="button" onClick={() => setPaymentMode('CASH')} style={payOption(paymentMode === 'CASH')}>
-                    <strong style={{ fontSize: '0.9rem' }}>💵 Comptant</strong>
-                    <span style={payHint}>Payé sur place — marqué payé tout de suite.</span>
-                  </button>
                   <button
                     type="button"
                     disabled={!hasEmail}
                     onClick={() => hasEmail && setPaymentMode('STRIPE_LINK')}
                     style={payOption(paymentMode === 'STRIPE_LINK', !hasEmail)}
                   >
-                    <strong style={{ fontSize: '0.9rem' }}>💳 À payer en ligne</strong>
-                    <span style={payHint}>La cliente reçoit un courriel avec carte ET virement Interac — elle choisit.</span>
+                    <strong style={{ fontSize: '0.9rem' }}>💳 Carte de crédit</strong>
+                    <span style={payHint}>La cliente reçoit un courriel avec un lien de paiement sécurisé.</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!hasEmail}
+                    onClick={() => hasEmail && setPaymentMode('INTERAC')}
+                    style={payOption(paymentMode === 'INTERAC', !hasEmail)}
+                  >
+                    <strong style={{ fontSize: '0.9rem' }}>🏦 Virement Interac</strong>
+                    <span style={payHint}>La cliente reçoit les instructions de virement — à confirmer dans le pupitre une fois l'argent reçu.</span>
                   </button>
                 </div>
-                {!hasEmail && <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: '8px 0 0', fontWeight: 400 }}>Ajoute un courriel pour proposer le paiement en ligne. Sinon : comptant.</p>}
+                {!hasEmail && <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: '8px 0 0', fontWeight: 400 }}>Un courriel est requis pour envoyer le paiement (carte ou Interac).</p>}
               </div>
 
               <label style={label}>Notes (optionnel)

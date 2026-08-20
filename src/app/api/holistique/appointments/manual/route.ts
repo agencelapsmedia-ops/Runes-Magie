@@ -312,7 +312,7 @@ export async function POST(req: Request) {
           if (payment === 'CASH' && !created) await sendManualCashConfirmationToClient(data);
           // « À payer en ligne » : un seul courriel offrant carte ET Interac au choix.
           if (payment === 'STRIPE_LINK' && paymentLink) await sendPaymentChoiceToClient(data, paymentLink);
-          // Legacy : ancien mode Interac seul (le formulaire ne l'envoie plus).
+          // Virement Interac : instructions envoyées à la cliente, paiement à confirmer dans le pupitre.
           if (payment === 'INTERAC') await sendInteracInstructionsToClient(data);
         }
         // Notif praticienne uniquement si l'admin a créé le RDV pour elle
