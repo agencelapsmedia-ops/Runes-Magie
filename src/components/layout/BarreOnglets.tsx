@@ -147,12 +147,20 @@ export default function BarreOnglets() {
             </p>
             <div className="flex flex-col gap-3">
               <Link
-                href="/soins"
+                href="/soins?offering=cours-formation-runes"
                 onClick={() => setChoixReservation(false)}
                 className="rounded-sm border border-or-ancien/50 px-5 py-4 text-center font-cinzel text-[0.72rem] uppercase tracking-widest text-or-ancien"
                 style={{ background: 'rgba(107, 63, 160, 0.25)' }}
               >
-                📚 Un cours de formation
+                ᚱ Un cours de Runes
+              </Link>
+              <Link
+                href="/soins?offering=cours-formation-tarot"
+                onClick={() => setChoixReservation(false)}
+                className="rounded-sm border border-or-ancien/50 px-5 py-4 text-center font-cinzel text-[0.72rem] uppercase tracking-widest text-or-ancien"
+                style={{ background: 'rgba(107, 63, 160, 0.25)' }}
+              >
+                🃏 Un cours de Tarot
               </Link>
               <Link
                 href="/seances"

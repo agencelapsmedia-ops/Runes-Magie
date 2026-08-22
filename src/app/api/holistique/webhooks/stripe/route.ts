@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { markBookingPaidV2 } from '@/lib/holistic-v2-sync';
 import { createDailyRoomForAppointment } from '@/lib/daily-co';
 import { createCalendarEventForAppointment } from '@/lib/google-calendar';
+import { createReceipt, serviceFromNotes } from '@/lib/receipt-service';
 import {
   buildBookingEmailData,
   sendBookingConfirmationToClient,
@@ -68,6 +69,27 @@ export async function POST(req: Request) {
         paidAt: usesDeposit ? null : new Date(),
       },
     });
+
+    // Reçu automatique (best-effort) : acompte ou paiement complet par carte.
+    try {
+      const apptForReceipt = await prisma.holisticAppointment.findUnique({
+        where: { id: appointmentId },
+        select: { clientId: true, notes: true, depositAmount: true, totalAmount: true },
+      });
+      if (apptForReceipt) {
+        const service = serviceFromNotes(apptForReceipt.notes);
+        await createReceipt({
+          clientId: apptForReceipt.clientId,
+          description: usesDeposit ? `Acompte — ${service}` : service,
+          amount: (usesDeposit ? apptForReceipt.depositAmount : apptForReceipt.totalAmount) ?? 0,
+          method: 'CARD',
+          appointmentId,
+          kind: usesDeposit ? 'DEPOSIT' : 'FULL',
+        });
+      }
+    } catch (err) {
+      console.error('[webhook] reçu échoué (non-bloquant)', err);
+    }
 
     // Création auto de la salle vidéo Daily.co si le RDV est virtuel
     // (best-effort — si échec, la salle sera créée à la demande quand quelqu'un visite /soins/consultation/[id])

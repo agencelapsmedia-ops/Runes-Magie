@@ -359,6 +359,7 @@ model HolisticUser {
   // ── Formations avec Noctura ──
   formationEnrollments FormationEnrollment[]
   formationCredits     FormationCreditTransaction[]
+  receipts             Receipt[]
 }
 
 model Practitioner {
@@ -1273,4 +1274,26 @@ model FormationAuditLog {
   createdAt    DateTime            @default(now())
 
   @@index([enrollmentId, createdAt])
+}
+
+// ── Reçus (factures simples — « Taxes non applicables » pour l'instant) ──
+// Générés automatiquement à chaque encaissement (acompte/solde carte, Interac
+// confirmé, paiement de formation). Numérotation RM-AAAA-NNNN.
+model Receipt {
+  id                 String       @id @default(cuid())
+  number             String       @unique // RM-2026-0001
+  clientId           String
+  client             HolisticUser @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  description        String
+  amount             Float
+  method             String // CARD | INTERAC | CASH | OTHER
+  paidAt             DateTime
+  // Idempotence par source : un seul reçu par (RDV, type) et par paiement de formation.
+  appointmentId      String?
+  kind               String       @default("PAYMENT") // DEPOSIT | REMAINDER | FULL | FORMATION | MANUAL
+  formationPaymentId String?      @unique
+  createdAt          DateTime     @default(now())
+
+  @@unique([appointmentId, kind])
+  @@index([clientId, paidAt])
 }

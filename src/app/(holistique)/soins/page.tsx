@@ -11,10 +11,18 @@ import { prisma } from '@/lib/db';
  */
 export const dynamic = 'force-dynamic';
 
-export default async function SoinsRedirect() {
+export default async function SoinsRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<{ offering?: string }>;
+}) {
+  const { offering } = await searchParams;
   const noctura = await prisma.practitioner.findFirst({
     where: { isOwner: true },
     select: { id: true },
   });
-  redirect(noctura ? `/soins/reserver/${noctura.id}` : '/soins/praticiens');
+  if (!noctura) redirect('/soins/praticiens');
+  // Préserve le service présélectionné (ex. ?offering=cours-formation-runes).
+  const suffix = offering ? `?offering=${encodeURIComponent(offering)}` : '';
+  redirect(`/soins/reserver/${noctura.id}${suffix}`);
 }

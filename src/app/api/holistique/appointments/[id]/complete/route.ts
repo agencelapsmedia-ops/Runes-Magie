@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
 import { setCourseState } from '@/lib/formation-service';
+import { createReceipt, serviceFromNotes } from '@/lib/receipt-service';
 
 /**
  * Rencontre de formation terminée au pupitre → le cours de la formation est
@@ -186,6 +187,16 @@ export async function POST(
           status: 'PAID',
           paidAt: new Date(),
         },
+      });
+
+      // Reçu automatique du solde (best-effort).
+      await createReceipt({
+        clientId: appointment.clientId,
+        description: `Solde — ${serviceFromNotes(appointment.notes)}`,
+        amount: remainingAmount,
+        method: 'CARD',
+        appointmentId,
+        kind: 'REMAINDER',
       });
 
       const journal = await autoCompleteFormationCourse(appointment, `${appointment.practitioner.user.firstName} ${appointment.practitioner.user.lastName}`.trim());

@@ -53,6 +53,15 @@ export default async function AchatsPage() {
       })
     : [];
 
+  // Reçus des séances et formations (module Reçus RM-AAAA-NNNN).
+  const receipts = member
+    ? await prisma.receipt.findMany({
+        where: { clientId: member.id },
+        orderBy: { paidAt: 'desc' },
+      })
+    : [];
+  const METHOD_FR: Record<string, string> = { CARD: 'Carte', INTERAC: 'Interac', CASH: 'Comptant', OTHER: 'Autre' };
+
   return (
     <div>
       <MembreHeader
@@ -61,7 +70,40 @@ export default async function AchatsPage() {
         subtitle="Votre historique de commandes et vos factures PDF"
       />
 
-      {orders.length === 0 ? (
+      {receipts.length > 0 && (
+        <div className="mb-10">
+          <h2 className="mb-4 font-cinzel text-xs uppercase tracking-widest text-or-ancien">
+            Mes reçus — séances &amp; formations
+          </h2>
+          <div className="flex flex-col gap-2">
+            {receipts.map((r) => (
+              <Link
+                key={r.id}
+                href={`/compte/achats/recu/${r.id}`}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4 transition-colors hover:border-or-ancien/50"
+                style={{ background: 'var(--charbon-mystere)', borderColor: 'rgba(74, 45, 122, 0.3)' }}
+              >
+                <div>
+                  <p className="font-cinzel text-[0.7rem] uppercase tracking-widest text-parchemin/50">{r.number}</p>
+                  <p className="font-cormorant text-base text-parchemin">{r.description}</p>
+                  <p className="font-cormorant text-sm text-parchemin/45">
+                    {formatDate(r.paidAt)} · {METHOD_FR[r.method] ?? r.method}
+                  </p>
+                </div>
+                <span className="font-cinzel text-sm text-or-ancien">{r.amount.toFixed(2)} $</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {receipts.length > 0 && (
+        <h2 className="mb-4 font-cinzel text-xs uppercase tracking-widest text-or-ancien">
+          Mes commandes de la boutique
+        </h2>
+      )}
+
+      {orders.length === 0 && receipts.length > 0 ? null : orders.length === 0 ? (
         <ComingSoon message="Vous n'avez pas encore passé de commande.">
           <Link
             href="/boutique"

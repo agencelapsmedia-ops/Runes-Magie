@@ -31,7 +31,9 @@ export default async function ParcoursPage({ params }: { params: Promise<{ enrol
   // Réservation directe : le calendrier de Noctura (praticienne propriétaire),
   // sans passer par la page d'accueil des soins.
   const noctura = await prisma.practitioner.findFirst({ where: { isOwner: true }, select: { id: true } });
-  const reserverUrl = noctura ? `/soins/reserver/${noctura.id}` : '/soins';
+  // Présélectionne le service « Cours de formation » correspondant à la formation.
+  const offeringSlug = detail.enrollment.formation.code === 'TP' ? 'cours-formation-tarot' : 'cours-formation-runes';
+  const reserverUrl = noctura ? `/soins/reserver/${noctura.id}?offering=${offeringSlug}` : '/soins';
 
   const { enrollment: e, credits, documents, totalPaid, balance } = detail;
   const base = e.progress.filter((p) => !p.course.isOptional);

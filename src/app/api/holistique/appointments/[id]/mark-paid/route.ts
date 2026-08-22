@@ -3,6 +3,7 @@ import { holisticSession } from '@/lib/holistic-auth';
 import { prisma } from '@/lib/db';
 import { buildBookingEmailData, sendInteracReceivedToClient } from '@/lib/holistic-booking-email';
 import { isInternalEmail } from '@/lib/holistic-clients';
+import { createReceipt, serviceFromNotes } from '@/lib/receipt-service';
 
 /**
  * POST /api/holistique/appointments/[id]/mark-paid
@@ -35,6 +36,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     data: { status: 'PAID', paidAt: new Date() },
   });
   await prisma.holisticAppointment.update({ where: { id }, data: { depositPaidAt: new Date() } });
+
+  // Reçu automatique (best-effort) : virement Interac encaissé.
+  await createReceipt({
+    clientId: appt.clientId,
+    description: serviceFromNotes(appt.notes),
+    amount: appt.payment?.amountTotal ?? appt.totalAmount ?? 0,
+    method: 'INTERAC',
+    appointmentId: id,
+    kind: 'FULL',
+  });
 
   // Confirmation au client : virement reçu → RDV confirmé (best-effort, non-bloquant).
   try {

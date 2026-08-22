@@ -259,5 +259,28 @@ export async function addPayment(params: {
       },
     });
     return payment;
+  }).then(async (payment) => {
+    // Reçu automatique pour un paiement de formation encaissé (best-effort).
+    if ((params.status ?? 'PAID') === 'PAID') {
+      const enr = await prisma.formationEnrollment.findUnique({
+        where: { id: params.enrollmentId },
+        select: { clientId: true, formation: { select: { title: true } } },
+      });
+      if (enr) {
+        const { createReceipt } = await import('@/lib/receipt-service');
+        await createReceipt({
+          clientId: enr.clientId,
+          description: params.note?.trim()
+            ? `Formation ${enr.formation.title} — ${params.note.trim()}`
+            : `Formation ${enr.formation.title}`,
+          amount: params.amount,
+          method: params.method,
+          paidAt: params.paidAt,
+          formationPaymentId: payment.id,
+          kind: 'FORMATION',
+        });
+      }
+    }
+    return payment;
   });
 }
