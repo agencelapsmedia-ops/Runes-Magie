@@ -65,16 +65,21 @@ export default function BarreOnglets() {
   // son en-tête), la silhouette pour une cliente ou une visiteuse.
   const iconeEspace = utilisateur?.role === 'PRACTITIONER' ? 'rune' : 'personne';
 
-  const onglets: Onglet[] = [
-    ...ONGLETS_COMMUNS,
-    { cle: 'espace', label: espace.label, icone: iconeEspace, href: espace.href },
-  ];
-
-  // Sixième onglet réservé à qui administre réellement le site — en pratique
-  // la propriétaire seule. Les autres gardent une barre à cinq onglets.
-  if (aAccesAdmin(utilisateur)) {
-    onglets.push({ cle: 'admin', label: 'Admin', icone: 'etoile', href: '/admin' });
-  }
+  // Barre de NOCTURA (propriétaire/admin) — refonte Espace unifié 2026-08-22 :
+  // son outil principal (le calendrier des RDV) et ses messages plateforme
+  // remplacent Réservation/chat ; UN SEUL bouton « Mon espace » (l'admin).
+  const onglets: Onglet[] = aAccesAdmin(utilisateur)
+    ? [
+        { cle: 'accueil', label: 'Accueil', icone: 'lune', href: '/', exact: true },
+        { cle: 'calendrier', label: 'Calendrier', icone: 'calendrier', href: '/admin/calendrier' },
+        { cle: 'messages', label: 'Messages', icone: 'bulle', href: '/admin/conversations' },
+        { cle: 'boutique', label: 'Boutique', icone: 'sac', href: '/admin/boutique' },
+        { cle: 'espace', label: 'Mon espace', icone: 'etoile', href: '/admin', exact: true },
+      ]
+    : [
+        ...ONGLETS_COMMUNS,
+        { cle: 'espace', label: espace.label, icone: iconeEspace, href: espace.href },
+      ];
 
   const estActif = (onglet: Onglet) => {
     if (!onglet.href) return false;

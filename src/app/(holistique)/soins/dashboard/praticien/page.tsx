@@ -85,6 +85,11 @@ export default async function PraticienDashboardPage() {
   if (role === 'ADMIN') {
     redirect('/admin');
   }
+  // La propriétaire (Noctura) : son espace unifié est l'administration —
+  // le pupitre sombre reste pour les futures praticiennes non-propriétaires.
+  if ((session.user as any).isOwner === true) {
+    redirect('/admin');
+  }
 
   const userId = (session.user as any).id as string;
   const practitionerId = (session.user as any).practitionerId as string;

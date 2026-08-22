@@ -49,6 +49,10 @@ export function espacePrincipal(u: SessionUtilisateur | null | undefined): {
   labelLong: string;
 } {
   if (u?.role === 'PRACTITIONER') {
+    // La propriétaire (Noctura) : un SEUL espace, l'administration unifiée.
+    if (u.isOwner === true) {
+      return { href: '/admin', label: 'Mon espace', labelLong: 'Mon espace' };
+    }
     return { href: '/soins/dashboard/praticien', label: 'Mon espace', labelLong: 'Mon espace praticien' };
   }
   if (u?.role === 'ADMIN') {

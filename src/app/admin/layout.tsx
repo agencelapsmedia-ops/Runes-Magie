@@ -8,8 +8,23 @@ import { useEffect, useState } from 'react';
 // Menu épuré : 6 entrées de haut niveau. Chacune ouvre une PAGE HUB qui regroupe
 // ses outils en cartes (plus de sous-liste dans le menu). `match` = préfixes de
 // routes appartenant à la catégorie, pour surligner l'entrée même sur une page-outil.
+// Menu regroupé en 6 sections (refonte « Espace Noctura » 2026-08-22) : moins
+// d'entrées, plus parlant. Toutes les anciennes pages restent accessibles —
+// seule la navigation change ; les `match` gardent l'entrée active correcte.
 const navItems: { label: string; href: string; icon: string; exact?: boolean; match: string[] }[] = [
-  { label: 'Dashboard', href: '/admin', icon: 'ᛊ', exact: true, match: [] },
+  { label: 'Ma journée', href: '/admin', icon: 'ᛊ', exact: true, match: [] },
+  {
+    label: 'Calendrier & RDV',
+    href: '/admin/calendrier',
+    icon: 'ᚦ',
+    match: ['/admin/calendrier', '/admin/consultations'],
+  },
+  {
+    label: 'Élèves & Clients',
+    href: '/admin/eleves',
+    icon: 'ᛗ',
+    match: ['/admin/eleves', '/admin/crm', '/admin/clients', '/admin/conversations', '/admin/recus'],
+  },
   {
     label: 'Boutique',
     href: '/admin/boutique',
@@ -17,21 +32,20 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
     match: ['/admin/boutique', '/admin/commandes', '/admin/produits', '/admin/categories', '/admin/clover'],
   },
   {
-    label: 'Soins & Cours',
-    href: '/admin/services',
-    icon: 'ᚹ',
+    label: 'Contenu du site',
+    href: '/admin/site',
+    icon: 'ᛟ',
     match: [
-      '/admin/services', '/admin/calendrier', '/admin/consultations', '/admin/praticiens',
-      '/admin/offerings', '/admin/formations', '/admin/revenus-holistique',
+      '/admin/site', '/admin/evenements', '/admin/publications', '/admin/services',
+      '/admin/offerings', '/admin/formations', '/admin/todo',
     ],
   },
-  { label: 'Élèves', href: '/admin/eleves', icon: 'ᚱ', match: ['/admin/eleves'] },
-  { label: 'CRM / Clients', href: '/admin/crm', icon: 'ᛗ', match: ['/admin/crm', '/admin/clients', '/admin/conversations'] },
-  { label: 'Reçus', href: '/admin/recus', icon: 'ᚠ', match: ['/admin/recus'] },
-  { label: 'To-do liste', href: '/admin/todo', icon: 'ᛏ', match: ['/admin/todo'] },
-  { label: 'Événements', href: '/admin/evenements', icon: 'ᛝ', match: ['/admin/evenements'] },
-  { label: 'Publications', href: '/admin/publications', icon: 'ᛒ', match: ['/admin/publications'] },
-  { label: 'Site', href: '/admin/site', icon: 'ᛟ', match: ['/admin/site'] },
+  {
+    label: 'Mon profil & réglages',
+    href: '/admin/mon-espace',
+    icon: 'ᚱ',
+    match: ['/admin/mon-espace', '/admin/praticiens', '/admin/revenus-holistique'],
+  },
 ];
 
 function AdminShell({ children }: { children: React.ReactNode }) {

@@ -28,9 +28,59 @@ interface AvailabilityPayload {
   blocks: AvailabilityBlock[];
 }
 
+/** Applique un changement de profil (logique partagée approbation / auto-approbation). */
+async function appliquerProfil(practitionerId: string, p: ProfilePayload): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    if (p.firstName !== undefined || p.lastName !== undefined) {
+      const practitioner = await tx.practitioner.findUnique({ where: { id: practitionerId } });
+      if (practitioner) {
+        await tx.holisticUser.update({
+          where: { id: practitioner.userId },
+          data: {
+            ...(p.firstName !== undefined && { firstName: p.firstName }),
+            ...(p.lastName !== undefined && { lastName: p.lastName }),
+          },
+        });
+      }
+    }
+    await tx.practitioner.update({
+      where: { id: practitionerId },
+      data: {
+        ...(p.bio !== undefined && { bio: p.bio }),
+        ...(p.specialties !== undefined && { specialties: p.specialties }),
+        ...(p.yearsExperience !== undefined && { yearsExperience: p.yearsExperience }),
+        ...(p.hourlyRate !== undefined && { hourlyRate: p.hourlyRate }),
+        ...(p.photoUrl !== undefined && { photoUrl: p.photoUrl }),
+      },
+    });
+  });
+}
+
+/** Applique un changement de disponibilités (le payload est la vérité). */
+async function appliquerDisponibilites(practitionerId: string, p: AvailabilityPayload): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.holisticAvailability.deleteMany({ where: { practitionerId } });
+    if (p.blocks?.length) {
+      await tx.holisticAvailability.createMany({
+        data: p.blocks.map((b) => ({
+          practitionerId,
+          dayOfWeek: b.dayOfWeek,
+          date: b.date ? new Date(`${b.date}T12:00:00.000Z`) : null,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          isActive: b.isActive,
+        })),
+      });
+    }
+  });
+}
+
 /**
  * Soumis par le praticien lui-même. Crée une PendingPractitionerChange en statut PENDING.
  * Le profil public n'est PAS modifié immédiatement — il faut l'approbation admin.
+ * EXCEPTION : la propriétaire (isOwner) est auto-approuvée — son changement
+ * s'applique immédiatement, avec une trace APPROVED (fin de la boucle où elle
+ * devait s'approuver elle-même dans l'admin).
  */
 export async function requestProfileChange(payload: ProfilePayload): Promise<void> {
   const session = await auth();
@@ -39,6 +89,23 @@ export async function requestProfileChange(payload: ProfilePayload): Promise<voi
   if (role !== 'PRACTITIONER') throw new Error('Réservé aux praticiens.');
   const practitionerId = (session.user as { practitionerId?: string }).practitionerId;
   if (!practitionerId) throw new Error('Praticien introuvable.');
+
+  if ((session.user as { isOwner?: boolean }).isOwner === true) {
+    await appliquerProfil(practitionerId, payload);
+    await prisma.pendingPractitionerChange.create({
+      data: {
+        practitionerId,
+        type: 'PROFILE',
+        payload: payload as object,
+        status: 'APPROVED',
+        reviewedAt: new Date(),
+        adminNote: 'Auto-approuvé (propriétaire)',
+      },
+    });
+    revalidatePath('/admin/mon-espace');
+    revalidatePath('/soins/praticiens');
+    return;
+  }
 
   const change = await prisma.pendingPractitionerChange.create({
     data: {
@@ -73,6 +140,23 @@ export async function requestAvailabilityChange(payload: AvailabilityPayload): P
   if (role !== 'PRACTITIONER') throw new Error('Réservé aux praticiens.');
   const practitionerId = (session.user as { practitionerId?: string }).practitionerId;
   if (!practitionerId) throw new Error('Praticien introuvable.');
+
+  if ((session.user as { isOwner?: boolean }).isOwner === true) {
+    await appliquerDisponibilites(practitionerId, payload);
+    await prisma.pendingPractitionerChange.create({
+      data: {
+        practitionerId,
+        type: 'AVAILABILITY',
+        payload: payload as unknown as object,
+        status: 'APPROVED',
+        reviewedAt: new Date(),
+        adminNote: 'Auto-approuvé (propriétaire)',
+      },
+    });
+    revalidatePath('/admin/mon-espace');
+    revalidatePath('/soins/reserver');
+    return;
+  }
 
   const change = await prisma.pendingPractitionerChange.create({
     data: {
@@ -117,55 +201,9 @@ export async function approveChange(changeId: string, adminNote?: string): Promi
   if (change.status !== 'PENDING') throw new Error('Cette demande a déjà été traitée.');
 
   if (change.type === 'PROFILE') {
-    const p = change.payload as ProfilePayload;
-    await prisma.$transaction(async (tx) => {
-      // Mise à jour User (nom) si présent
-      if (p.firstName !== undefined || p.lastName !== undefined) {
-        const practitioner = await tx.practitioner.findUnique({
-          where: { id: change.practitionerId },
-        });
-        if (practitioner) {
-          await tx.holisticUser.update({
-            where: { id: practitioner.userId },
-            data: {
-              ...(p.firstName !== undefined && { firstName: p.firstName }),
-              ...(p.lastName !== undefined && { lastName: p.lastName }),
-            },
-          });
-        }
-      }
-      // Mise à jour Practitioner (champs métier)
-      await tx.practitioner.update({
-        where: { id: change.practitionerId },
-        data: {
-          ...(p.bio !== undefined && { bio: p.bio }),
-          ...(p.specialties !== undefined && { specialties: p.specialties }),
-          ...(p.yearsExperience !== undefined && { yearsExperience: p.yearsExperience }),
-          ...(p.hourlyRate !== undefined && { hourlyRate: p.hourlyRate }),
-          ...(p.photoUrl !== undefined && { photoUrl: p.photoUrl }),
-        },
-      });
-    });
+    await appliquerProfil(change.practitionerId, change.payload as ProfilePayload);
   } else if (change.type === 'AVAILABILITY') {
-    const p = change.payload as AvailabilityPayload;
-    await prisma.$transaction(async (tx) => {
-      // Stratégie : remplace l'ensemble des dispos (le payload est la vérité)
-      await tx.holisticAvailability.deleteMany({
-        where: { practitionerId: change.practitionerId },
-      });
-      if (p.blocks?.length) {
-        await tx.holisticAvailability.createMany({
-          data: p.blocks.map((b) => ({
-            practitionerId: change.practitionerId,
-            dayOfWeek: b.dayOfWeek,
-            date: b.date ? new Date(`${b.date}T12:00:00.000Z`) : null,
-            startTime: b.startTime,
-            endTime: b.endTime,
-            isActive: b.isActive,
-          })),
-        });
-      }
-    });
+    await appliquerDisponibilites(change.practitionerId, change.payload as unknown as AvailabilityPayload);
   }
 
   await prisma.pendingPractitionerChange.update({
