@@ -109,7 +109,10 @@ export default async function FormationsPage() {
                     )}
                   </div>
 
-                  <span className="mt-4 font-cinzel text-[0.65rem] uppercase tracking-widest text-turquoise-cristal transition-colors duration-200 group-hover:text-or-ancien">
+                  <span
+                    className="mt-5 inline-block self-start rounded-sm border px-6 py-3 text-center font-cinzel text-[0.68rem] uppercase tracking-widest text-or-ancien transition-all duration-200 group-hover:bg-or-ancien/10"
+                    style={{ borderColor: 'rgba(201,168,76,0.5)', background: 'rgba(201,168,76,0.06)' }}
+                  >
                     Voir mon parcours →
                   </span>
                 </Link>
