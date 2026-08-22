@@ -185,6 +185,15 @@ export async function POST(req: Request) {
     const enrollment = await prisma.formationEnrollment.findFirst({
       where: { clientId, status: { in: ['ACTIVE', 'PAYMENT_DUE'] } },
       orderBy: { createdAt: 'desc' },
+      include: {
+        formation: { select: { title: true } },
+        progress: {
+          where: { state: 'UNLOCKED', course: { isOptional: false } },
+          include: { course: { select: { code: true, title: true, sortOrder: true } } },
+          orderBy: { course: { sortOrder: 'asc' } },
+          take: 1,
+        },
+      },
     });
     if (!enrollment) {
       return NextResponse.json(
@@ -192,6 +201,14 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    // Libellé du RDV : la rencontre de formation (cours actuel), pas le soin
+    // choisi sur la page — c'est ce que verront la cliente et Noctura partout.
+    const currentCourse = enrollment.progress[0]?.course ?? null;
+    const creditNotes = [
+      `Service : Rencontre de formation — ${enrollment.formation.title}${currentCourse ? ` (${currentCourse.code} — ${currentCourse.title})` : ''}`,
+      mode ? `Mode : ${mode === 'IN_PERSON' ? 'Présentiel' : 'Virtuel (vidéo)'}` : null,
+      notes,
+    ].filter(Boolean).join('\n');
     let creditAppt;
     try {
       creditAppt = await prisma.$transaction(async (tx) => {
@@ -206,7 +223,7 @@ export async function POST(req: Request) {
             practitionerId,
             startsAt: new Date(startsAt),
             endsAt: new Date(endsAt),
-            notes: enrichedNotes,
+            notes: creditNotes,
             status: 'CONFIRMED',
             paymentMode: 'FORMATION_CREDIT',
             totalAmount: 0,
@@ -214,6 +231,7 @@ export async function POST(req: Request) {
             remainingAmount: 0,
             depositPaidAt: new Date(),
             formationEnrollmentId: enrollment.id,
+            formationCourseId: currentCourse ? enrollment.progress[0].courseId : null,
           },
         });
         await tx.holisticPayment.create({
