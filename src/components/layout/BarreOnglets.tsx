@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import IconeCategorie from '@/components/ui/IconeCategorie';
 import {
@@ -33,19 +34,22 @@ interface Onglet {
   icone: string;
   href?: string;
   exact?: boolean;
-  action?: 'chat';
+  action?: 'chat' | 'reservation';
 }
 
 const ONGLETS_COMMUNS: Onglet[] = [
   { cle: 'accueil', label: 'Accueil', icone: 'lune', href: '/', exact: true },
   { cle: 'boutique', label: 'Boutique', icone: 'sac', href: '/boutique' },
-  { cle: 'reservation', label: 'Réservation', icone: 'calendrier', href: '/seances' },
+  // « Réservation » ouvre un petit choix (cours de formation OU soin) plutôt
+  // que d'amener directement aux séances — les élèves réservent leurs cours.
+  { cle: 'reservation', label: 'Réservation', icone: 'calendrier', action: 'reservation' },
   { cle: 'messages', label: 'Messages', icone: 'bulle', action: 'chat' },
 ];
 
 export default function BarreOnglets() {
   const pathname = usePathname() ?? '/';
   const { utilisateur } = useSessionUtilisateur();
+  const [choixReservation, setChoixReservation] = useState(false);
 
   // La barre reste visible dans le back-office. Elle en était exclue au motif
   // que « l'admin a sa propre navigation » — sauf que sur téléphone cette
@@ -109,7 +113,11 @@ export default function BarreOnglets() {
                 <button
                   type="button"
                   className={classes}
-                  onClick={() => window.dispatchEvent(new CustomEvent('noctura:ouvrir'))}
+                  onClick={() =>
+                    onglet.action === 'reservation'
+                      ? setChoixReservation(true)
+                      : window.dispatchEvent(new CustomEvent('noctura:ouvrir'))
+                  }
                 >
                   {contenu}
                 </button>
@@ -118,6 +126,53 @@ export default function BarreOnglets() {
           );
         })}
       </ul>
+
+      {/* Petit choix « cours ou soin ? » au-dessus de la barre */}
+      {choixReservation && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Que veux-tu réserver ?"
+          className="fixed inset-0 z-[95]"
+          style={{ background: 'rgba(10, 10, 18, 0.6)' }}
+          onClick={() => setChoixReservation(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-x-3 rounded-lg border border-or-ancien/40 bg-noir-nuit p-5 shadow-2xl"
+            style={{ bottom: 'calc(88px + env(safe-area-inset-bottom))' }}
+          >
+            <p className="mb-4 text-center font-cinzel text-sm uppercase tracking-widest text-or-ancien">
+              Que veux-tu réserver ?
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/soins"
+                onClick={() => setChoixReservation(false)}
+                className="rounded-sm border border-or-ancien/50 px-5 py-4 text-center font-cinzel text-[0.72rem] uppercase tracking-widest text-or-ancien"
+                style={{ background: 'rgba(107, 63, 160, 0.25)' }}
+              >
+                📚 Un cours de formation
+              </Link>
+              <Link
+                href="/seances"
+                onClick={() => setChoixReservation(false)}
+                className="rounded-sm border border-turquoise-cristal/40 px-5 py-4 text-center font-cinzel text-[0.72rem] uppercase tracking-widest text-turquoise-cristal"
+                style={{ background: 'rgba(46, 196, 182, 0.08)' }}
+              >
+                ᛉ Un soin ou une consultation
+              </Link>
+              <button
+                type="button"
+                onClick={() => setChoixReservation(false)}
+                className="py-2 text-center font-cormorant text-sm italic text-parchemin/50"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
