@@ -356,6 +356,8 @@ model HolisticUser {
   courseProgress    CourseProgress[]
   // ── Événements (rituels, veillées) ──
   eventRegistrations EventRegistration[]
+  // ── Formations avec Noctura ──
+  formationEnrollments FormationEnrollment[]
 }
 
 model Practitioner {
@@ -477,11 +479,20 @@ model HolisticAppointment {
   remainderPaymentIntentId String?  // PaymentIntent ID du paiement du solde (pour reçu)
   completionOutcome       String?   // CHARGED | GIFTED | NO_SHOW (set quand la praticienne clique « Terminer »)
 
+  // ─── Lien formation (module Formations avec Noctura) ─────────────────────
+  // Un RDV lié à une formation consomme un crédit de la banque au lieu du flux
+  // acompte/solde. Nullables : le parcours soins existant reste inchangé.
+  formationEnrollmentId String?
+  formationEnrollment   FormationEnrollment? @relation(fields: [formationEnrollmentId], references: [id])
+  formationCourseId     String? // FormationCourse visé par la rencontre (facultatif)
+
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
   payment        HolisticPayment?
   review         HolisticReview?
   notifications  HolisticNotification[]
+
+  @@index([formationEnrollmentId])
 }
 
 model HolisticPayment {
@@ -1081,4 +1092,162 @@ model EventRegistration {
 
   @@unique([eventId, userId])
   @@index([eventId, status])
+}
+
+// ════════════════════════════════════════════════════════════════
+// FORMATIONS AVEC NOCTURA — parcours pédagogiques présentiels
+//  (Runes de l'Ancien Futhark RF, Tarot Pratique TP…)
+//  Source de vérité des plans : Vault Obsidian « Runes et Magie ».
+//  Distinct de l'espace membre (Course/Lesson = cours en ligne auto-rythmés) :
+//  ici la progression est VALIDÉE par Noctura, les rencontres consomment des
+//  crédits d'une banque transactionnelle, les documents sont protégés.
+// ════════════════════════════════════════════════════════════════
+
+// Programme de formation (Runes, Tarot…).
+model Formation {
+  id           String                @id @default(cuid())
+  code         String                @unique // "RF" | "TP"
+  title        String
+  subtitle     String                @default("")
+  description  String                @default("")
+  defaultPrice Float? // prix indicatif — le prix réel vit sur l'inscription
+  isActive     Boolean               @default(true)
+  courses      FormationCourse[]
+  enrollments  FormationEnrollment[]
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+}
+
+// Un cours du plan (RF01…), examen ou slot de spécialisation inclus.
+model FormationCourse {
+  id                   String                     @id @default(cuid())
+  formationId          String
+  formation            Formation                  @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  code                 String // "RF01", "TP03"…
+  title                String
+  summary              String                     @default("")
+  sessionNumber        Int                        @default(1)
+  sortOrder            Int                        @default(0)
+  isExam               Boolean                    @default(false)
+  // Examens RF11/RF22/RF25 (et TP équivalents) : inclus dans la banque de
+  // 10 cours → countsAsCredit=false (« 1 numéro RF ≠ 1 crédit »).
+  countsAsCredit       Boolean                    @default(true)
+  isSpecializationSlot Boolean                    @default(false) // RF26-RF30, TP29-TP30
+  // Cours optionnel choisissable dans un slot (Kabbale, Dons psychiques…).
+  // N'apparaît pas dans le parcours de base ; gérable en données par l'admin.
+  isOptional           Boolean                    @default(false)
+  documents            FormationCourseDocument[]
+  progress             EnrollmentCourseProgress[]
+
+  @@unique([formationId, code])
+  @@index([formationId, sortOrder])
+}
+
+// Inscription d'une cliente à une formation.
+model FormationEnrollment {
+  id           String                       @id @default(cuid())
+  formationId  String
+  formation    Formation                    @relation(fields: [formationId], references: [id])
+  clientId     String
+  client       HolisticUser                 @relation(fields: [clientId], references: [id])
+  // ACTIVE | PAYMENT_DUE | SUSPENDED | COMPLETED | DIPLOMA_ELIGIBLE | DIPLOMA_AWARDED
+  status       String                       @default("ACTIVE")
+  totalPrice   Float? // prix convenu pour CETTE cliente (sur-mesure startup)
+  adminNotes   String                       @default("")
+  startedAt    DateTime                     @default(now())
+  progress     EnrollmentCourseProgress[]
+  credits      FormationCreditTransaction[]
+  payments     FormationPayment[]
+  auditLogs    FormationAuditLog[]
+  appointments HolisticAppointment[]
+  createdAt    DateTime                     @default(now())
+  updatedAt    DateTime                     @updatedAt
+
+  @@unique([formationId, clientId])
+  @@index([clientId])
+}
+
+// État d'un cours pour une inscription. La complétion vient de Noctura/admin,
+// jamais de la cliente.
+model EnrollmentCourseProgress {
+  id           String              @id @default(cuid())
+  enrollmentId String
+  enrollment   FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       FormationCourse     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  state        String              @default("LOCKED") // LOCKED | UNLOCKED | COMPLETED
+  unlockedAt   DateTime?
+  completedAt  DateTime?
+  completedBy  String? // nom/id de qui a validé (Noctura, admin)
+  origin       String              @default("AUTO") // AUTO | MANUAL
+  note         String              @default("")
+  // Pour un slot de spécialisation : id du FormationCourse optionnel choisi.
+  chosenCourseId String?
+
+  @@unique([enrollmentId, courseId])
+  @@index([enrollmentId, state])
+}
+
+// Banque de crédits transactionnelle : le solde = somme des deltas.
+// Jamais de « remaining = remaining - 1 » hors transaction.
+model FormationCreditTransaction {
+  id            String              @id @default(cuid())
+  enrollmentId  String
+  enrollment    FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  delta         Int // +10 allocation, -1 utilisation, +1 remboursement…
+  type          String // ALLOCATION | USE | REFUND | ADJUSTMENT | BONUS | CORRECTION
+  reason        String              @default("")
+  createdBy     String? // qui (Noctura, admin, "SYSTEM")
+  appointmentId String?             @unique // RDV lié pour USE/REFUND (anti double-débit)
+  createdAt     DateTime            @default(now())
+
+  @@index([enrollmentId])
+}
+
+// Versements et paiements historiques d'une inscription.
+// Total payé = somme des PAID ; le solde se calcule contre totalPrice.
+model FormationPayment {
+  id            String              @id @default(cuid())
+  enrollmentId  String
+  enrollment    FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  amount        Float
+  paidAt        DateTime
+  method        String // INTERAC | CARD | CASH | OTHER
+  status        String              @default("PAID") // PAID | PENDING | FAILED
+  installmentNo Int? // 1, 2, 3… si versement planifié
+  note          String              @default("")
+  createdBy     String?
+  createdAt     DateTime            @default(now())
+
+  @@index([enrollmentId])
+}
+
+// Document protégé d'un cours (bucket Supabase PRIVÉ, jamais d'URL publique).
+// Accessible à la cliente seulement quand son cours est COMPLETED (règle app).
+model FormationCourseDocument {
+  id          String          @id @default(cuid())
+  courseId    String
+  course      FormationCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String          @default("")
+  storagePath String // chemin dans le bucket privé « formations »
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([courseId, sortOrder])
+}
+
+// Historique / audit des interventions sur une inscription.
+model FormationAuditLog {
+  id           String              @id @default(cuid())
+  enrollmentId String
+  enrollment   FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  actor        String              @default("SYSTEM") // « Noctura », « SYSTEM », admin…
+  action       String // COURSE_COMPLETED | COURSE_UNLOCKED | CREDIT_ADJUSTED | PAYMENT_ADDED…
+  detail       String              @default("")
+  createdAt    DateTime            @default(now())
+
+  @@index([enrollmentId, createdAt])
 }
