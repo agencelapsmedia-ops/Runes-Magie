@@ -28,7 +28,7 @@ export async function getClientEnrollments(clientId: string): Promise<Enrollment
       formation: { select: { code: true, title: true } },
       progress: {
         where: { course: { isOptional: false } },
-        include: { course: { select: { code: true, title: true, sortOrder: true } } },
+        include: { course: { select: { code: true, title: true, sortOrder: true, countsInProgress: true } } },
       },
       payments: { where: { status: 'PAID' }, select: { amount: true } },
       appointments: {
@@ -45,7 +45,10 @@ export async function getClientEnrollments(clientId: string): Promise<Enrollment
   const credits = await creditBalance(clientId);
 
   return enrollments.map((e) => {
-    const done = e.progress.filter((p) => p.state === 'COMPLETED').length;
+    // Le « X / 30 » n'inclut que les vrais cours (les jalons d'examen non
+    // numérotés du Tarot restent visibles dans le parcours mais hors décompte).
+    const comptes = e.progress.filter((p) => p.course.countsInProgress);
+    const done = comptes.filter((p) => p.state === 'COMPLETED').length;
     const current = e.progress
       .filter((p) => p.state === 'UNLOCKED')
       .sort((a, b) => a.course.sortOrder - b.course.sortOrder)[0];
@@ -56,7 +59,7 @@ export async function getClientEnrollments(clientId: string): Promise<Enrollment
       formationTitle: e.formation.title,
       status: e.status,
       completed: done,
-      total: e.progress.length,
+      total: comptes.length,
       currentCourse: current ? { code: current.course.code, title: current.course.title } : null,
       credits,
       totalPaid,

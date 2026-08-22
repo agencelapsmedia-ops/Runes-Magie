@@ -150,6 +150,8 @@ async function seedFormation(
         countsAsCredit: c.countsAsCredit ?? true,
         isSpecializationSlot: c.isSpecializationSlot ?? false,
         isOptional: c.isOptional ?? false,
+        // Jalons hors décompte : examens Tarot non numérotés (TP-E1/E2/E3).
+        countsInProgress: !c.code.startsWith('TP-E'),
       },
       update: {
         title: c.title,

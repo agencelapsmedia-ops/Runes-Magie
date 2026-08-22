@@ -1139,6 +1139,9 @@ model FormationCourse {
   // 10 cours → countsAsCredit=false (« 1 numéro RF ≠ 1 crédit »).
   countsAsCredit       Boolean                    @default(true)
   isSpecializationSlot Boolean                    @default(false) // RF26-RF30, TP29-TP30
+  // false = jalon hors décompte (ex. examens Tarot non numérotés TP-E1/E2/E3) :
+  // visible dans le parcours mais exclu du « X / 30 » de progression.
+  countsInProgress     Boolean                    @default(true)
   // Cours optionnel choisissable dans un slot (Kabbale, Dons psychiques…).
   // N'apparaît pas dans le parcours de base ; gérable en données par l'admin.
   isOptional           Boolean                    @default(false)

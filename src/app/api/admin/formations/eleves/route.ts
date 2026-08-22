@@ -23,7 +23,7 @@ export async function GET() {
       include: {
         client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
         formation: { select: { code: true, title: true } },
-        progress: { select: { state: true, course: { select: { isOptional: true, isExam: true } } } },
+        progress: { select: { state: true, course: { select: { isOptional: true, isExam: true, countsInProgress: true } } } },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -36,7 +36,7 @@ export async function GET() {
 
   const rows = await Promise.all(
     enrollments.map(async (e) => {
-      const base = e.progress.filter((p) => !p.course.isOptional);
+      const base = e.progress.filter((p) => !p.course.isOptional && p.course.countsInProgress);
       return {
         id: e.id,
         client: e.client,

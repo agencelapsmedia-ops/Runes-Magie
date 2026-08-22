@@ -11,7 +11,7 @@ import Link from 'next/link';
 interface Course {
   id: string; code: string; title: string; summary: string;
   sessionNumber: number; isExam: boolean; countsAsCredit: boolean;
-  isSpecializationSlot: boolean; isOptional: boolean;
+  isSpecializationSlot: boolean; isOptional: boolean; countsInProgress: boolean;
 }
 interface Progress {
   id: string; state: string; completedAt: string | null; completedBy: string | null;
@@ -140,7 +140,8 @@ export default function FicheElevePage() {
   if (!fiche) return <p style={{ color: '#6B7280' }}>Chargement…</p>;
   const e = fiche.enrollment;
   const base = e.progress.filter((p) => !p.course.isOptional);
-  const done = base.filter((p) => p.state === 'COMPLETED').length;
+  const comptes = base.filter((p) => p.course.countsInProgress);
+  const done = comptes.filter((p) => p.state === 'COMPLETED').length;
   const current = base.find((p) => p.state === 'UNLOCKED');
   const sessions = Array.from(new Set(base.map((p) => p.course.sessionNumber))).sort();
 
@@ -170,7 +171,7 @@ export default function FicheElevePage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '18px' }}>
           <div style={{ background: 'rgba(107,63,160,0.07)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#4A2D7A' }}>{done} / {base.length}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#4A2D7A' }}>{done} / {comptes.length}</div>
             <div style={{ fontSize: '0.72rem', color: '#6B7280' }}>Progression</div>
           </div>
           <div style={{ background: 'rgba(6,95,70,0.07)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>

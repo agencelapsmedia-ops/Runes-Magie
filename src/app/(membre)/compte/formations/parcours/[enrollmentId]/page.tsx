@@ -35,10 +35,13 @@ export default async function ParcoursPage({ params }: { params: Promise<{ enrol
 
   const { enrollment: e, credits, documents, totalPaid, balance } = detail;
   const base = e.progress.filter((p) => !p.course.isOptional);
-  const done = base.filter((p) => p.state === 'COMPLETED').length;
+  // Décompte « X / 30 » : seulement les vrais cours (jalons d'examen non
+  // numérotés exclus, mais toujours affichés dans le parcours).
+  const comptes = base.filter((p) => p.course.countsInProgress);
+  const done = comptes.filter((p) => p.state === 'COMPLETED').length;
   const current = base.find((p) => p.state === 'UNLOCKED');
   const sessions = Array.from(new Set(base.map((p) => p.course.sessionNumber))).sort();
-  const pct = base.length ? Math.round((done / base.length) * 100) : 0;
+  const pct = comptes.length ? Math.round((done / comptes.length) * 100) : 0;
   const complete = e.status === 'COMPLETED' || e.status === 'DIPLOMA_ELIGIBLE' || e.status === 'DIPLOMA_AWARDED';
 
   const cardStyle = { background: 'var(--charbon-mystere)', borderColor: 'rgba(74,45,122,0.3)' };
@@ -67,7 +70,7 @@ export default async function ParcoursPage({ params }: { params: Promise<{ enrol
       {/* Résumé */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { v: `${done} / ${base.length}`, l: 'Cours complétés' },
+          { v: `${done} / ${comptes.length}`, l: 'Cours complétés' },
           { v: String(credits), l: 'Jetons restants' },
           { v: current ? current.course.code : '—', l: 'Cours actuel' },
           { v: `${totalPaid.toFixed(0)} $`, l: balance != null ? `Payé (reste ${balance.toFixed(0)} $)` : 'Payé' },
