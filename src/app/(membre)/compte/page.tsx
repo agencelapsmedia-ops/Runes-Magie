@@ -211,6 +211,9 @@ export default async function CompteDashboardPage() {
               const canJoin = appt.status === 'CONFIRMED' && isVirtual;
               const prac = appt.practitioner;
               const pracUser = prac?.user;
+              // Service réellement réservé (« Service : … » dans les notes) —
+              // affiché en priorité sur les spécialités génériques de la praticienne.
+              const serviceName = ((appt.notes ?? '') as string).match(/Service\s*:\s*([^\n]+)/)?.[1]?.trim() ?? null;
               return (
                 <div
                   key={appt.id}
@@ -230,11 +233,15 @@ export default async function CompteDashboardPage() {
                       <p className="font-cinzel text-sm text-parchemin">
                         {pracUser?.firstName} {pracUser?.lastName}
                       </p>
-                      {prac?.specialties && prac.specialties.length > 0 && (
+                      {serviceName ? (
+                        <p className="font-cormorant text-base text-turquoise-cristal/80">
+                          {serviceName}
+                        </p>
+                      ) : prac?.specialties && prac.specialties.length > 0 ? (
                         <p className="font-cormorant text-base text-turquoise-cristal/80">
                           {prac.specialties.slice(0, 2).join(' · ')}
                         </p>
-                      )}
+                      ) : null}
                       <p className="mb-2 font-cormorant text-base text-parchemin/45">
                         {formatDate(startsAt)} à {formatTime(startsAt)}
                       </p>

@@ -127,6 +127,9 @@ export default function ReservationPage({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   // Jetons de formation (module Formations avec Noctura) — 0 si pas élève.
   const [formationCredits, setFormationCredits] = useState(0);
+  const [formationEnrollments, setFormationEnrollments] = useState<
+    { id: string; code: string; title: string; currentCourse: { code: string; title: string } | null }[]
+  >([]);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -205,6 +208,7 @@ export default function ReservationPage({
             if (cr.ok) {
               const j = await cr.json();
               setFormationCredits(j.credits ?? 0);
+              setFormationEnrollments(Array.isArray(j.enrollments) ? j.enrollments : []);
             }
           } catch { /* silencieux */ }
         } else {
@@ -307,7 +311,7 @@ export default function ReservationPage({
     setSlotRemaining(remaining);
   }
 
-  async function handleConfirmAndPay(paymentMethod: 'CARD' | 'INTERAC' | 'CREDIT' = 'CARD') {
+  async function handleConfirmAndPay(paymentMethod: 'CARD' | 'INTERAC' | 'CREDIT' = 'CARD', formationEnrollmentId?: string) {
     if (!selectedDate || !selectedSlot || !practitioner) return;
 
     // Vérif d'abord : doit être connecté en tant que client
@@ -337,6 +341,7 @@ export default function ReservationPage({
           offeringId: offering?.id ?? undefined,
           mode: selectedMode,
           paymentMethod,
+          formationEnrollmentId,
         }),
       });
 
@@ -1196,36 +1201,41 @@ export default function ReservationPage({
               />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {formationCredits > 0 && (
+                {formationCredits > 0 && formationEnrollments.length > 0 && (
                   <>
-                    <button
-                      type="button"
-                      disabled={booking}
-                      onClick={() => handleConfirmAndPay('CREDIT')}
-                      style={{
-                        width: '100%',
-                        padding: '16px',
-                        fontFamily: 'var(--font-cinzel)',
-                        fontSize: '0.85rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.18em',
-                        background: booking
-                          ? 'rgba(107, 63, 160, 0.3)'
-                          : 'linear-gradient(135deg, #6B3FA0, #4A2D7A)',
-                        color: 'var(--or-ancien)',
-                        border: '1px solid rgba(201, 168, 76, 0.6)',
-                        borderRadius: '2px',
-                        cursor: booking ? 'not-allowed' : 'pointer',
-                        opacity: booking ? 0.7 : 1,
-                        transition: 'all 0.3s',
-                        boxShadow: booking ? 'none' : '0 4px 20px rgba(107, 63, 160, 0.25)',
-                      }}
-                    >
-                      {booking ? 'Traitement en cours...' : `🪙 Réserver avec 1 jeton (il t'en reste ${formationCredits})`}
-                    </button>
+                    {formationEnrollments.map((enr) => (
+                      <button
+                        key={enr.id}
+                        type="button"
+                        disabled={booking}
+                        onClick={() => handleConfirmAndPay('CREDIT', enr.id)}
+                        style={{
+                          width: '100%',
+                          padding: '16px',
+                          fontFamily: 'var(--font-cinzel)',
+                          fontSize: '0.8rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.14em',
+                          background: booking
+                            ? 'rgba(107, 63, 160, 0.3)'
+                            : 'linear-gradient(135deg, #6B3FA0, #4A2D7A)',
+                          color: 'var(--or-ancien)',
+                          border: '1px solid rgba(201, 168, 76, 0.6)',
+                          borderRadius: '2px',
+                          cursor: booking ? 'not-allowed' : 'pointer',
+                          opacity: booking ? 0.7 : 1,
+                          transition: 'all 0.3s',
+                          boxShadow: booking ? 'none' : '0 4px 20px rgba(107, 63, 160, 0.25)',
+                        }}
+                      >
+                        {booking
+                          ? 'Traitement en cours...'
+                          : `🪙 Mon cours ${enr.code === 'RF' ? 'de Runes' : enr.code === 'TP' ? 'de Tarot' : enr.title}${enr.currentCourse ? ` — ${enr.currentCourse.code}` : ''} (1 jeton)`}
+                      </button>
+                    ))}
                     <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'rgba(232,220,190,0.5)', fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>
-                      Aucun paiement requis — 1 jeton de ta banque de formation sera utilisé.
-                      Il te sera remboursé si tu annules.
+                      Il te reste {formationCredits} jeton{formationCredits > 1 ? 's' : ''} — aucun paiement requis,
+                      le jeton est remboursé si tu annules.
                     </p>
                   </>
                 )}

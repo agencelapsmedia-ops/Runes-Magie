@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   const session = await holisticSession();
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-  const { practitionerId, startsAt, endsAt, notes, offeringId, mode, paymentMethod } = await req.json();
+  const { practitionerId, startsAt, endsAt, notes, offeringId, mode, paymentMethod, formationEnrollmentId } = await req.json();
   // Méthode de paiement choisie par la cliente : 'CARD' (défaut, Stripe),
   // 'INTERAC' (virement) ou 'CREDIT' (1 jeton de formation — module Formations).
   const useInterac = paymentMethod === 'INTERAC';
@@ -182,8 +182,16 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    // La cliente peut préciser SA formation (Runes ou Tarot) ; le filtre par
+    // clientId garantit qu'elle ne peut jamais viser l'inscription d'une autre.
     const enrollment = await prisma.formationEnrollment.findFirst({
-      where: { clientId, status: { in: ['ACTIVE', 'PAYMENT_DUE'] } },
+      where: {
+        clientId,
+        status: { in: ['ACTIVE', 'PAYMENT_DUE'] },
+        ...(typeof formationEnrollmentId === 'string' && formationEnrollmentId
+          ? { id: formationEnrollmentId }
+          : {}),
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         formation: { select: { title: true } },

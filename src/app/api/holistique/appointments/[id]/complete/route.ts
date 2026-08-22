@@ -2,6 +2,37 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import Stripe from 'stripe';
+import { setCourseState } from '@/lib/formation-service';
+
+/**
+ * Rencontre de formation terminée au pupitre → le cours de la formation est
+ * automatiquement marqué « Terminé » (et le suivant débloqué). Best-effort :
+ * un échec n'empêche jamais la complétion du RDV — Noctura garde toujours la
+ * possibilité de corriger dans la fiche élève. Pas appelé pour un NO_SHOW.
+ */
+async function autoCompleteFormationCourse(
+  appt: { paymentMode: string | null; formationEnrollmentId: string | null; formationCourseId: string | null },
+  actor: string,
+): Promise<string[] | null> {
+  if (appt.paymentMode !== 'FORMATION_CREDIT' || !appt.formationEnrollmentId || !appt.formationCourseId) return null;
+  try {
+    const progress = await prisma.enrollmentCourseProgress.findUnique({
+      where: { enrollmentId_courseId: { enrollmentId: appt.formationEnrollmentId, courseId: appt.formationCourseId } },
+      select: { state: true },
+    });
+    if (!progress || progress.state === 'COMPLETED') return null;
+    return await setCourseState({
+      enrollmentId: appt.formationEnrollmentId,
+      courseId: appt.formationCourseId,
+      action: 'complete',
+      actor,
+      note: 'Rencontre complétée au pupitre',
+    });
+  } catch (err) {
+    console.error('[complete] auto-complétion du cours de formation échouée (non-bloquant)', err);
+    return null;
+  }
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' as any });
@@ -77,8 +108,9 @@ export async function POST(
           completionOutcome: 'CHARGED',
         },
       });
-      // Le HolisticPayment était déjà PAID lors du checkout (cas groupe sans acompte)
-      return NextResponse.json({ success: true, charged: 0 });
+      // Le HolisticPayment était déjà PAID lors du checkout (cas groupe sans acompte / jeton)
+      const journal = await autoCompleteFormationCourse(appointment, `${appointment.practitioner.user.firstName} ${appointment.practitioner.user.lastName}`.trim());
+      return NextResponse.json({ success: true, charged: 0, formation: journal ?? undefined });
     }
 
     if (!appointment.stripePaymentMethodId || !appointment.stripeCustomerId) {
@@ -179,7 +211,8 @@ export async function POST(
       },
     });
     // Le paiement de l'acompte (s'il y en a un) est conservé en l'état
-    return NextResponse.json({ success: true, charged: 0, outcome: 'GIFTED' });
+    const journal = await autoCompleteFormationCourse(appointment, `${appointment.practitioner.user.firstName} ${appointment.practitioner.user.lastName}`.trim());
+    return NextResponse.json({ success: true, charged: 0, outcome: 'GIFTED', formation: journal ?? undefined });
   }
 
   // Cas 3 : NO_SHOW — client absent, l'acompte reste comme pénalité
