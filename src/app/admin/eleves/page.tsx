@@ -115,7 +115,10 @@ export default function ElevesPage() {
           <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.5rem', color: '#2D1B4E', margin: 0 }}>Élèves / Formations</h1>
           <p style={{ color: '#6B7280', fontSize: '0.85rem', margin: '4px 0 0' }}>Parcours Runes & Tarot avec Noctura — progression, crédits et paiements.</p>
         </div>
-        <button type="button" style={btn} onClick={() => setOpenInscription(true)}>+ Inscrire une élève</button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <Link href="/admin/eleves/documents" style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #6B3FA0', background: '#fff', color: '#6B3FA0', fontWeight: 600, fontSize: '0.85rem', textDecoration: 'none' }}>📜 Documents de cours</Link>
+          <button type="button" style={btn} onClick={() => setOpenInscription(true)}>+ Inscrire une élève</button>
+        </div>
       </div>
 
       <input placeholder="Rechercher une élève ou une formation…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...field, maxWidth: '360px', marginBottom: '16px' }} />

@@ -1232,15 +1232,19 @@ model FormationPayment {
   @@index([enrollmentId])
 }
 
-// Document protégé d'un cours (bucket Supabase PRIVÉ, jamais d'URL publique).
-// Accessible à la cliente seulement quand son cours est COMPLETED (règle app).
+// Document protégé d'un cours. Le fichier vit EN BASE (bytea) : aucune URL
+// publique n'existe — seule la route API le sert, après vérification de la
+// session ET que le cours est COMPLETED pour cette cliente.
 model FormationCourseDocument {
   id          String          @id @default(cuid())
   courseId    String
   course      FormationCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title       String
   description String          @default("")
-  storagePath String // chemin dans le bucket privé « formations »
+  storagePath String          @default("") // legacy/optionnel (non utilisé pour les blobs)
+  data        Bytes? // contenu du PDF (max ~10 Mo, validé à l'upload)
+  mimeType    String          @default("application/pdf")
+  sizeBytes   Int             @default(0)
   sortOrder   Int             @default(0)
   isActive    Boolean         @default(true)
   createdAt   DateTime        @default(now())
