@@ -358,6 +358,7 @@ model HolisticUser {
   eventRegistrations EventRegistration[]
   // ── Formations avec Noctura ──
   formationEnrollments FormationEnrollment[]
+  formationCredits     FormationCreditTransaction[]
 }
 
 model Practitioner {
@@ -1110,7 +1111,12 @@ model Formation {
   title        String
   subtitle     String                @default("")
   description  String                @default("")
-  defaultPrice Float? // prix indicatif — le prix réel vit sur l'inscription
+  defaultPrice Float? // prix indicatif de la formation complète
+  // Tarification (2026-08) : cours à la carte 89,99 $ (+1 crédit) ;
+  // bloc de 10 cours 675 $ (67,50 $/cours, rabais) → +10 crédits.
+  // Les crédits sont PARTAGÉS entre formations (Runes ou Tarot).
+  pricePerCourse  Float? // 89,99 $
+  pricePerBlock10 Float? // 675 $
   isActive     Boolean               @default(true)
   courses      FormationCourse[]
   enrollments  FormationEnrollment[]
@@ -1189,11 +1195,15 @@ model EnrollmentCourseProgress {
 }
 
 // Banque de crédits transactionnelle : le solde = somme des deltas.
+// La banque appartient à la CLIENTE (crédits utilisables Runes OU Tarot) ;
+// enrollmentId est un simple contexte facultatif.
 // Jamais de « remaining = remaining - 1 » hors transaction.
 model FormationCreditTransaction {
   id            String              @id @default(cuid())
-  enrollmentId  String
-  enrollment    FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  clientId      String?
+  client        HolisticUser?       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  enrollmentId  String?
+  enrollment    FormationEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   delta         Int // +10 allocation, -1 utilisation, +1 remboursement…
   type          String // ALLOCATION | USE | REFUND | ADJUSTMENT | BONUS | CORRECTION
   reason        String              @default("")
