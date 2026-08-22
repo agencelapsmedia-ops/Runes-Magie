@@ -128,7 +128,7 @@ export default function ReservationPage({
   // Jetons de formation (module Formations avec Noctura) — 0 si pas élève.
   const [formationCredits, setFormationCredits] = useState(0);
   const [formationEnrollments, setFormationEnrollments] = useState<
-    { id: string; code: string; title: string; currentCourse: { code: string; title: string } | null }[]
+    { id: string; code: string; title: string; pricePerCourse: number | null; currentCourse: { code: string; title: string } | null }[]
   >([]);
 
   const [monthOffset, setMonthOffset] = useState(0);
@@ -1236,6 +1236,43 @@ export default function ReservationPage({
                     <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'rgba(232,220,190,0.5)', fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>
                       Il te reste {formationCredits} jeton{formationCredits > 1 ? 's' : ''} — aucun paiement requis,
                       le jeton est remboursé si tu annules.
+                    </p>
+                  </>
+                )}
+                {formationCredits === 0 && formationEnrollments.length > 0 && (
+                  <>
+                    {/* Élève sans jetons (paie à la carte) : réserver SON cours au prix de la formation. */}
+                    {formationEnrollments.map((enr) => (
+                      <button
+                        key={enr.id}
+                        type="button"
+                        disabled={booking}
+                        onClick={() => handleConfirmAndPay('CARD', enr.id)}
+                        style={{
+                          width: '100%',
+                          padding: '16px',
+                          fontFamily: 'var(--font-cinzel)',
+                          fontSize: '0.8rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.14em',
+                          background: booking
+                            ? 'rgba(107, 63, 160, 0.3)'
+                            : 'linear-gradient(135deg, #6B3FA0, #4A2D7A)',
+                          color: 'var(--or-ancien)',
+                          border: '1px solid rgba(201, 168, 76, 0.6)',
+                          borderRadius: '2px',
+                          cursor: booking ? 'not-allowed' : 'pointer',
+                          opacity: booking ? 0.7 : 1,
+                          transition: 'all 0.3s',
+                        }}
+                      >
+                        {booking
+                          ? 'Traitement en cours...'
+                          : `📚 Mon cours ${enr.code === 'RF' ? 'de Runes' : enr.code === 'TP' ? 'de Tarot' : enr.title}${enr.currentCourse ? ` — ${enr.currentCourse.code}` : ''}${enr.pricePerCourse ? ` (${enr.pricePerCourse.toFixed(2)} $)` : ''}`}
+                      </button>
+                    ))}
+                    <p style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic', color: 'rgba(232,220,190,0.5)', fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>
+                      Cours à la carte : acompte de 25 $ maintenant, le reste facturé à la fin du cours.
                     </p>
                   </>
                 )}

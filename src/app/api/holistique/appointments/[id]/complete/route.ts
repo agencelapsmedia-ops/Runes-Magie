@@ -14,7 +14,9 @@ async function autoCompleteFormationCourse(
   appt: { paymentMode: string | null; formationEnrollmentId: string | null; formationCourseId: string | null },
   actor: string,
 ): Promise<string[] | null> {
-  if (appt.paymentMode !== 'FORMATION_CREDIT' || !appt.formationEnrollmentId || !appt.formationCourseId) return null;
+  // Tout RDV lié à une formation (jeton, carte à la carte ou Interac) : la
+  // complétion au pupitre valide le cours, peu importe le mode de paiement.
+  if (!appt.formationEnrollmentId || !appt.formationCourseId) return null;
   try {
     const progress = await prisma.enrollmentCourseProgress.findUnique({
       where: { enrollmentId_courseId: { enrollmentId: appt.formationEnrollmentId, courseId: appt.formationCourseId } },
@@ -172,10 +174,12 @@ export async function POST(
         },
       });
 
+      const journal = await autoCompleteFormationCourse(appointment, `${appointment.practitioner.user.firstName} ${appointment.practitioner.user.lastName}`.trim());
       return NextResponse.json({
         success: true,
         charged: remainingAmount,
         paymentIntentId: paymentIntent.id,
+        formation: journal ?? undefined,
       });
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

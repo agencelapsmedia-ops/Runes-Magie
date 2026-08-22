@@ -6,6 +6,7 @@ import { mirrorAppointmentToBooking, mirrorPaymentToV2 } from '@/lib/holistic-v2
 import { createDailyRoomForAppointment } from '@/lib/daily-co';
 import { createCalendarEventForAppointment } from '@/lib/google-calendar';
 import { isInternalEmail } from '@/lib/holistic-clients';
+import { createEnrollment } from '@/lib/formation-service';
 import {
   buildBookingEmailData,
   sendInteracInstructionsToClient,
@@ -153,9 +154,78 @@ export async function POST(req: Request) {
     notes,
   ].filter(Boolean).join('\n') || undefined;
 
+  // ─── Contexte FORMATION pour un paiement carte/Interac (à la carte) ──────
+  // Deux portes d'entrée :
+  //  1) l'élève clique « 💳 Mon cours — 89,99 $ » (formationEnrollmentId) ;
+  //  2) une cliente réserve un service de formation (offering.formationCode)
+  //     → elle DEVIENT élève automatiquement (inscription créée, 1er cours débloqué).
+  // Le RDV est alors lié au cours actuel : « Compléter la séance » chargera le
+  // solde ET marquera le cours terminé (déblocage auto du suivant).
+  let formationCtx: { enrollmentId: string; courseId: string | null; label: string; price: number | null } | null = null;
+  if (!useCredit && practitioner.isOwner) {
+    try {
+      let enrollmentId: string | null = null;
+      if (typeof formationEnrollmentId === 'string' && formationEnrollmentId) {
+        const own = await prisma.formationEnrollment.findFirst({
+          where: { id: formationEnrollmentId, clientId, status: { in: ['ACTIVE', 'PAYMENT_DUE'] } },
+          select: { id: true },
+        });
+        enrollmentId = own?.id ?? null;
+      } else if (offering?.formationCode) {
+        const formation = await prisma.formation.findUnique({ where: { code: offering.formationCode } });
+        if (formation) {
+          const existing = await prisma.formationEnrollment.findUnique({
+            where: { formationId_clientId: { formationId: formation.id, clientId } },
+            select: { id: true },
+          });
+          enrollmentId = existing?.id
+            ?? (await createEnrollment({
+              formationId: formation.id,
+              clientId,
+              adminNotes: 'Inscription automatique — achat d’un cours en ligne.',
+              actor: 'SYSTEM (achat en ligne)',
+            })).id;
+        }
+      }
+      if (enrollmentId) {
+        const enr = await prisma.formationEnrollment.findUnique({
+          where: { id: enrollmentId },
+          include: {
+            formation: { select: { title: true, pricePerCourse: true } },
+            progress: {
+              where: { state: 'UNLOCKED', course: { isOptional: false } },
+              include: { course: { select: { code: true, title: true } } },
+              orderBy: { course: { sortOrder: 'asc' } },
+              take: 1,
+            },
+          },
+        });
+        if (enr) {
+          const cc = enr.progress[0] ?? null;
+          formationCtx = {
+            enrollmentId: enr.id,
+            courseId: cc?.courseId ?? null,
+            label: `Service : Rencontre de formation — ${enr.formation.title}${cc ? ` (${cc.course.code} — ${cc.course.title})` : ''}`,
+            price: enr.formation.pricePerCourse ?? null,
+          };
+        }
+      }
+    } catch (err) {
+      console.error('[checkout] contexte formation échoué (non-bloquant)', err);
+    }
+  }
+
   const durationHours = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / (1000 * 60 * 60);
-  // Prix : prix de l'Offering si fourni, sinon fallback sur hourlyRate × heures
-  const amountTotal = offering ? offering.price : practitioner.hourlyRate * durationHours;
+  // Prix : cours de formation à la carte (89,99 $), sinon Offering, sinon hourlyRate × heures
+  const amountTotal = formationCtx?.price ?? (offering ? offering.price : practitioner.hourlyRate * durationHours);
+  // Notes du RDV : libellé formation prioritaire sur le service choisi.
+  const finalNotes = formationCtx
+    ? [formationCtx.label, mode ? `Mode : ${mode === 'IN_PERSON' ? 'Présentiel' : 'Virtuel (vidéo)'}` : null, notes].filter(Boolean).join('\n')
+    : enrichedNotes;
+  // Champs de liaison formation ajoutés aux RDV carte/Interac.
+  const formationLink = formationCtx
+    ? { formationEnrollmentId: formationCtx.enrollmentId, formationCourseId: formationCtx.courseId }
+    : {};
 
   // ─── Modèle acompte + solde ──────────────────────────────────────────────
   // Services individuels (capacity = 1) : acompte 25 $ à la résa, solde après séance
@@ -312,12 +382,13 @@ export async function POST(req: Request) {
         practitionerId,
         startsAt: new Date(startsAt),
         endsAt: new Date(endsAt),
-        notes: enrichedNotes,
+        notes: finalNotes,
         status: 'CONFIRMED',
         paymentMode: 'INTERAC',
         totalAmount: amountTotal,
         depositAmount: amountTotal,
         remainingAmount: 0,
+        ...formationLink,
       },
     });
     await prisma.holisticPayment.create({
@@ -365,11 +436,12 @@ export async function POST(req: Request) {
       practitionerId,
       startsAt: new Date(startsAt),
       endsAt: new Date(endsAt),
-      notes: enrichedNotes,
+      notes: finalNotes,
       status: 'PENDING',
       totalAmount: amountTotal,
       depositAmount: usesDeposit ? DEPOSIT_AMOUNT : amountTotal,
       remainingAmount: amountRemaining,
+      ...formationLink,
     },
   });
 

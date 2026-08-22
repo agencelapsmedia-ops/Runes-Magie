@@ -21,7 +21,7 @@ export async function GET() {
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,
-      formation: { select: { code: true, title: true } },
+      formation: { select: { code: true, title: true, pricePerCourse: true } },
       progress: {
         where: { state: 'UNLOCKED', course: { isOptional: false } },
         orderBy: { course: { sortOrder: 'asc' } },
@@ -37,6 +37,7 @@ export async function GET() {
       id: e.id,
       code: e.formation.code,
       title: e.formation.title,
+      pricePerCourse: e.formation.pricePerCourse,
       currentCourse: e.progress[0]?.course ?? null,
     })),
   });

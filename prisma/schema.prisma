@@ -583,6 +583,9 @@ model Offering {
   bufferMinutes   Int          @default(15)
   // Prix : à la carte (par personne), pour 2 personnes (duo), package complet
   price            Float        // prix de base à la carte / par personne
+  // Service de FORMATION (module Formations) : 'RF' | 'TP'. Réserver ce service
+  // inscrit automatiquement la cliente comme élève et lie le RDV à son cours actuel.
+  formationCode    String?
   priceForTwo      Float?       // tarif spécial pour duo (couple, ami·e, etc.)
   pricePackage     Float?       // forfait complet (ex: pack de N cours)
   pricePackageMsrp Float?       // valeur d'origine du forfait (pour afficher l'économie)
