@@ -93,6 +93,20 @@ export async function POST(
   if (appointment.status === 'COMPLETED') {
     return NextResponse.json({ error: 'Ce RDV est déjà terminé.' }, { status: 400 });
   }
+  // Rencontre de FORMATION payée par Interac : le virement doit être confirmé
+  // AVANT de compléter — sinon le cours (et son document) se débloqueraient
+  // sans que l'argent ait été reçu. (NO_SHOW reste permis : rien à débloquer.)
+  if (
+    appointment.formationEnrollmentId &&
+    appointment.paymentMode === 'INTERAC' &&
+    appointment.payment?.status !== 'PAID' &&
+    outcome !== 'NO_SHOW'
+  ) {
+    return NextResponse.json(
+      { error: 'Le virement Interac de ce cours n’est pas encore confirmé. Confirme d’abord la réception du paiement, puis complète la séance.' },
+      { status: 400 },
+    );
+  }
   if (appointment.status === 'CANCELLED') {
     return NextResponse.json({ error: 'Impossible de terminer un RDV annulé.' }, { status: 400 });
   }
