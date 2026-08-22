@@ -132,29 +132,46 @@ export default function ElevesPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {filtered.map((e) => {
-            const st = STATUS_FR[e.status] ?? STATUS_FR.ACTIVE;
-            const pct = e.total ? Math.round((e.completed / e.total) * 100) : 0;
+          {/* Une carte par ÉLÈVE : ses formations regroupées, crédits (partagés) affichés une fois. */}
+          {Object.values(
+            filtered.reduce<Record<string, EleveRow[]>>((acc, e) => {
+              (acc[e.client.id] ??= []).push(e);
+              return acc;
+            }, {}),
+          ).map((rows) => {
+            const client = rows[0].client;
+            const credits = rows[0].credits;
             return (
-              <Link key={e.id} href={`/admin/eleves/${e.id}`} style={{ textDecoration: 'none' }}>
-                <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', cursor: 'pointer' }}>
-                  <div style={{ flex: '1 1 200px' }}>
-                    <strong style={{ color: '#1F2937', fontSize: '1rem' }}>{e.client.firstName} {e.client.lastName}</strong>
-                    <div style={{ color: '#6B7280', fontSize: '0.8rem' }}>{e.formation.title}</div>
+              <div key={client.id} style={{ ...card }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  <strong style={{ color: '#1F2937', fontSize: '1.05rem' }}>{client.firstName} {client.lastName}</strong>
+                  <div style={{ textAlign: 'center' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: credits > 0 ? '#065F46' : '#991B1B' }}>{credits}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#6B7280', marginLeft: '6px' }}>crédit{credits > 1 ? 's' : ''} (partagés)</span>
                   </div>
-                  <div style={{ flex: '1 1 160px', minWidth: '140px' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: '4px' }}>Progression {e.completed} / {e.total}</div>
-                    <div style={{ height: '8px', borderRadius: '4px', background: '#F3F4F6', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6B3FA0,#C9A84C)' }} />
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'center', minWidth: '80px' }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color: e.credits > 0 ? '#065F46' : '#991B1B' }}>{e.credits}</div>
-                    <div style={{ fontSize: '0.7rem', color: '#6B7280' }}>crédit{e.credits > 1 ? 's' : ''}</div>
-                  </div>
-                  <span style={{ padding: '4px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, background: st.bg, color: st.fg }}>{st.label}</span>
                 </div>
-              </Link>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {rows.map((e) => {
+                    const st = STATUS_FR[e.status] ?? STATUS_FR.ACTIVE;
+                    const pct = e.total ? Math.round((e.completed / e.total) * 100) : 0;
+                    return (
+                      <Link key={e.id} href={`/admin/eleves/${e.id}`} style={{ textDecoration: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', padding: '10px 12px', borderRadius: '8px', background: '#FAFAFA', border: '1px solid #F3F4F6', cursor: 'pointer' }}>
+                          <div style={{ flex: '1 1 180px', color: '#4B5563', fontSize: '0.85rem', fontWeight: 600 }}>{e.formation.title}</div>
+                          <div style={{ flex: '1 1 160px', minWidth: '140px' }}>
+                            <div style={{ fontSize: '0.72rem', color: '#6B7280', marginBottom: '4px' }}>Progression {e.completed} / {e.total}</div>
+                            <div style={{ height: '7px', borderRadius: '4px', background: '#EFEFEF', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#6B3FA0,#C9A84C)' }} />
+                            </div>
+                          </div>
+                          <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 600, background: st.bg, color: st.fg }}>{st.label}</span>
+                          <span style={{ color: '#6B3FA0', fontSize: '0.8rem' }}>Ouvrir →</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>
