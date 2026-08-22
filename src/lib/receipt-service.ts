@@ -33,6 +33,8 @@ export async function createReceipt(params: {
   appointmentId?: string | null;
   kind?: 'DEPOSIT' | 'REMAINDER' | 'FULL' | 'FORMATION' | 'MANUAL';
   formationPaymentId?: string | null;
+  /** false = pas de courriel (ex. génération rétroactive de vieux reçus). */
+  sendEmail?: boolean;
 }): Promise<{ id: string; number: string } | null> {
   try {
     if (!(params.amount > 0)) return null;
@@ -82,9 +84,11 @@ export async function createReceipt(params: {
     }
     if (!receipt) return null;
 
-    await sendReceiptEmail(receipt.id).catch((err) =>
-      console.error('[recu] envoi courriel échoué (non-bloquant)', err),
-    );
+    if (params.sendEmail !== false) {
+      await sendReceiptEmail(receipt.id).catch((err) =>
+        console.error('[recu] envoi courriel échoué (non-bloquant)', err),
+      );
+    }
     return receipt;
   } catch (err) {
     console.error('[recu] création échouée (non-bloquant)', err);
