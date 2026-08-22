@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
+import { INTERAC_EMAIL, INTERAC_ANSWER } from '@/lib/constants';
+import InteracCountdown from './InteracCountdown';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +35,8 @@ export default async function ReservationConfirmeePage({
   let practitionerName = '';
   let serviceName = '';
   let startsAt: Date | null = null;
+  let interacDeadline: string | null = null;
+  let interacMontant: number | null = null;
 
   if (appointmentId) {
     const appt = await prisma.holisticAppointment.findUnique({
@@ -47,6 +51,10 @@ export default async function ReservationConfirmeePage({
       startsAt = appt.startsAt;
       const m = (appt.notes ?? '').match(/Service\s*:\s*([^\n]+)/);
       if (m) serviceName = m[1].trim();
+      // Interac : délai de 30 min (voir holistic-interac-release.ts) à partir
+      // de la création de la réservation, et montant complet à virer.
+      interacDeadline = new Date(appt.createdAt.getTime() + 30 * 60 * 1000).toISOString();
+      interacMontant = appt.totalAmount ?? null;
     }
   }
 
@@ -163,25 +171,13 @@ export default async function ReservationConfirmeePage({
           </p>
         )}
 
-        {isInterac && (
-          <div
-            style={{
-              background: 'rgba(201, 168, 76, 0.1)',
-              border: '1px solid rgba(201, 168, 76, 0.35)',
-              borderRadius: '6px',
-              padding: '16px 18px',
-              marginBottom: '24px',
-              textAlign: 'left',
-            }}
-          >
-            <p style={{ fontFamily: 'var(--font-cinzel)', color: 'var(--or-ancien)', fontSize: '0.85rem', margin: '0 0 6px' }}>
-              🏦 Paiement par virement Interac
-            </p>
-            <p style={{ fontFamily: 'var(--font-cormorant)', color: 'rgba(232, 220, 190, 0.75)', fontSize: '1rem', lineHeight: 1.6, margin: 0 }}>
-              Ta place est réservée&nbsp;! Pour la confirmer définitivement, effectue ton virement Interac —
-              les instructions (destinataire, montant, réponse secrète) t&apos;ont été envoyées par courriel.
-            </p>
-          </div>
+        {isInterac && interacDeadline && (
+          <InteracCountdown
+            deadline={interacDeadline}
+            montant={interacMontant}
+            destinataire={INTERAC_EMAIL}
+            reponse={INTERAC_ANSWER}
+          />
         )}
 
         <p
