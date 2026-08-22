@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getClientEnrollmentDetail } from '@/lib/formation-client';
+import { prisma } from '@/lib/db';
 import { MembreHeader } from '@/components/membre/MembrePage';
 
 /**
@@ -26,6 +27,11 @@ export default async function ParcoursPage({ params }: { params: Promise<{ enrol
   const { enrollmentId } = await params;
   const detail = await getClientEnrollmentDetail(userId, enrollmentId);
   if (!detail) notFound();
+
+  // Réservation directe : le calendrier de Noctura (praticienne propriétaire),
+  // sans passer par la page d'accueil des soins.
+  const noctura = await prisma.practitioner.findFirst({ where: { isOwner: true }, select: { id: true } });
+  const reserverUrl = noctura ? `/soins/reserver/${noctura.id}` : '/soins';
 
   const { enrollment: e, credits, documents, totalPaid, balance } = detail;
   const base = e.progress.filter((p) => !p.course.isOptional);
@@ -88,11 +94,11 @@ export default async function ParcoursPage({ params }: { params: Promise<{ enrol
         )}
         <div className="mt-4">
           <Link
-            href="/soins"
+            href={reserverUrl}
             className="inline-block rounded-sm border px-6 py-3 font-cinzel text-[0.68rem] uppercase tracking-widest text-or-ancien transition-colors hover:bg-or-ancien/10"
             style={{ borderColor: 'rgba(201,168,76,0.5)' }}
           >
-            Réserver ma rencontre avec Noctura →
+            Réserver mon cours avec Noctura →
           </Link>
           {credits > 0 && (
             <p className="mt-2 text-[0.75rem] text-parchemin/50">🪙 Tu as {credits} jeton{credits > 1 ? 's' : ''} — ta réservation pourra en utiliser un au lieu d’un paiement.</p>
