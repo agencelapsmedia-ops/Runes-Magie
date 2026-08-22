@@ -27,6 +27,7 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
   },
   { label: 'Élèves', href: '/admin/eleves', icon: 'ᚱ', match: ['/admin/eleves'] },
   { label: 'CRM / Clients', href: '/admin/crm', icon: 'ᛗ', match: ['/admin/crm', '/admin/clients', '/admin/conversations'] },
+  { label: 'Reçus', href: '/admin/recus', icon: 'ᚠ', match: ['/admin/recus'] },
   { label: 'To-do liste', href: '/admin/todo', icon: 'ᛏ', match: ['/admin/todo'] },
   { label: 'Événements', href: '/admin/evenements', icon: 'ᛝ', match: ['/admin/evenements'] },
   { label: 'Publications', href: '/admin/publications', icon: 'ᛒ', match: ['/admin/publications'] },
