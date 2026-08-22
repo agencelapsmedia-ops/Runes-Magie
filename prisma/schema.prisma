@@ -1208,7 +1208,10 @@ model FormationCreditTransaction {
   type          String // ALLOCATION | USE | REFUND | ADJUSTMENT | BONUS | CORRECTION
   reason        String              @default("")
   createdBy     String? // qui (Noctura, admin, "SYSTEM")
-  appointmentId String?             @unique // RDV lié pour USE/REFUND (anti double-débit)
+  appointmentId String?             @unique // RDV lié pour USE (anti double-débit)
+  // Remboursement lié à l'annulation d'un RDV : l'unicité en BASE garantit
+  // qu'un même RDV ne peut être remboursé qu'une seule fois (anti-course).
+  refundOfAppointmentId String?     @unique
   createdAt     DateTime            @default(now())
 
   @@index([enrollmentId])

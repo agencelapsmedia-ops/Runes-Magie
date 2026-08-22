@@ -34,6 +34,9 @@ export async function addCredits(params: {
   actor: string;
   appointmentId?: string | null;
 }) {
+  // SERIALIZABLE : deux débits concurrents lisant le même solde ne peuvent pas
+  // tous deux passer — Postgres rejette le second (P2034), qu'on remonte en
+  // erreur claire plutôt que de laisser le solde devenir négatif.
   return prisma.$transaction(async (tx) => {
     // Un débit ne doit jamais rendre le solde négatif.
     if (params.delta < 0) {
@@ -64,6 +67,12 @@ export async function addCredits(params: {
       });
     }
     return txn;
+  }, { isolationLevel: 'Serializable' }).catch((err) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((err as any)?.code === 'P2034') {
+      throw new Error('Opération de crédits en conflit — réessaie dans un instant.');
+    }
+    throw err;
   });
 }
 

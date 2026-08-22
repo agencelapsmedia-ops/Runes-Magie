@@ -204,6 +204,13 @@ export async function POST(req: Request) {
     // Libellé du RDV : la rencontre de formation (cours actuel), pas le soin
     // choisi sur la page — c'est ce que verront la cliente et Noctura partout.
     const currentCourse = enrollment.progress[0]?.course ?? null;
+    // Pas de cours débloqué (parcours terminé ou bloqué) → pas de rencontre à jeton.
+    if (!currentCourse) {
+      return NextResponse.json(
+        { error: 'Aucun cours disponible dans ta formation pour l’instant — contacte Noctura.' },
+        { status: 400 },
+      );
+    }
     const creditNotes = [
       `Service : Rencontre de formation — ${enrollment.formation.title}${currentCourse ? ` (${currentCourse.code} — ${currentCourse.title})` : ''}`,
       mode ? `Mode : ${mode === 'IN_PERSON' ? 'Présentiel' : 'Virtuel (vidéo)'}` : null,
@@ -252,8 +259,17 @@ export async function POST(req: Request) {
           data: { enrollmentId: enrollment.id, actor: 'SYSTEM', action: 'CREDIT_USE', detail: '−1 jeton — rencontre réservée' },
         });
         return appt;
-      });
+      }, { isolationLevel: 'Serializable' });
+      // SERIALIZABLE : deux réservations simultanées sur le dernier jeton ne
+      // peuvent pas toutes deux passer — la seconde échoue (P2034, géré ci-dessous).
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((err as any)?.code === 'P2034') {
+        return NextResponse.json(
+          { error: 'Deux réservations en même temps — réessaie dans un instant.' },
+          { status: 409 },
+        );
+      }
       if ((err as Error).message === 'SOLDE_INSUFFISANT') {
         return NextResponse.json({ error: 'Tu n’as plus de jetons de cours — choisis un autre mode de paiement.' }, { status: 400 });
       }

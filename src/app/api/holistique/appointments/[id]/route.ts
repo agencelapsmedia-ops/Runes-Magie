@@ -20,10 +20,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const { id } = await params;
   const { status } = await req.json();
-  const role = (session.user as any).role;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user = session.user as any;
+  const role = user.role;
+
+  // Statut : liste blanche stricte (colonne texte comparée strictement partout).
+  const STATUTS_VALIDES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
+  if (!STATUTS_VALIDES.includes(status)) {
+    return NextResponse.json({ error: 'Statut invalide' }, { status: 400 });
+  }
 
   const appointment = await prisma.holisticAppointment.findUnique({ where: { id } });
   if (!appointment) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
+
+  // Autorisation : la cliente du RDV, la praticienne du RDV, ou un admin/propriétaire.
+  // (Sans cette garde, n'importe quel compte connecté pouvait changer le RDV d'un tiers.)
+  const isAdmin = role === 'ADMIN' || user.isOwner === true;
+  const isClientOfAppt = role === 'CLIENT' && appointment.clientId === user.id;
+  const isPractitionerOfAppt = role === 'PRACTITIONER' && user.practitionerId === appointment.practitionerId;
+  if (!isAdmin && !isClientOfAppt && !isPractitionerOfAppt) {
+    return NextResponse.json({ error: 'Action non autorisée sur ce rendez-vous' }, { status: 403 });
+  }
+
+  // Une annulation n'est permise que depuis PENDING/CONFIRMED : un RDV déjà
+  // complété (séance livrée) ou déjà annulé ne s'annule pas.
+  if (status === 'CANCELLED' && !['PENDING', 'CONFIRMED'].includes(appointment.status)) {
+    return NextResponse.json({ error: 'Ce rendez-vous ne peut plus être annulé.' }, { status: 400 });
+  }
 
   const updated = await prisma.holisticAppointment.update({
     where: { id },
@@ -47,25 +70,31 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     try {
       const use = await prisma.formationCreditTransaction.findUnique({ where: { appointmentId: id } });
       if (use && use.delta < 0 && use.clientId) {
-        const dejaRembourse = await prisma.formationCreditTransaction.findFirst({
-          where: { clientId: use.clientId, type: 'REFUND', reason: { contains: id } },
-        });
-        if (!dejaRembourse) {
-          await prisma.formationCreditTransaction.create({
-            data: {
-              clientId: use.clientId,
-              enrollmentId: use.enrollmentId,
-              delta: 1,
-              type: 'REFUND',
-              reason: `Annulation de la rencontre ${id}`,
-              createdBy: 'SYSTEM',
-            },
-          });
-          if (use.enrollmentId) {
-            await prisma.formationAuditLog.create({
-              data: { enrollmentId: use.enrollmentId, actor: 'SYSTEM', action: 'CREDIT_REFUND', detail: '+1 jeton — rencontre annulée' },
-            });
-          }
+        // L'unicité de refundOfAppointmentId (contrainte BASE) garantit un seul
+        // remboursement par RDV, même sous deux annulations concurrentes : la
+        // deuxième insertion échoue en P2002 et est ignorée.
+        try {
+          await prisma.$transaction([
+            prisma.formationCreditTransaction.create({
+              data: {
+                clientId: use.clientId,
+                enrollmentId: use.enrollmentId,
+                delta: 1,
+                type: 'REFUND',
+                reason: `Annulation de la rencontre ${id}`,
+                createdBy: 'SYSTEM',
+                refundOfAppointmentId: id,
+              },
+            }),
+            ...(use.enrollmentId
+              ? [prisma.formationAuditLog.create({
+                  data: { enrollmentId: use.enrollmentId, actor: 'SYSTEM', action: 'CREDIT_REFUND', detail: '+1 jeton — rencontre annulée' },
+                })]
+              : []),
+          ]);
+        } catch (err) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((err as any)?.code !== 'P2002') throw err; // déjà remboursé → silencieux
         }
       }
     } catch (err) {
