@@ -180,7 +180,13 @@ export async function sendBookingNotificationToPractitioner(data: BookingEmailDa
         ${data.notes ? `<p style="margin: 12px 0 4px; color: #E8DCC8;"><strong>Notes du client :</strong><br><em>${data.notes}</em></p>` : ''}
       </div>
 
-      ${data.paymentMode === 'INTERAC' ? `
+      ${data.paymentMode === 'FORMATION_CREDIT' ? `
+      <div style="background: rgba(107, 63, 160, 0.12); border: 1px solid rgba(107, 63, 160, 0.4); border-radius: 6px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0; color: #E8DCC8; font-size: 14px; line-height: 1.5;">
+          🪙 <strong>Rencontre de formation — payée avec 1 jeton.</strong> Aucun paiement à percevoir.
+          À la fin du cours, marque-le « Terminé » dans la fiche élève pour débloquer le suivant.
+        </p>
+      </div>` : data.paymentMode === 'INTERAC' ? `
       <div style="background: rgba(201, 168, 76, 0.12); border: 1px solid rgba(201, 168, 76, 0.5); border-radius: 6px; padding: 16px; margin: 16px 0;">
         <p style="margin: 0 0 8px; color: #C9A84C; font-size: 15px; line-height: 1.5;">
           ⏳ <strong>Paiement par virement Interac — ${data.totalAmount.toFixed(2)} $ EN ATTENTE</strong>

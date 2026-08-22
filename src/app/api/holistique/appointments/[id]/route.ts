@@ -40,6 +40,39 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     console.error('[v2-sync] syncAppointmentStatusToV2 failed', { appointmentId: id, err });
   }
 
+  // Annulation d'une rencontre payée avec un jeton de formation → remboursement
+  // automatique du jeton (une seule fois). Pour un no-show, Noctura peut ensuite
+  // retirer le jeton via « Ajuster la banque » dans la fiche élève.
+  if (status === 'CANCELLED' && appointment.paymentMode === 'FORMATION_CREDIT') {
+    try {
+      const use = await prisma.formationCreditTransaction.findUnique({ where: { appointmentId: id } });
+      if (use && use.delta < 0 && use.clientId) {
+        const dejaRembourse = await prisma.formationCreditTransaction.findFirst({
+          where: { clientId: use.clientId, type: 'REFUND', reason: { contains: id } },
+        });
+        if (!dejaRembourse) {
+          await prisma.formationCreditTransaction.create({
+            data: {
+              clientId: use.clientId,
+              enrollmentId: use.enrollmentId,
+              delta: 1,
+              type: 'REFUND',
+              reason: `Annulation de la rencontre ${id}`,
+              createdBy: 'SYSTEM',
+            },
+          });
+          if (use.enrollmentId) {
+            await prisma.formationAuditLog.create({
+              data: { enrollmentId: use.enrollmentId, actor: 'SYSTEM', action: 'CREDIT_REFUND', detail: '+1 jeton — rencontre annulée' },
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[annulation] remboursement du jeton échoué (non-bloquant)', { appointmentId: id, err });
+    }
+  }
+
   // Annulation → courriels aux deux parties + retrait de l'événement agenda Google
   // (best-effort, no-op si non connectée / Resend non configuré).
   if (status === 'CANCELLED') {

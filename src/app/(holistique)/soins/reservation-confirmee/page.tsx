@@ -24,10 +24,11 @@ function formatDateTime(date: Date): string {
 export default async function ReservationConfirmeePage({
   searchParams,
 }: {
-  searchParams: Promise<{ appointment?: string; interac?: string }>;
+  searchParams: Promise<{ appointment?: string; interac?: string; credit?: string }>;
 }) {
-  const { appointment: appointmentId, interac } = await searchParams;
+  const { appointment: appointmentId, interac, credit } = await searchParams;
   const isInterac = interac === '1';
+  const isCredit = credit === '1';
 
   let practitionerName = '';
   let serviceName = '';
@@ -145,6 +146,20 @@ export default async function ReservationConfirmeePage({
             }}
           >
             {formatDateTime(startsAt)}
+          </p>
+        )}
+
+        {isCredit && (
+          <p
+            style={{
+              fontFamily: 'var(--font-cormorant)',
+              color: 'var(--or-ancien)',
+              fontSize: '1.05rem',
+              marginBottom: '24px',
+            }}
+          >
+            🪙 1 jeton de formation a été utilisé — aucun paiement requis.
+            Tu peux suivre ta progression dans « Mon espace → Mes formations ».
           </p>
         )}
 

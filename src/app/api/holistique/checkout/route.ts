@@ -39,8 +39,10 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
   const { practitionerId, startsAt, endsAt, notes, offeringId, mode, paymentMethod } = await req.json();
-  // Méthode de paiement choisie par la cliente : 'CARD' (défaut, Stripe) ou 'INTERAC'.
+  // Méthode de paiement choisie par la cliente : 'CARD' (défaut, Stripe),
+  // 'INTERAC' (virement) ou 'CREDIT' (1 jeton de formation — module Formations).
   const useInterac = paymentMethod === 'INTERAC';
+  const useCredit = paymentMethod === 'CREDIT';
 
   // Barrière serveur : impossible de réserver un créneau déjà passé (l'affichage
   // les masque déjà, ceci garantit le refus même depuis une page restée ouverte).
@@ -168,6 +170,94 @@ export async function POST(req: Request) {
   const commissionRate = (practitioner.commissionPct ?? parseFloat(process.env.COMMISSION_RATE || '35')) / 100;
   const amountCommission = amountTotal * commissionRate;
   const amountPractitioner = amountTotal - amountCommission;
+
+  // ─── Parcours JETON DE FORMATION ─────────────────────────────────────────
+  // La cliente utilise 1 crédit de sa banque (module Formations avec Noctura).
+  // Débit ATOMIQUE avec la création du RDV : la vérification du solde et le
+  // débit vivent dans la même transaction (anti double-clic / dernier jeton).
+  if (useCredit) {
+    if (!practitioner.isOwner) {
+      return NextResponse.json(
+        { error: 'Les jetons de formation servent uniquement pour les rencontres avec Noctura.' },
+        { status: 400 },
+      );
+    }
+    const enrollment = await prisma.formationEnrollment.findFirst({
+      where: { clientId, status: { in: ['ACTIVE', 'PAYMENT_DUE'] } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!enrollment) {
+      return NextResponse.json(
+        { error: 'Aucune formation active — les jetons sont réservés aux élèves inscrites.' },
+        { status: 400 },
+      );
+    }
+    let creditAppt;
+    try {
+      creditAppt = await prisma.$transaction(async (tx) => {
+        const agg = await tx.formationCreditTransaction.aggregate({
+          where: { clientId },
+          _sum: { delta: true },
+        });
+        if ((agg._sum.delta ?? 0) < 1) throw new Error('SOLDE_INSUFFISANT');
+        const appt = await tx.holisticAppointment.create({
+          data: {
+            clientId,
+            practitionerId,
+            startsAt: new Date(startsAt),
+            endsAt: new Date(endsAt),
+            notes: enrichedNotes,
+            status: 'CONFIRMED',
+            paymentMode: 'FORMATION_CREDIT',
+            totalAmount: 0,
+            depositAmount: 0,
+            remainingAmount: 0,
+            depositPaidAt: new Date(),
+            formationEnrollmentId: enrollment.id,
+          },
+        });
+        await tx.holisticPayment.create({
+          data: { appointmentId: appt.id, amountTotal: 0, amountCommission: 0, amountPractitioner: 0, status: 'PAID', paidAt: new Date() },
+        });
+        await tx.formationCreditTransaction.create({
+          data: {
+            clientId,
+            enrollmentId: enrollment.id,
+            delta: -1,
+            type: 'USE',
+            reason: 'Rencontre de formation réservée',
+            createdBy: 'SYSTEM',
+            appointmentId: appt.id,
+          },
+        });
+        await tx.formationAuditLog.create({
+          data: { enrollmentId: enrollment.id, actor: 'SYSTEM', action: 'CREDIT_USE', detail: '−1 jeton — rencontre réservée' },
+        });
+        return appt;
+      });
+    } catch (err) {
+      if ((err as Error).message === 'SOLDE_INSUFFISANT') {
+        return NextResponse.json({ error: 'Tu n’as plus de jetons de cours — choisis un autre mode de paiement.' }, { status: 400 });
+      }
+      throw err;
+    }
+    // Effets de bord best-effort (identiques aux autres parcours)
+    if (mode === 'VIRTUAL') {
+      try { await createDailyRoomForAppointment({ appointmentId: creditAppt.id, endsAt: new Date(endsAt) }); }
+      catch (err) { console.error('[checkout jeton] Daily échoué', err); }
+    }
+    try { await createCalendarEventForAppointment(creditAppt.id); }
+    catch (err) { console.error('[checkout jeton] Google Agenda échoué', err); }
+    try {
+      const data = await buildBookingEmailData(creditAppt.id);
+      if (data) await sendBookingNotificationToPractitioner(data);
+    } catch (err) {
+      console.error('[checkout jeton] courriels échoués (non-bloquant)', err);
+    }
+    return NextResponse.json({
+      url: `${getReturnBase(req)}/soins/reservation-confirmee?appointment=${creditAppt.id}&credit=1`,
+    });
+  }
 
   // ─── Parcours VIREMENT INTERAC ───────────────────────────────────────────
   // La cliente choisit de payer par virement (montant complet). Le RDV est
