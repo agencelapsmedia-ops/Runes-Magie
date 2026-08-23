@@ -108,41 +108,51 @@ export default async function ConversationsAdminPage({
           Aucune conversation pour l&apos;instant — le chat vient d&apos;ouvrir ses portes. ✦
         </div>
       ) : (
-        <div style={{ background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                {['Date', 'Visiteuse', 'Messages', 'Dernier message', ''].map((h) => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px', fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {conversations.map((c, i) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? '#FFF' : '#FAFAFA' }}>
-                  <td style={{ padding: '12px', fontSize: '0.85rem', color: '#374151', whiteSpace: 'nowrap' }}>{formatDate(c.updatedAt)}</td>
-                  <td style={{ padding: '12px', fontSize: '0.85rem', color: '#2D1B4E', fontWeight: 600 }}>
-                    {c.visitorName || 'Anonyme'}
-                    {c.visitorEmail && <span style={{ display: 'block', fontWeight: 400, color: '#6B7280', fontSize: '0.78rem' }}>{c.visitorEmail}</span>}
-                  </td>
-                  <td style={{ padding: '12px', fontSize: '0.85rem', color: '#374151' }}>{c._count.messages}</td>
-                  <td style={{ padding: '12px', fontSize: '0.85rem', color: '#6B7280', maxWidth: '360px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {c.messages[0]?.content ?? '—'}
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <Link
-                      href={`/admin/conversations?id=${c.id}`}
-                      style={{ padding: '6px 14px', background: '#6B3FA0', color: '#FFF', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}
-                    >
-                      Lire
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        /* Cartes empilées (responsive) : le tableau débordait sur téléphone —
+           chaque conversation est maintenant une carte cliquable, style boîte
+           de réception, lisible sur toutes les tailles d'écran. */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {conversations.map((c) => (
+            <Link
+              key={c.id}
+              href={`/admin/conversations?id=${c.id}`}
+              style={{
+                display: 'block',
+                background: '#FFFFFF',
+                borderRadius: '12px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                padding: '14px 16px',
+                textDecoration: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#2D1B4E' }}>
+                  {c.visitorName || 'Anonyme'}
+                  <span style={{ marginLeft: '8px', padding: '1px 8px', borderRadius: '999px', background: 'rgba(107,63,160,0.1)', color: '#6B3FA0', fontSize: '0.72rem', fontWeight: 600 }}>
+                    {c._count.messages} msg
+                  </span>
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>{formatDate(c.updatedAt)}</span>
+              </div>
+              {c.visitorEmail && (
+                <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#6B7280' }}>{c.visitorEmail}</p>
+              )}
+              <p
+                style={{
+                  margin: '6px 0 0',
+                  fontSize: '0.85rem',
+                  color: '#6B7280',
+                  lineHeight: 1.5,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {c.messages[0]?.content ?? '—'}
+              </p>
+            </Link>
+          ))}
         </div>
       )}
     </div>
