@@ -3,7 +3,7 @@ import { prisma } from '../src/lib/db';
 
 async function main() {
   const clients = await prisma.holisticUser.findMany({
-    where: { lastName: { contains: 'mendon', mode: 'insensitive' }, role: 'CLIENT' },
+    where: { lastName: { contains: 'hamraoui', mode: 'insensitive' }, role: 'CLIENT' },
   });
   for (const client of clients) {
     console.log('Cliente:', client.id, client.firstName, client.lastName, client.email);
@@ -28,7 +28,7 @@ async function main() {
     for (const c of credits) console.log(' crédit:', c.delta, c.type, c.reason, '| rdv', c.appointmentId);
 
     const rdvs = await prisma.holisticAppointment.findMany({
-      where: { clientId: client.id, startsAt: { gte: new Date('2026-08-01') } },
+      where: { clientId: client.id, startsAt: { gte: new Date('2026-06-01') } },
       orderBy: { startsAt: 'asc' },
     });
     for (const r of rdvs) {
