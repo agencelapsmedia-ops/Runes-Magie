@@ -30,7 +30,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Message trop long (1000 caractères max).' }, { status: 400 });
   }
 
-  // Visiteuse connectée ? (facultatif — enrichit la conversation)
+  // Visiteuse connectée ? Obligatoire depuis 2026-08-24 : sans compte, Noctura
+  // ne savait ni qui écrivait ni comment répondre (aucun courriel, aucun nom).
   let holisticUserId: string | null = null;
   let visitorName: string | null = null;
   try {
@@ -42,7 +43,17 @@ export async function POST(req: Request) {
       visitorName = (u.name as string) ?? null;
     }
   } catch {
-    // anonyme — parfaitement acceptable
+    // pas de session — traité juste en dessous
+  }
+  if (!holisticUserId) {
+    return NextResponse.json(
+      {
+        error:
+          '✦ Pour nous écrire et nous permettre de bien te répondre, connecte-toi ou crée ton compte gratuit — ainsi nous savons qui tu es et nous pouvons faire le suivi de ta demande.',
+        authRequired: true,
+      },
+      { status: 401 },
+    );
   }
 
   // Charge ou crée la conversation
@@ -58,6 +69,17 @@ export async function POST(req: Request) {
       data: { holisticUserId, visitorName },
       include: { messages: true },
     });
+  }
+  // Conversation commencée avant connexion : on la rattache au compte pour
+  // que l'admin voie qui a écrit.
+  if (!conversation.holisticUserId) {
+    conversation = {
+      ...(await prisma.chatConversation.update({
+        where: { id: conversation.id },
+        data: { holisticUserId, visitorName },
+        include: { messages: { orderBy: { createdAt: 'asc' } } },
+      })),
+    };
   }
   if (conversation.messages.length >= MAX_MESSAGES_PER_CONVERSATION) {
     return NextResponse.json(

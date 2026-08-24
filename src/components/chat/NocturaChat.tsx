@@ -2,12 +2,42 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import type { ChatMsg } from './types';
 import ChatLauncher from './ChatLauncher';
 import ChatWindow from './ChatWindow';
 import WelcomeScreen from './WelcomeScreen';
 import MessageList from './MessageList';
 import ChatComposer from './ChatComposer';
+
+/**
+ * Remplace la zone de saisie quand personne n'est connecté : écrire à Noctura
+ * exige un compte (sinon impossible de savoir qui écrit ni de faire un suivi).
+ */
+function ConnexionRequise() {
+  return (
+    <div className="shrink-0 border-t border-or-ancien/25 p-4 text-center">
+      <p className="mb-3 font-cormorant text-sm leading-snug text-parchemin">
+        ✦ Pour nous écrire et nous permettre un meilleur suivi de ta demande,
+        connecte-toi ou crée ton compte gratuit.
+      </p>
+      <div className="flex items-center justify-center gap-2">
+        <Link
+          href="/soins/auth/register"
+          className="rounded-full bg-gradient-to-br from-or-ancien to-or-clair px-4 py-2 font-cinzel text-xs uppercase tracking-wider text-charbon-mystere shadow-[0_0_12px_rgba(201,168,76,0.4)] transition-all hover:brightness-110"
+        >
+          Créer mon compte
+        </Link>
+        <Link
+          href="/soins/auth/login"
+          className="rounded-full border border-or-ancien/50 px-4 py-2 font-cinzel text-xs uppercase tracking-wider text-or-clair transition-all hover:bg-or-ancien/10"
+        >
+          Me connecter
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 const STORAGE_KEY = 'noctura-conversation-id';
 const OPEN_KEY = 'noctura-open'; // sessionStorage : le chat reste ouvert d'une page à l'autre
@@ -21,6 +51,8 @@ const OPEN_KEY = 'noctura-open'; // sessionStorage : le chat reste ouvert d'une 
 export default function NocturaChat() {
   const pathname = usePathname();
   const [open, setOpenState] = useState(false);
+  // null = état inconnu (vérification en cours) ; false = pas de compte connecté.
+  const [connectee, setConnectee] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [typing, setTyping] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
@@ -67,6 +99,14 @@ export default function NocturaChat() {
 
   // Au chargement d'une page : récupère la conversation, et rouvre le chat
   // s'il était ouvert sur la page précédente (avec son historique).
+  // Écrire dans le chat exige un compte : on vérifie la session une fois.
+  useEffect(() => {
+    fetch('/api/chat/moi')
+      .then((r) => r.json())
+      .then((d) => setConnectee(!!d.connectee))
+      .catch(() => setConnectee(false));
+  }, []);
+
   useEffect(() => {
     conversationIdRef.current = localStorage.getItem(STORAGE_KEY);
     let wasOpen = false;
@@ -169,7 +209,13 @@ export default function NocturaChat() {
       {open && (
         <ChatWindow
           onClose={() => setOpen(false)}
-          composer={<ChatComposer onSend={sendMessage} disabled={typing} />}
+          composer={
+            connectee === false ? (
+              <ConnexionRequise />
+            ) : (
+              <ChatComposer onSend={sendMessage} disabled={typing || connectee === null} />
+            )
+          }
         >
           {messages.length === 0 && !showHandoff ? (
             <WelcomeScreen onPick={sendMessage} onHuman={() => setShowHandoff(true)} />
