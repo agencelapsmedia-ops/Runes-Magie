@@ -220,3 +220,76 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json(updated);
 }
+
+/**
+ * DELETE — efface DÉFINITIVEMENT un rendez-vous et tout ce qui y est rattaché
+ * (paiement, reçus, avis, notifications, jeton de formation consommé).
+ * Réservé à un admin / à la propriétaire. Sert à nettoyer les tests et les
+ * réservations fantômes qui encombrent le panneau « À régler » de Ma journée.
+ * Pour une vraie cliente, le geste normal reste l'annulation (PUT
+ * status=CANCELLED) : elle garde la trace et prévient les deux parties.
+ */
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await holisticSession();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user = session?.user as any;
+  if (user?.role !== 'ADMIN' && user?.isOwner !== true) {
+    return NextResponse.json({ error: 'Action réservée à un admin' }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const appt = await prisma.holisticAppointment.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      startsAt: true,
+      client: { select: { firstName: true, lastName: true } },
+    },
+  });
+  if (!appt) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
+
+  // Miroir V2 et agenda Google d'abord : les deux lisent le RDV en base, donc
+  // ils doivent tourner tant qu'il existe encore. Best-effort : un échec ici ne
+  // doit pas empêcher le ménage demandé.
+  try {
+    await syncAppointmentStatusToV2({ appointmentId: id, status: 'CANCELLED', cancelledBy: 'ADMIN' });
+  } catch (err) {
+    console.error('[suppression] sync V2 échouée (non-bloquant)', { appointmentId: id, err });
+  }
+  try {
+    await deleteCalendarEventForAppointment(id);
+  } catch (err) {
+    console.error('[suppression] retrait de l\'événement Google échoué (non-bloquant)', {
+      appointmentId: id,
+      err,
+    });
+  }
+
+  // Tout part dans la même transaction : sans ça les clés étrangères (paiement,
+  // avis, notifications) refusent la suppression du RDV.
+  const [notifications, recus, jetons] = await prisma.$transaction([
+    prisma.holisticNotification.deleteMany({ where: { appointmentId: id } }),
+    prisma.receipt.deleteMany({ where: { appointmentId: id } }),
+    // Effacer la ligne « USE » rend le jeton à la banque de l'élève (le solde est
+    // la somme des delta) ; on retire aussi un éventuel remboursement d'annulation
+    // pour ne pas créditer deux fois le même RDV.
+    prisma.formationCreditTransaction.deleteMany({
+      where: { OR: [{ appointmentId: id }, { refundOfAppointmentId: id }] },
+    }),
+    prisma.holisticReview.deleteMany({ where: { appointmentId: id } }),
+    prisma.holisticPayment.deleteMany({ where: { appointmentId: id } }),
+    prisma.holisticAppointment.delete({ where: { id } }),
+  ]);
+
+  console.info('[suppression] RDV effacé définitivement', {
+    appointmentId: id,
+    client: `${appt.client.firstName} ${appt.client.lastName}`,
+    startsAt: appt.startsAt.toISOString(),
+    par: user?.email ?? user?.id ?? 'inconnu',
+    notifications: notifications.count,
+    recus: recus.count,
+    jetons: jetons.count,
+  });
+
+  return NextResponse.json({ ok: true, recusEffaces: recus.count, jetonsRendus: jetons.count });
+}
