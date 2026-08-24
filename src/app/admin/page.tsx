@@ -163,6 +163,7 @@ export default function MaJourneePage() {
               remainingAmount={r.remainingAmount ?? 0}
               depositAmount={r.depositAmount ?? 0}
               totalAmount={r.totalAmount ?? 0}
+              onDone={load}
             />
           )}
           {r.status === 'CONFIRMED' && (
@@ -249,6 +250,7 @@ export default function MaJourneePage() {
                         remainingAmount={solde}
                         depositAmount={r.depositAmount ?? 0}
                         totalAmount={r.totalAmount ?? 0}
+                        onDone={load}
                       />
                     )}
                     <button

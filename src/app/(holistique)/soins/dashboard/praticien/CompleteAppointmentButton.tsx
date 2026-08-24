@@ -9,6 +9,9 @@ interface Props {
   remainingAmount: number; // ce qu'il reste à charger (0 si paiement déjà complet)
   depositAmount: number; // montant déjà perçu
   totalAmount: number; // total de la séance
+  // Pages client (ex. « Ma journée ») : recharge leur propre liste après la
+  // complétion — router.refresh() ne re-déclenche pas un fetch côté client.
+  onDone?: () => void;
 }
 
 type Outcome = 'CHARGED' | 'GIFTED' | 'NO_SHOW';
@@ -19,6 +22,7 @@ export default function CompleteAppointmentButton({
   remainingAmount,
   depositAmount,
   totalAmount,
+  onDone,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -54,6 +58,7 @@ export default function CompleteAppointmentButton({
         setTimeout(() => {
           setOpen(false);
           router.refresh();
+          onDone?.();
         }, 1500);
       } catch {
         setError('Impossible de joindre le serveur.');
@@ -147,10 +152,14 @@ export default function CompleteAppointmentButton({
                     }}
                   >
                     <p style={{ fontFamily: 'var(--font-cinzel)', color: '#4ade80', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 4px', letterSpacing: '0.05em' }}>
-                      ✓ Client venu — Charger le solde {remainingAmount > 0 ? `(${remainingAmount.toFixed(2)} $)` : ''}
+                      {remainingAmount > 0
+                        ? `✓ Client venu — Charger le solde (${remainingAmount.toFixed(2)} $)`
+                        : '✓ Client venu — Rien à prélever'}
                     </p>
                     <p style={{ fontFamily: 'var(--font-cormorant)', color: 'var(--parchemin)', opacity: 0.65, fontSize: '0.85rem', margin: 0 }}>
-                      Cas normal. La carte sauvegardée du client est prélevée du montant restant.
+                      {remainingAmount > 0
+                        ? 'Cas normal. La carte sauvegardée du client est prélevée du montant restant.'
+                        : 'La séance est déjà entièrement payée. Aucun prélèvement ne sera fait — la séance est simplement marquée terminée.'}
                     </p>
                   </button>
 
