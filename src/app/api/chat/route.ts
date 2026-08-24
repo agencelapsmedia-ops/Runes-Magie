@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { prisma } from '@/lib/db';
 import { holisticSession } from '@/lib/holistic-auth';
 import { buildNocturaSystemPrompt, NOCTURA_OFFLINE_MESSAGE } from '@/lib/noctura-prompt';
+import { notifyNocturaOfChatMessage } from '@/lib/chat-notification-email';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,6 +95,20 @@ export async function POST(req: Request) {
   await prisma.chatMessage.create({
     data: { conversationId, role: 'user', content: message },
   });
+
+  // Notifie Noctura par courriel (best-effort, jamais bloquant, anti-rafale
+  // 15 min). Le « Répondre à » est l'adresse de la cliente connectée.
+  void prisma.holisticUser
+    .findUnique({ where: { id: holisticUserId }, select: { email: true, firstName: true, lastName: true } })
+    .then((client) =>
+      notifyNocturaOfChatMessage({
+        conversationId,
+        message,
+        visitorName: client ? `${client.firstName} ${client.lastName}`.trim() : visitorName,
+        visitorEmail: client?.email?.endsWith('@interne.invalid') ? null : (client?.email ?? null),
+      }),
+    )
+    .catch(() => {});
 
   // IA non configurée → réponse hors-ligne propre (persistée aussi)
   if (!anthropic) {
