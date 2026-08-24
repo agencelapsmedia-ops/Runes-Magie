@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
+import ReplyBox from './ReplyBox';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,8 +68,8 @@ export default async function ConversationsAdminPage({
                     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                   }}
                 >
-                  <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: m.role === 'user' ? '#6B3FA0' : '#92400E', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {m.role === 'user' ? 'Visiteuse' : 'Noctura'} · {formatDate(m.createdAt)}
+                  <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: m.role === 'user' ? '#6B3FA0' : m.role === 'assistant-humain' ? '#166534' : '#92400E', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {m.role === 'user' ? 'Visiteuse' : m.role === 'assistant-humain' ? 'Toi (réponse humaine)' : 'Noctura (IA)'} · {formatDate(m.createdAt)}
                   </p>
                   <p style={{ margin: '6px 0 0', fontSize: '0.92rem', color: '#1F2937', whiteSpace: 'pre-line', lineHeight: 1.55 }}>
                     {m.content}
@@ -76,6 +77,7 @@ export default async function ConversationsAdminPage({
                 </div>
               ))}
             </div>
+            <ReplyBox conversationId={conversation.id} />
           </>
         )}
       </div>

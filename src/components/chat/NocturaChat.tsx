@@ -87,7 +87,8 @@ export default function NocturaChat() {
         setMessages(
           data.messages.map((m: { role: string; content: string }) => ({
             id: nextId(),
-            role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+            // `assistant-humain` (réponse d'Annabelle) s'affiche comme Noctura.
+            role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
             content: m.content,
           })),
         );

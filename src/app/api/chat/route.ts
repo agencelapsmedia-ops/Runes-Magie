@@ -109,8 +109,10 @@ export async function POST(req: Request) {
 
   // Historique complet (rôles alternés user/assistant) + le nouveau message
   const history: { role: 'user' | 'assistant'; content: string }[] = [
+    // `assistant-humain` (réponse d'Annabelle depuis l'admin) compte comme
+    // assistant : l'IA doit voir ce qui a déjà été répondu à la visiteuse.
     ...conversation.messages.map((m) => ({
-      role: (m.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
+      role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
       content: m.content,
     })),
     { role: 'user' as const, content: message },
