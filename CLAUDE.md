@@ -43,6 +43,7 @@
 - État/roadmap module soins → `SUIVI_HOLISTIQUE.md`
 - Backlog d'idées → `CHOSES_A_FAIRE.md`
 - Plans & specs de features → `docs/superpowers/`
+- **Contexte entreprise** (offre, tarifs, inventaire, roadmap, contenu) → vault Obsidian « WYRD AI », dossier `10-ENTREPRISES/Runes-et-Magie/` — table des notes et règles d'usage dans le `CLAUDE.md` du dossier parent. Le vault est la source de vérité du **pourquoi** ; ne pas déduire l'offre du seul code.
 
 ## Règles de projet
 
