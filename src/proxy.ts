@@ -9,7 +9,7 @@ import type { NextRequest } from 'next/server';
  * false     → site normal.
  * Basculer cette constante puis pousser sur main.
  */
-const MAINTENANCE: 'TOTAL' | 'PUBLIC' | false = 'TOTAL';
+const MAINTENANCE: 'TOTAL' | 'PUBLIC' | false = false;
 
 export function proxy(request: NextRequest) {
   if (MAINTENANCE === 'TOTAL') {
