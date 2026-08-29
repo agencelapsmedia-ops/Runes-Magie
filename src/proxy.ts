@@ -12,7 +12,7 @@ import type { NextRequest } from 'next/server';
  *  - /api (webhooks Stripe, crons, chat… ne doivent jamais casser)
  *  - les assets (_next, images, favicon…)
  */
-const MAINTENANCE = false;
+const MAINTENANCE = true;
 
 export function proxy(request: NextRequest) {
   if (!MAINTENANCE) return NextResponse.next();
