@@ -1,0 +1,33 @@
+# Déclencheur externe du cron de publication sociale.
+# Le cron Vercel (plan Hobby) est limité à un passage quotidien ; ce workflow
+# appelle l'endpoint toutes les 15 minutes (best effort — GitHub peut retarder
+# de quelques minutes) pour que les publications programmées partent à l'heure.
+name: Cron publications sociales
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: cron-social
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Traiter les publications échues
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::Secret CRON_SECRET absent du dépôt — configurer Settings → Secrets → Actions avec la valeur de Vercel."
+            exit 0
+          fi
+          curl -fsS --max-time 90 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "https://runesetmagie.ca/api/cron/social-publish?limite=8"
