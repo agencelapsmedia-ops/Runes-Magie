@@ -106,6 +106,35 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=MedievalSharp&display=swap"
         />
+        {/* ── Installation (PWA) ──
+            Enregistrement du service worker et capture de l'invite
+            d'installation. Inline plutôt qu'en composant : `beforeinstallprompt`
+            ne se déclenche qu'UNE fois, souvent avant l'hydratation React — un
+            écouteur posé dans un composant le raterait et le bouton
+            « Télécharger l'application » n'apparaîtrait jamais. L'événement est
+            mis de côté ici, puis relayé à l'app par un événement maison.
+            Voir src/components/pwa/BoutonTelechargerApp.tsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function (e) {
+      console.warn('Service worker non enregistre :', e);
+    });
+  });
+}
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  window.__rmInstallPrompt = e;
+  window.dispatchEvent(new Event('rm:installable'));
+});
+window.addEventListener('appinstalled', function () {
+  window.__rmInstallPrompt = null;
+  window.dispatchEvent(new Event('rm:installed'));
+});`,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
