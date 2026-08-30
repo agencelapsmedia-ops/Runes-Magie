@@ -214,6 +214,112 @@ Catégories à surveiller (utilise exactement ces libellés dans "categorie") :
 
 Le vocabulaire spirituel prudent (« accompagne », « favorise la détente », « selon la tradition », « expérience immersive ») est ACCEPTABLE. Pour chaque problème : "extrait" = citation exacte, "raison" = pourquoi c'est risqué, "suggestion" = reformulation sûre. "niveau" par texte : OK (rien), ATTENTION (à surveiller), RISQUE (refus probable). "globalLevel" = le pire des trois. Un texte vide est OK.`;
 
+/* ————— Génération de masse : une publication complète depuis la matière ————— */
+
+export interface PostGenere {
+  titre: string;
+  baseText: string;
+  hashtags: string[];
+  facebook: SocialVariant;
+  instagram: SocialVariant;
+  visuel: Record<string, string>;
+  altVisuel: string;
+}
+
+const SCHEMA_VISUEL = {
+  type: 'object',
+  properties: {
+    titre: { type: 'string' },
+    sousTitre: { type: 'string' },
+    texte: { type: 'string' },
+    glyphe: { type: 'string' },
+    auteur: { type: 'string' },
+    date: { type: 'string' },
+    cta: { type: 'string' },
+  },
+  required: ['titre', 'sousTitre', 'texte', 'glyphe', 'auteur', 'date', 'cta'],
+  additionalProperties: false,
+} as const;
+
+const SCHEMA_POST_GENERE = {
+  type: 'object',
+  properties: {
+    titre: { type: 'string' },
+    baseText: { type: 'string' },
+    hashtags: { type: 'array', items: { type: 'string' } },
+    facebook: SCHEMA_VARIANTE,
+    instagram: SCHEMA_VARIANTE,
+    visuel: SCHEMA_VISUEL,
+    altVisuel: { type: 'string' },
+  },
+  required: ['titre', 'baseText', 'hashtags', 'facebook', 'instagram', 'visuel', 'altVisuel'],
+  additionalProperties: false,
+} as const;
+
+export interface ArgumentsGenerationMatiere {
+  marque: MarqueIA;
+  serieLabel: string;
+  gabaritLabel: string;
+  champsGabarit: { cle: string; label: string; optionnel?: boolean }[];
+  matiere: { title: string; frontmatter: Record<string, unknown>; body: string } | null;
+  consignes: string;
+  hashtagsMarque: string[];
+}
+
+/** Génère une publication complète (textes + contenu du visuel) depuis une note de matière. */
+export async function genererPostDepuisMatiere(args: ArgumentsGenerationMatiere): Promise<PostGenere> {
+  const champs = args.champsGabarit
+    .map((c) => `"${c.cle}" (${c.label}${c.optionnel ? ', optionnel' : ''})`)
+    .join(', ');
+
+  const system = `Tu es la rédactrice réseaux sociaux de « ${args.marque.nom} ».
+
+${args.marque.voix.trim() || 'Style : français du Québec, ton chaleureux et authentique.'}
+
+Tu produis UNE publication complète de la série « ${args.serieLabel} » :
+1. "titre" : titre interne court et descriptif (jamais publié).
+2. "baseText" : le message de base, 2 à 4 phrases fidèles à la matière fournie.
+3. "hashtags" : 3 à 8 hashtags de base${args.hashtagsMarque.length ? ` (inclure quelques-uns de : ${args.hashtagsMarque.join(' ')})` : ''}.
+4. "facebook" : version narrative posée (2 à 4 courts paragraphes), peu d'émojis, 3 à 8 hashtags sobres.
+5. "instagram" : version rythmée (phrases courtes, émojis pertinents sans excès), appel à l'action clair, 10 à 20 hashtags.
+6. "visuel" : les textes du montage graphique « ${args.gabaritLabel} » — champs : ${champs}. Champs courts (≤ 110 caractères, "texte" ≤ 190). Les champs qui ne s'appliquent pas : chaîne vide.
+7. "altVisuel" : texte alternatif sobre décrivant le visuel (accessibilité).
+
+RÈGLES ABSOLUES : jamais de promesse thérapeutique, médicale ou de résultat garanti ; les affirmations spirituelles s'expriment par « selon la tradition », « on raconte que »… ; ne rien inventer qui contredise la matière fournie.`;
+
+  const contenu = args.matiere
+    ? [
+        `Matière première — « ${args.matiere.title} » :`,
+        Object.keys(args.matiere.frontmatter).length
+          ? `Métadonnées : ${JSON.stringify(args.matiere.frontmatter)}`
+          : '',
+        args.matiere.body.slice(0, 3500),
+        args.consignes ? `\nConsignes supplémentaires : ${args.consignes}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n')
+    : `Pas de matière première — suis ces consignes :\n\n${args.consignes}`;
+
+  const brut = (await appelStructure(system, contenu, SCHEMA_POST_GENERE as unknown as Record<string, unknown>, 0.8)) as Record<string, unknown>;
+
+  const visuelBrut =
+    typeof brut.visuel === 'object' && brut.visuel !== null ? (brut.visuel as Record<string, unknown>) : {};
+  const visuel: Record<string, string> = {};
+  for (const [cle, valeur] of Object.entries(visuelBrut)) {
+    if (typeof valeur === 'string' && valeur.trim()) visuel[cle] = valeur.trim();
+  }
+
+  return {
+    titre: typeof brut.titre === 'string' && brut.titre.trim() ? brut.titre.trim().slice(0, 150) : 'Publication générée',
+    baseText: typeof brut.baseText === 'string' ? brut.baseText : '',
+    hashtags: versTableauTextes(brut.hashtags),
+    facebook: versVariant(brut.facebook),
+    instagram: versVariant(brut.instagram),
+    visuel,
+    altVisuel: typeof brut.altVisuel === 'string' ? brut.altVisuel : '',
+  };
+}
+
 /** Génère les déclinaisons FB/IG + hashtags + textes alternatifs. */
 export async function genererDeclinaisons(post: PostPourIA, marque: MarqueIA = MARQUE_IA_DEFAUT): Promise<Declinaisons> {
   const brut = (await appelStructure(systemDeclinaisons(marque), descriptionPost(post), SCHEMA_DECLINAISONS as unknown as Record<string, unknown>, 0.7)) as Record<string, unknown>;

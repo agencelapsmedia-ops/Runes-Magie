@@ -1,12 +1,21 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { RESEAU_LABELS, STATUTS_POST, TYPES_CONTENU } from '@/lib/social-constants';
 import type { PostSerialise } from '@/lib/social-posts';
 import type { CompteSerialise } from '@/lib/social-accounts';
 import FichePublication from './FichePublication';
 import CalendrierEditorial from './CalendrierEditorial';
+import GenerateurSerie from './GenerateurSerie';
+
+interface BatchProgression {
+  id: string;
+  title: string;
+  quantite: number;
+  status: string;
+  progression?: { enAttente: number; enCours: number; generes: number; erreurs: number };
+}
 
 const VIOLET = '#6B3FA0';
 
@@ -28,11 +37,83 @@ export default function PublicationsClient({
   const [filtreType, setFiltreType] = useState('tous');
   const [fiche, setFiche] = useState<PostSerialise | 'nouveau' | null>(null);
   const [dateInitiale, setDateInitiale] = useState<string | null>(null);
+  const [generateur, setGenerateur] = useState(false);
+  const [batches, setBatches] = useState<BatchProgression[]>([]);
+  const [approbationEnCours, setApprobationEnCours] = useState(false);
 
   const recharger = useCallback(async () => {
     const res = await fetch(`/api/admin/social/posts?org=${encodeURIComponent(orgActive)}`);
     if (res.ok) setPosts(await res.json());
   }, [orgActive]);
+
+  const rechargerBatches = useCallback(async (): Promise<BatchProgression[]> => {
+    try {
+      const res = await fetch(`/api/admin/social/batches?org=${encodeURIComponent(orgActive)}`);
+      if (!res.ok) return [];
+      const data: BatchProgression[] = await res.json();
+      setBatches(data);
+      return data;
+    } catch {
+      return [];
+    }
+  }, [orgActive]);
+
+  // Suivi des lots en cours : relance la génération et rafraîchit tant que ça tourne.
+  useEffect(() => {
+    let arret = false;
+    let enCoursDeTic = false;
+
+    const tic = async () => {
+      if (arret || enCoursDeTic) return;
+      enCoursDeTic = true;
+      try {
+        const lots = await rechargerBatches();
+        if (lots.some((b) => b.status === 'EN_COURS')) {
+          await fetch('/api/admin/social/batches/tick', { method: 'POST' }).catch(() => undefined);
+          if (!arret) await Promise.all([rechargerBatches(), recharger()]);
+        }
+      } finally {
+        enCoursDeTic = false;
+      }
+    };
+
+    void tic();
+    const intervalle = setInterval(tic, 20_000);
+    return () => {
+      arret = true;
+      clearInterval(intervalle);
+    };
+  }, [recharger, rechargerBatches]);
+
+  const aApprouver = posts.filter((p) => p.status === 'A_APPROUVER').length;
+
+  /** « Tout approuver » : A_APPROUVER → PROGRAMMEE pour la marque active. */
+  async function toutApprouver() {
+    if (
+      !window.confirm(
+        `Approuver les ${aApprouver} publications en attente ? Elles partiront automatiquement à leurs dates programmées.`,
+      )
+    )
+      return;
+    setApprobationEnCours(true);
+    try {
+      const res = await fetch('/api/admin/social/posts/approuver-lot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: orgActive }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(data.ignores) && data.ignores.length > 0) {
+        window.alert(
+          `${data.approuves} approuvée(s). Ignorées :\n` +
+            data.ignores.map((x: { title: string; raison: string }) => `• ${x.title} — ${x.raison}`).join('\n'),
+        );
+      }
+      await recharger();
+    } finally {
+      setApprobationEnCours(false);
+    }
+  }
 
   const comptesActifs = comptes.filter((c) => c.isActive);
 
@@ -71,6 +152,13 @@ export default function PublicationsClient({
           </Link>
           <button
             type="button"
+            onClick={() => setGenerateur(true)}
+            style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #0D5C54, #1A8A7D)', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            ⚡ Générer une série
+          </button>
+          <button
+            type="button"
             onClick={() => {
               setDateInitiale(null);
               setFiche('nouveau');
@@ -81,6 +169,57 @@ export default function PublicationsClient({
           </button>
         </div>
       </div>
+
+      {/* Lots de génération en cours ou en erreur */}
+      {batches
+        .filter((b) => b.status === 'EN_COURS' || (b.progression?.erreurs ?? 0) > 0)
+        .slice(0, 3)
+        .map((b) => {
+          const p = b.progression ?? { enAttente: 0, enCours: 0, generes: 0, erreurs: 0 };
+          const enCours = b.status === 'EN_COURS';
+          return (
+            <div
+              key={b.id}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', background: enCours ? '#ECFDF5' : '#FEF3C7', border: `1px solid ${enCours ? '#6EE7B7' : '#FCD34D'}`, borderRadius: '8px', padding: '10px 16px', marginBottom: '10px', fontSize: '0.85rem', color: enCours ? '#065F46' : '#92400E' }}
+            >
+              <span style={{ fontWeight: 700 }}>{enCours ? '⚙ Génération en cours' : '⚠ Lot avec erreurs'} — {b.title}</span>
+              <span>
+                {p.generes}/{b.quantite} générés
+                {p.erreurs > 0 && ` · ${p.erreurs} erreur${p.erreurs > 1 ? 's' : ''}`}
+              </span>
+              {enCours && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!window.confirm(`Annuler le lot « ${b.title} » ? Les publications déjà générées restent.`)) return;
+                    await fetch(`/api/admin/social/batches/${b.id}`, { method: 'DELETE' });
+                    await rechargerBatches();
+                  }}
+                  style={{ marginLeft: 'auto', padding: '4px 12px', background: '#FFFFFF', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Annuler le lot
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+      {/* Approbation en un clic */}
+      {aApprouver > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '8px', padding: '10px 16px', marginBottom: '10px', fontSize: '0.85rem', color: '#92400E' }}>
+          <span style={{ fontWeight: 700 }}>
+            {aApprouver} publication{aApprouver > 1 ? 's' : ''} en attente d’approbation
+          </span>
+          <button
+            type="button"
+            onClick={toutApprouver}
+            disabled={approbationEnCours}
+            style={{ marginLeft: 'auto', padding: '6px 16px', background: approbationEnCours ? '#FCD34D' : 'linear-gradient(135deg, #92400E, #B45309)', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700, cursor: approbationEnCours ? 'wait' : 'pointer' }}
+          >
+            {approbationEnCours ? 'Approbation…' : `✅ Tout approuver (${aApprouver})`}
+          </button>
+        </div>
+      )}
 
       {/* Sélecteur de marque */}
       {organisations.length > 1 && (
@@ -247,6 +386,18 @@ export default function PublicationsClient({
           </table>
         )}
       </div>
+      )}
+
+      {generateur && (
+        <GenerateurSerie
+          organizationId={orgActive}
+          comptes={comptesActifs}
+          onClose={() => setGenerateur(false)}
+          onCreated={async () => {
+            await Promise.all([rechargerBatches(), recharger()]);
+            void fetch('/api/admin/social/batches/tick', { method: 'POST' }).catch(() => undefined);
+          }}
+        />
       )}
 
       {fiche && (

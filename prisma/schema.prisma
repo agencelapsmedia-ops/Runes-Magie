@@ -973,6 +973,45 @@ model ContentSource {
   @@index([organizationId, kind, isActive])
 }
 
+// Lot de génération de masse : « marque + série + gabarit + quantité →
+// N publications complètes (texte IA + visuel) en A_APPROUVER, dates étalées ».
+// Le lot est instantané à créer ; ses items sont générés en tâche de fond
+// (cron social-generate + relances depuis l'interface), 2 par passage.
+model ContentBatch {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  serieKey       String // RUNE_DU_JOUR | MYTHOLOGIE | CITATIONS | PROMOS | LIBRE (src/lib/social-series.ts)
+  templateKey    String // gabarit visuel (src/lib/social-render/registry.ts)
+  quantite       Int
+  params         Json     @default("{}") // { format, heureLocale, cadenceJours, dateDebut, accountIds, consignes }
+  status         String   @default("EN_COURS") // EN_COURS | TERMINE | ERREUR | ANNULE
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  items          ContentBatchItem[]
+
+  @@index([organizationId, status])
+}
+
+// Un item = une publication à générer. Même mécanique de verrou/tentatives
+// que SocialPublishJob (updateMany conditionnel, max 3 essais).
+model ContentBatchItem {
+  id          String       @id @default(cuid())
+  batchId     String
+  batch       ContentBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sourceId    String? // ContentSource choisi à la création (rotation par usageCount)
+  scheduledAt DateTime // date étalée, calculée à la création du lot
+  status      String       @default("EN_ATTENTE") // EN_ATTENTE | EN_COURS | GENERE | ERREUR
+  attempts    Int          @default(0)
+  startedAt   DateTime? // verrou : moment où une exécution a réclamé l'item
+  lastError   String?      @db.Text
+  postId      String?      @unique // SocialPost créé (A_APPROUVER)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, batchId])
+}
+
 // Compte connecté — la cliente colle l'ID + le token longue durée.
 // Le token est CHIFFRÉ (AES-256-GCM, src/lib/social-crypto.ts) : jamais en
 // clair en base, dans les logs ni dans les réponses API (seulement tokenLastFour).
@@ -1017,6 +1056,7 @@ model SocialPost {
   images           Json      @default("[]") // [{ url, alt }] — 0 à 10, URLs Supabase Storage publiques
   variants         Json      @default("{}") // { FACEBOOK: { texte, hashtags }, INSTAGRAM: {...} } — éditable après génération IA
   complianceReport Json? // dernier rapport « Vérifier la conformité Meta »
+  batchId          String? // lot de génération d'origine (référence souple, pas de FK)
   status           String    @default("BROUILLON") // BROUILLON | A_APPROUVER | PROGRAMMEE | PUBLIEE | ERREUR
   scheduledAt      DateTime? // UTC — affiché/saisi en heure de Montréal (America/Toronto)
   publishedAt      DateTime? // quand tous les jobs ont réussi
