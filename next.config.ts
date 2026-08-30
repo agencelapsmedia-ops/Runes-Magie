@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Les gabarits de visuels (src/lib/social-render) lisent les TTF au runtime :
+  // on force leur inclusion dans le bundle serverless des routes qui rendent.
+  outputFileTracingIncludes: {
+    '/api/admin/social/**': ['./src/assets/fonts/**/*'],
+    '/api/cron/**': ['./src/assets/fonts/**/*'],
+  },
   images: {
     // Sert automatiquement AVIF (puis WebP en repli) pour toutes les images
     // passant par next/image — meilleure compression, qualité préservée.

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { uploadFile } from '@/lib/supabase';
+import { listImages, uploadFile } from '@/lib/supabase';
+import { FORMATS_VISUELS, GABARITS_VISUELS } from '@/lib/social-render/registry';
 import {
   MAX_IMAGES,
   RESEAU_LABELS,
@@ -80,6 +81,55 @@ export default function FichePublication({
   const [iaEnCours, setIaEnCours] = useState<'variantes' | 'conformite' | null>(null);
   const [suggestionsHashtags, setSuggestionsHashtags] = useState<string[]>([]);
   const [rapport, setRapport] = useState<RapportConformiteUI | null>(null);
+
+  // Médiathèque + générateur de visuels
+  const [mediathequeOuverte, setMediathequeOuverte] = useState(false);
+  const [mediatheque, setMediatheque] = useState<string[] | null>(null);
+  const [generateurOuvert, setGenerateurOuvert] = useState(false);
+  const [gabaritCle, setGabaritCle] = useState(GABARITS_VISUELS[0].cle);
+  const [formatVisuel, setFormatVisuel] = useState('PORTRAIT');
+  const [donneesGabarit, setDonneesGabarit] = useState<Record<string, string>>({});
+  const [renduEnCours, setRenduEnCours] = useState(false);
+
+  async function basculerMediatheque() {
+    setMediathequeOuverte((v) => !v);
+    if (!mediatheque) {
+      try {
+        setMediatheque(await listImages(120));
+      } catch {
+        setMediatheque([]);
+      }
+    }
+  }
+
+  /** Génère un visuel de gabarit aux couleurs de la marque et l'ajoute aux images. */
+  async function genererVisuel() {
+    if (images.length >= MAX_IMAGES) {
+      setFeedback({ ok: false, text: `Maximum ${MAX_IMAGES} images par publication.` });
+      return;
+    }
+    setRenduEnCours(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/admin/social/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateKey: gabaritCle, format: formatVisuel, donnees: donneesGabarit, organizationId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback({ ok: false, text: data.error ?? 'Échec du rendu du visuel.' });
+        return;
+      }
+      const gabarit = GABARITS_VISUELS.find((g) => g.cle === gabaritCle);
+      setImages((prev) => [...prev, { url: data.url, alt: donneesGabarit.titre || gabarit?.label || 'Visuel généré' }]);
+      setFeedback({ ok: true, text: 'Visuel généré et ajouté aux images ✓' });
+    } catch {
+      setFeedback({ ok: false, text: 'Erreur réseau — réessaie.' });
+    } finally {
+      setRenduEnCours(false);
+    }
+  }
 
   const verrouille = courant?.status === 'PUBLIEE';
   const statut = STATUTS_POST[courant?.status ?? 'BROUILLON'] ?? STATUTS_POST.BROUILLON;
@@ -387,6 +437,111 @@ export default function FichePublication({
           <p style={{ fontSize: '0.72rem', color: '#9CA3AF', marginTop: '6px' }}>
             JPG ou PNG recommandés (Instagram n’accepte pas tous les formats). 2+ images = carrousel.
           </p>
+
+          {!verrouille && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+              <button type="button" onClick={basculerMediatheque} style={boutonContour(VIOLET, '#C4B5FD')}>
+                {mediathequeOuverte ? '📁 Fermer la médiathèque' : '📁 Choisir dans la médiathèque'}
+              </button>
+              <button type="button" onClick={() => setGenerateurOuvert((v) => !v)} style={boutonContour(VIOLET, '#C4B5FD')}>
+                {generateurOuvert ? '🎨 Fermer le générateur' : '🎨 Générer un visuel de marque'}
+              </button>
+            </div>
+          )}
+
+          {/* Médiathèque : repiocher une image déjà téléversée */}
+          {mediathequeOuverte && !verrouille && (
+            <div style={{ marginTop: '10px', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '10px', maxHeight: '260px', overflowY: 'auto' }}>
+              {mediatheque === null ? (
+                <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0 }}>Chargement de la médiathèque…</p>
+              ) : mediatheque.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0 }}>Aucune image dans la médiathèque.</p>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {mediatheque.map((url) => (
+                    <button
+                      key={url}
+                      type="button"
+                      title="Ajouter cette image à la publication"
+                      onClick={() => {
+                        if (images.length >= MAX_IMAGES) {
+                          setFeedback({ ok: false, text: `Maximum ${MAX_IMAGES} images par publication.` });
+                          return;
+                        }
+                        if (images.some((img) => img.url === url)) return;
+                        setImages((prev) => [...prev, { url, alt: '' }]);
+                      }}
+                      style={{ padding: 0, border: images.some((img) => img.url === url) ? `2px solid ${VIOLET}` : '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', background: '#F9FAFB' }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" style={{ width: '86px', height: '86px', objectFit: 'cover', display: 'block' }} loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Générateur de visuels de marque (gabarits + charte) */}
+          {generateurOuvert && !verrouille && (
+            <div style={{ marginTop: '10px', border: '1px solid #C4B5FD', borderRadius: '10px', padding: '12px', background: '#FAF8FF' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '10px', marginBottom: '10px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: VIOLET }}>
+                  Gabarit
+                  <select
+                    value={gabaritCle}
+                    onChange={(e) => {
+                      setGabaritCle(e.target.value);
+                      setDonneesGabarit({});
+                    }}
+                    style={champ}
+                  >
+                    {GABARITS_VISUELS.map((g) => (
+                      <option key={g.cle} value={g.cle}>{g.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: VIOLET }}>
+                  Format
+                  <select value={formatVisuel} onChange={(e) => setFormatVisuel(e.target.value)} style={champ}>
+                    {FORMATS_VISUELS.map((f) => (
+                      <option key={f.cle} value={f.cle}>{f.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {(GABARITS_VISUELS.find((g) => g.cle === gabaritCle)?.champs ?? []).map((c) => (
+                <label key={c.cle} style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: VIOLET, marginBottom: '8px' }}>
+                  {c.label}
+                  {c.optionnel ? ' (optionnel)' : ''}
+                  {c.multiligne ? (
+                    <textarea
+                      value={donneesGabarit[c.cle] ?? ''}
+                      onChange={(e) => setDonneesGabarit((prev) => ({ ...prev, [c.cle]: e.target.value }))}
+                      rows={2}
+                      maxLength={500}
+                      placeholder={c.placeholder}
+                      style={{ ...champ, resize: 'vertical' }}
+                    />
+                  ) : (
+                    <input
+                      value={donneesGabarit[c.cle] ?? ''}
+                      onChange={(e) => setDonneesGabarit((prev) => ({ ...prev, [c.cle]: e.target.value }))}
+                      maxLength={200}
+                      placeholder={c.placeholder}
+                      style={champ}
+                    />
+                  )}
+                </label>
+              ))}
+              <button type="button" onClick={genererVisuel} disabled={renduEnCours} style={boutonPlein(renduEnCours)}>
+                {renduEnCours ? '🎨 Rendu en cours…' : '🎨 Générer et ajouter aux images'}
+              </button>
+              <p style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '8px', marginBottom: 0 }}>
+                Le visuel est rendu aux couleurs et polices de la marque (modifiables dans « 🏷 Marques »).
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Réseaux ciblés */}
