@@ -1,7 +1,6 @@
 // Composant serveur : aucun état ni événement → pas d'hydratation inutile.
 import Image from 'next/image';
 import OrnementDore from './OrnementDore';
-import BoutonTelechargerApp from '@/components/pwa/BoutonTelechargerApp';
 
 /**
  * Hero de l'accueil « application ».
@@ -13,9 +12,6 @@ import BoutonTelechargerApp from '@/components/pwa/BoutonTelechargerApp';
  *    hauteur la repousserait sous la ligne de flottaison.
  * 2. **Pas de boutons d'appel.** Les tuiles jouent ce rôle, et bien mieux :
  *    neuf destinations lisibles d'un coup d'œil au lieu de deux.
- *    Seule exception : le bouton « Télécharger l'application » (PWA) — une
- *    affordance d'installation, pas une navigation, rendue nulle quand le
- *    navigateur n'offre pas l'installation.
  *
  * La marge négative compense la navbar transparente du layout ; le `pt`
  * interne empêche le titre de passer dessous.
@@ -68,10 +64,6 @@ export default function HeroCompact() {
           <p className="mt-4 max-w-lg font-philosopher text-lg text-parchemin/90">
             Cours, outils et guidance pour &eacute;veiller ta magie.
           </p>
-
-          <div className="mt-6">
-            <BoutonTelechargerApp />
-          </div>
         </div>
       </div>
 
@@ -104,10 +96,6 @@ export default function HeroCompact() {
         <p className="max-w-xs font-philosopher text-base text-parchemin/90">
           Cours, outils et guidance pour &eacute;veiller ta magie.
         </p>
-
-        <div className="mt-2">
-          <BoutonTelechargerApp />
-        </div>
       </div>
     </section>
   );

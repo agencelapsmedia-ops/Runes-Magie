@@ -48,7 +48,7 @@ function isIosSafari(): boolean {
   return ios && safari;
 }
 
-export default function BoutonTelechargerApp() {
+export default function BoutonTelechargerApp({ className = '' }: { className?: string }) {
   const [invite, setInvite] = useState<InstallPromptEvent | null>(null);
   const [installee, setInstallee] = useState(false);
   const [iosSafari, setIosSafari] = useState(false);
@@ -99,7 +99,7 @@ export default function BoutonTelechargerApp() {
   if (!invite && !iosSafari) return null;
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className={`flex flex-col items-center gap-3 ${className}`}>
       <button
         type="button"
         onClick={surClic}

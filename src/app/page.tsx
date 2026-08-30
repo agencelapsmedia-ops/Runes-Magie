@@ -3,6 +3,7 @@ import Link from 'next/link';
 import HeroCompact from '@/components/hero/HeroCompact';
 import MistEffect from '@/components/hero/MistEffect';
 import HomeTileGrid from '@/components/home/HomeTileGrid';
+import BoutonTelechargerApp from '@/components/pwa/BoutonTelechargerApp';
 import BoutiqueBand from '@/components/home/BoutiqueBand';
 import { getHomeTiles } from '@/lib/home-tiles';
 import SectionTitle from '@/components/ui/SectionTitle';
@@ -59,6 +60,14 @@ export default async function HomePage() {
           Neuf destinations lisibles d'un coup d'œil, remplaçant les deux
           boutons du hero. Contenu piloté depuis /admin/site/tuiles. */}
       <section className="relative z-10 -mt-6 pb-4 lg:-mt-10">
+        {/* Bouton « Télécharger l'application » (PWA) : posé au-dessus de la
+            grille plutôt que dans le hero — les tuiles remontent sur le hero
+            par la marge négative ci-dessus, et un bouton dans le hero entrait
+            en collision avec elles. Ici, il bouge AVEC la grille : collision
+            impossible, à toutes les largeurs. Rendu nul quand le navigateur
+            n'offre pas l'installation → aucun espace résiduel (les marges
+            vivent sur le composant via className). */}
+        <BoutonTelechargerApp className="px-4 pb-6 pt-1 lg:pb-8" />
         <HomeTileGrid tuiles={cartes} />
         {bande && <BoutiqueBand tuile={bande} />}
       </section>
