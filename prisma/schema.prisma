@@ -949,6 +949,30 @@ model Organization {
   updatedAt DateTime @updatedAt
 }
 
+// Matière première éditoriale d'une marque : notes de corpus (runes,
+// mythologie, produits…) importées du vault Obsidian par
+// scripts/import-obsidian.ts (idempotent par checksum) ou poussées par API.
+// `usageCount`/`lastUsedAt` servent à la rotation de la génération de masse
+// (les notes les moins utilisées passent en premier).
+model ContentSource {
+  id             String    @id @default(cuid())
+  organizationId String
+  kind           String // RUNE | MYTHOLOGIE | PRODUIT | LIBRE
+  slug           String // "fehu", "yggdrasil"
+  title          String
+  frontmatter    Json      @default("{}") // frontmatter Obsidian tel quel (glyphe, aett, tags…)
+  body           String    @db.Text // markdown sans frontmatter, wikilinks aplatis
+  checksum       String // sha256 — l'import n'écrit que si le contenu a changé
+  isActive       Boolean   @default(true)
+  usageCount     Int       @default(0)
+  lastUsedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([organizationId, kind, slug])
+  @@index([organizationId, kind, isActive])
+}
+
 // Compte connecté — la cliente colle l'ID + le token longue durée.
 // Le token est CHIFFRÉ (AES-256-GCM, src/lib/social-crypto.ts) : jamais en
 // clair en base, dans les logs ni dans les réponses API (seulement tokenLastFour).
