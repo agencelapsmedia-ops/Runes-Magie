@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
-import { ORGANIZATION_ID, STATUTS_POST_VALUES } from '@/lib/social-constants';
+import { STATUTS_POST_VALUES } from '@/lib/social-constants';
+import { resoudreOrgId } from '@/lib/organizations';
 import { serialiserPost, validerImages, validerType, validerVariants } from '@/lib/social-posts';
 
 export const dynamic = 'force-dynamic';
@@ -18,8 +19,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const statut = url.searchParams.get('statut');
   const mois = url.searchParams.get('mois'); // AAAA-MM
+  const organizationId = await resoudreOrgId(url.searchParams.get('org'));
 
-  const where: Record<string, unknown> = { organizationId: ORGANIZATION_ID };
+  const where: Record<string, unknown> = { organizationId };
   if (statut && STATUTS_POST_VALUES.includes(statut)) where.status = statut;
   if (mois && /^\d{4}-\d{2}$/.test(mois)) {
     const debut = new Date(`${mois}-01T00:00:00.000Z`);
@@ -53,15 +55,17 @@ export async function POST(req: Request) {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   if (!title) return NextResponse.json({ error: 'Le titre interne est requis.' }, { status: 400 });
 
+  const organizationId = await resoudreOrgId(body.organizationId);
+
   const imagesCheck = validerImages(body.images);
   if (!imagesCheck.ok) return NextResponse.json({ error: imagesCheck.erreur }, { status: 400 });
 
-  // Cibles : liste d'ids de comptes actifs
+  // Cibles : liste d'ids de comptes actifs de la même marque
   const accountIds: string[] = Array.isArray(body.targetAccountIds)
     ? body.targetAccountIds.filter((x: unknown): x is string => typeof x === 'string')
     : [];
   const comptes = accountIds.length
-    ? await prisma.socialAccount.findMany({ where: { id: { in: accountIds }, organizationId: ORGANIZATION_ID } })
+    ? await prisma.socialAccount.findMany({ where: { id: { in: accountIds }, organizationId } })
     : [];
 
   const scheduledAt =
@@ -71,7 +75,7 @@ export async function POST(req: Request) {
 
   const post = await prisma.socialPost.create({
     data: {
-      organizationId: ORGANIZATION_ID,
+      organizationId,
       title,
       type: validerType(body.type),
       baseText: typeof body.baseText === 'string' ? body.baseText : '',

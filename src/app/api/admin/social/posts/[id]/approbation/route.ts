@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
-import { ORGANIZATION_ID } from '@/lib/social-constants';
 import { serialiserPost } from '@/lib/social-posts';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +11,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (guard) return guard;
 
   const { id } = await params;
-  const post = await prisma.socialPost.findFirst({ where: { id, organizationId: ORGANIZATION_ID } });
+  const post = await prisma.socialPost.findFirst({ where: { id } });
   if (!post) return NextResponse.json({ error: 'Publication introuvable.' }, { status: 404 });
   if (post.status !== 'BROUILLON' && post.status !== 'A_APPROUVER') {
     return NextResponse.json({ error: `Impossible depuis le statut « ${post.status} ».` }, { status: 409 });

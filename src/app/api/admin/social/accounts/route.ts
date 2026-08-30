@@ -2,18 +2,20 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
 import { chiffrerToken, chiffrementConfigure } from '@/lib/social-crypto';
-import { ORGANIZATION_ID, RESEAUX } from '@/lib/social-constants';
+import { RESEAUX } from '@/lib/social-constants';
+import { resoudreOrgId } from '@/lib/organizations';
 import { serialiserCompte } from '@/lib/social-accounts';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/admin/social/accounts — liste des comptes (jetons masqués). */
-export async function GET() {
+/** GET /api/admin/social/accounts?org= — liste des comptes de la marque (jetons masqués). */
+export async function GET(req: Request) {
   const guard = await requireAdmin();
   if (guard) return guard;
 
+  const organizationId = await resoudreOrgId(new URL(req.url).searchParams.get('org'));
   const comptes = await prisma.socialAccount.findMany({
-    where: { organizationId: ORGANIZATION_ID },
+    where: { organizationId },
     orderBy: [{ network: 'asc' }, { createdAt: 'asc' }],
   });
   return NextResponse.json(comptes.map(serialiserCompte));
@@ -32,6 +34,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
+  const organizationId = await resoudreOrgId(body.organizationId);
   const network = typeof body.network === 'string' ? body.network.trim().toUpperCase() : '';
   const label = typeof body.label === 'string' ? body.label.trim() : '';
   const externalId = typeof body.externalId === 'string' ? body.externalId.trim() : '';
@@ -52,7 +55,7 @@ export async function POST(req: Request) {
   try {
     const compte = await prisma.socialAccount.create({
       data: {
-        organizationId: ORGANIZATION_ID,
+        organizationId,
         network,
         label,
         externalId,

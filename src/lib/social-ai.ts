@@ -168,9 +168,29 @@ function descriptionPost(post: PostPourIA): string {
   ].join('\n\n');
 }
 
-const SYSTEM_DECLINAISONS = `Tu es la rédactrice réseaux sociaux de « Runes & Magie », boutique-école ésotérique et espace de soins holistiques à Saint-Eustache, Québec.
+/** Marque au nom de laquelle l'IA rédige (nom + voix issus de la charte). */
+export interface MarqueIA {
+  nom: string;
+  voix: string;
+}
 
-Ton style : français du Québec, tutoiement chaleureux, univers mystique doux et invitant. RÈGLE ABSOLUE : jamais de promesse thérapeutique, médicale ou de résultat (pas de « guérit », « soigne », « élimine ton anxiété », « résultat garanti ») — utilise « accompagne », « favorise la détente », « un moment pour toi ».
+export const MARQUE_IA_DEFAUT: MarqueIA = {
+  nom: 'Runes & Magie',
+  voix:
+    'Boutique-école ésotérique et espace de soins holistiques à Saint-Eustache, Québec. ' +
+    'Style : français du Québec, tutoiement chaleureux, univers mystique doux et invitant. ' +
+    'RÈGLE ABSOLUE : jamais de promesse thérapeutique, médicale ou de résultat ' +
+    '(pas de « guérit », « soigne », « élimine ton anxiété », « résultat garanti ») — ' +
+    'utiliser « accompagne », « favorise la détente », « un moment pour toi ».',
+};
+
+const VOIX_GENERIQUE =
+  'Style : français du Québec, ton chaleureux et authentique. ' +
+  'Jamais de promesse thérapeutique, médicale ou de résultat garanti.';
+
+const systemDeclinaisons = (marque: MarqueIA) => `Tu es la rédactrice réseaux sociaux de « ${marque.nom} ».
+
+${marque.voix.trim() || VOIX_GENERIQUE}
 
 À partir du contenu fourni, produis :
 1. "facebook" : version narrative et posée (2 à 4 courts paragraphes), lien intégré naturellement s'il y en a un, peu d'émojis, 3 à 8 hashtags sobres.
@@ -178,7 +198,9 @@ Ton style : français du Québec, tutoiement chaleureux, univers mystique doux e
 3. "suggestionsHashtags" : 5 à 10 hashtags supplémentaires pertinents non utilisés ci-dessus.
 4. "altTexts" : un texte alternatif descriptif et sobre par image (accessibilité — décris ce qu'on voit, sans hashtags ni marketing). Autant d'entrées que d'images ; s'il n'y a pas d'images, tableau vide.`;
 
-const SYSTEM_CONFORMITE = `Tu es vérificatrice de conformité publicitaire Meta (Facebook/Instagram) pour une boutique ésotérique québécoise. Analyse SÉPARÉMENT chaque texte fourni (baseText, facebook, instagram) et signale tout passage risquant un refus ou une restriction.
+const systemConformite = (
+  marque: MarqueIA,
+) => `Tu es vérificatrice de conformité publicitaire Meta (Facebook/Instagram) pour la marque québécoise « ${marque.nom} ». Analyse SÉPARÉMENT chaque texte fourni (baseText, facebook, instagram) et signale tout passage risquant un refus ou une restriction.
 
 Catégories à surveiller (utilise exactement ces libellés dans "categorie") :
 - « promesse thérapeutique » : guérir, soigner, traiter, soulager une condition ;
@@ -193,8 +215,8 @@ Catégories à surveiller (utilise exactement ces libellés dans "categorie") :
 Le vocabulaire spirituel prudent (« accompagne », « favorise la détente », « selon la tradition », « expérience immersive ») est ACCEPTABLE. Pour chaque problème : "extrait" = citation exacte, "raison" = pourquoi c'est risqué, "suggestion" = reformulation sûre. "niveau" par texte : OK (rien), ATTENTION (à surveiller), RISQUE (refus probable). "globalLevel" = le pire des trois. Un texte vide est OK.`;
 
 /** Génère les déclinaisons FB/IG + hashtags + textes alternatifs. */
-export async function genererDeclinaisons(post: PostPourIA): Promise<Declinaisons> {
-  const brut = (await appelStructure(SYSTEM_DECLINAISONS, descriptionPost(post), SCHEMA_DECLINAISONS as unknown as Record<string, unknown>, 0.7)) as Record<string, unknown>;
+export async function genererDeclinaisons(post: PostPourIA, marque: MarqueIA = MARQUE_IA_DEFAUT): Promise<Declinaisons> {
+  const brut = (await appelStructure(systemDeclinaisons(marque), descriptionPost(post), SCHEMA_DECLINAISONS as unknown as Record<string, unknown>, 0.7)) as Record<string, unknown>;
   return {
     facebook: versVariant(brut.facebook),
     instagram: versVariant(brut.instagram),
@@ -204,14 +226,14 @@ export async function genererDeclinaisons(post: PostPourIA): Promise<Declinaison
 }
 
 /** Vérifie la conformité Meta des textes du post. */
-export async function verifierConformite(post: PostPourIA): Promise<RapportConformite> {
+export async function verifierConformite(post: PostPourIA, marque: MarqueIA = MARQUE_IA_DEFAUT): Promise<RapportConformite> {
   const contenu = [
     `baseText :\n${post.baseText || '(vide)'}`,
     `facebook :\n${post.variants.FACEBOOK?.texte || '(vide)'}\n${(post.variants.FACEBOOK?.hashtags ?? []).join(' ')}`,
     `instagram :\n${post.variants.INSTAGRAM?.texte || '(vide)'}\n${(post.variants.INSTAGRAM?.hashtags ?? []).join(' ')}`,
   ].join('\n\n---\n\n');
 
-  const brut = (await appelStructure(SYSTEM_CONFORMITE, contenu, SCHEMA_CONFORMITE as unknown as Record<string, unknown>, 0)) as Record<string, unknown>;
+  const brut = (await appelStructure(systemConformite(marque), contenu, SCHEMA_CONFORMITE as unknown as Record<string, unknown>, 0)) as Record<string, unknown>;
 
   const versSection = (v: unknown): SectionConformite => {
     const niveau = (v as { niveau?: unknown })?.niveau;

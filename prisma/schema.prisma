@@ -935,6 +935,20 @@ model CourseProgress {
 //  Statuts en TEXT + whitelists applicatives (src/lib/social-constants.ts).
 // ════════════════════════════════════════════════════════════════
 
+// Marque (organisation) : nom + charte graphique. `id` = slug référencé
+// SOUPLEMENT par SocialAccount/SocialPost/SocialPublishJob.organizationId
+// (pas de FK : les modèles existants restent intacts, validation applicative
+// dans src/lib/organizations.ts). La charte (couleurs, polices, voix de
+// marque, hashtags) pilote les gabarits visuels et les prompts IA.
+model Organization {
+  id        String   @id // slug : "runes-et-magie", "rca-distribution"
+  name      String
+  charte    Json     @default("{}") // CharteGraphique (src/lib/organizations.ts)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Compte connecté — la cliente colle l'ID + le token longue durée.
 // Le token est CHIFFRÉ (AES-256-GCM, src/lib/social-crypto.ts) : jamais en
 // clair en base, dans les logs ni dans les réponses API (seulement tokenLastFour).

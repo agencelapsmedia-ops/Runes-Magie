@@ -14,7 +14,8 @@
     "db:seed:categories": "tsx prisma/scripts/seed-categories.ts",
     "db:seed:pages": "tsx prisma/scripts/seed-site-pages.ts",
     "db:seed:tuiles": "tsx prisma/scripts/seed-home-tiles.ts",
-    "db:migrate:isbn-to-sku": "tsx prisma/scripts/migrate-isbn-to-sku.ts"
+    "db:migrate:isbn-to-sku": "tsx prisma/scripts/migrate-isbn-to-sku.ts",
+    "db:seed:organisations": "tsx prisma/scripts/seed-organizations.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",

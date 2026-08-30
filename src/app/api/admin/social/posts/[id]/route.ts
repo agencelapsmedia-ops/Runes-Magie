@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
-import { ORGANIZATION_ID } from '@/lib/social-constants';
 import { serialiserPost, validerImages, validerType, validerVariants } from '@/lib/social-posts';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +11,7 @@ const INCLUDE = {
 } as const;
 
 async function chargerPost(id: string) {
-  return prisma.socialPost.findFirst({ where: { id, organizationId: ORGANIZATION_ID }, include: INCLUDE });
+  return prisma.socialPost.findFirst({ where: { id }, include: INCLUDE });
 }
 
 /** GET /api/admin/social/posts/[id] — détail avec cibles et jobs. */
@@ -73,7 +72,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if ('targetAccountIds' in body && Array.isArray(body.targetAccountIds)) {
     const voulus: string[] = body.targetAccountIds.filter((x: unknown): x is string => typeof x === 'string');
     const comptes = voulus.length
-      ? await prisma.socialAccount.findMany({ where: { id: { in: voulus }, organizationId: ORGANIZATION_ID } })
+      ? await prisma.socialAccount.findMany({
+          where: { id: { in: voulus }, organizationId: existant.organizationId },
+        })
       : [];
     const actuels = new Set(existant.targets.map((t) => t.accountId));
     const cibles = new Set(comptes.map((c) => c.id));

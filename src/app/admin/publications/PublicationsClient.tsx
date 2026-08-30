@@ -10,13 +10,17 @@ import CalendrierEditorial from './CalendrierEditorial';
 
 const VIOLET = '#6B3FA0';
 
-/** Écran principal des publications : filtres, liste, fiche. */
+/** Écran principal des publications : marques, filtres, liste, fiche. */
 export default function PublicationsClient({
   postsInitiaux,
   comptes,
+  organisations,
+  orgActive,
 }: {
   postsInitiaux: PostSerialise[];
   comptes: CompteSerialise[];
+  organisations: { id: string; name: string; isActive: boolean }[];
+  orgActive: string;
 }) {
   const [posts, setPosts] = useState<PostSerialise[]>(postsInitiaux);
   const [vue, setVue] = useState<'calendrier' | 'liste'>('calendrier');
@@ -26,9 +30,9 @@ export default function PublicationsClient({
   const [dateInitiale, setDateInitiale] = useState<string | null>(null);
 
   const recharger = useCallback(async () => {
-    const res = await fetch('/api/admin/social/posts');
+    const res = await fetch(`/api/admin/social/posts?org=${encodeURIComponent(orgActive)}`);
     if (res.ok) setPosts(await res.json());
-  }, []);
+  }, [orgActive]);
 
   const comptesActifs = comptes.filter((c) => c.isActive);
 
@@ -54,7 +58,13 @@ export default function PublicationsClient({
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <Link
-            href="/admin/publications/comptes"
+            href="/admin/publications/marques"
+            style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${VIOLET}`, color: VIOLET, fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', background: '#FFFFFF' }}
+          >
+            🏷 Marques
+          </Link>
+          <Link
+            href={`/admin/publications/comptes?org=${encodeURIComponent(orgActive)}`}
             style={{ padding: '10px 16px', borderRadius: '8px', border: `1px solid ${VIOLET}`, color: VIOLET, fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', background: '#FFFFFF' }}
           >
             ⚙ Comptes connectés
@@ -71,6 +81,31 @@ export default function PublicationsClient({
           </button>
         </div>
       </div>
+
+      {/* Sélecteur de marque */}
+      {organisations.length > 1 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          {organisations.map((o) => (
+            <Link
+              key={o.id}
+              href={`/admin/publications?org=${encodeURIComponent(o.id)}`}
+              style={{
+                padding: '7px 16px',
+                borderRadius: '9999px',
+                border: `1px solid ${o.id === orgActive ? VIOLET : '#D1D5DB'}`,
+                background: o.id === orgActive ? VIOLET : '#FFFFFF',
+                color: o.id === orgActive ? '#FFFFFF' : o.isActive ? '#374151' : '#9CA3AF',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              {o.name}
+              {!o.isActive && ' (désactivée)'}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {comptesActifs.length === 0 && (
         <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '0.85rem', color: '#92400E' }}>
@@ -218,6 +253,7 @@ export default function PublicationsClient({
         <FichePublication
           post={fiche === 'nouveau' ? null : fiche}
           comptes={comptesActifs}
+          organizationId={orgActive}
           dateInitiale={dateInitiale}
           onClose={() => setFiche(null)}
           onChanged={async () => {

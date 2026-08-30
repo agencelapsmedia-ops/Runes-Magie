@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
-import { ORGANIZATION_ID, type SocialImage, type SocialVariant } from '@/lib/social-constants';
-import { iaConfiguree, verifierConformite } from '@/lib/social-ai';
+import type { SocialImage, SocialVariant } from '@/lib/social-constants';
+import { iaConfiguree, MARQUE_IA_DEFAUT, verifierConformite } from '@/lib/social-ai';
+import { getOrganisation } from '@/lib/organizations';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -22,20 +23,26 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const postId = typeof body.postId === 'string' ? body.postId : '';
-  const post = await prisma.socialPost.findFirst({ where: { id: postId, organizationId: ORGANIZATION_ID } });
+  const post = await prisma.socialPost.findFirst({ where: { id: postId } });
   if (!post) return NextResponse.json({ error: 'Publication introuvable — enregistre-la d’abord.' }, { status: 404 });
 
+  const org = await getOrganisation(post.organizationId);
+  const marque = org ? { nom: org.name, voix: org.charte.voix } : MARQUE_IA_DEFAUT;
+
   try {
-    const rapport = await verifierConformite({
-      title: post.title,
-      type: post.type,
-      baseText: post.baseText,
-      callToAction: post.callToAction,
-      link: post.link,
-      hashtags: post.hashtags,
-      images: Array.isArray(post.images) ? (post.images as unknown as SocialImage[]) : [],
-      variants: (post.variants ?? {}) as unknown as Record<string, SocialVariant>,
-    });
+    const rapport = await verifierConformite(
+      {
+        title: post.title,
+        type: post.type,
+        baseText: post.baseText,
+        callToAction: post.callToAction,
+        link: post.link,
+        hashtags: post.hashtags,
+        images: Array.isArray(post.images) ? (post.images as unknown as SocialImage[]) : [],
+        variants: (post.variants ?? {}) as unknown as Record<string, SocialVariant>,
+      },
+      marque,
+    );
     await prisma.socialPost.update({
       where: { id: post.id },
       data: {

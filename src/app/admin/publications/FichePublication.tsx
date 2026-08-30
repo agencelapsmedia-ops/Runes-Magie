@@ -49,12 +49,14 @@ function versInputLocal(iso: string | null): string {
 export default function FichePublication({
   post,
   comptes,
+  organizationId,
   dateInitiale,
   onClose,
   onChanged,
 }: {
   post: PostSerialise | null; // null = création
   comptes: CompteSerialise[]; // comptes actifs
+  organizationId: string; // marque active (utilisée à la création)
   dateInitiale?: string | null; // pré-remplissage depuis un clic sur le calendrier
   onClose: () => void;
   onChanged: () => Promise<void>;
@@ -84,6 +86,7 @@ export default function FichePublication({
 
   function corps() {
     return {
+      organizationId,
       title,
       type,
       baseText,

@@ -7,12 +7,16 @@ import type { CompteSerialise } from '@/lib/social-accounts';
 
 const VIOLET = '#6B3FA0';
 
-/** Gestion des comptes réseaux sociaux : liste, ajout, test de connexion. */
+/** Gestion des comptes réseaux sociaux : liste, ajout, test de connexion — par marque. */
 export default function ComptesClient({
   comptesInitiaux,
+  organisations,
+  orgActive,
   chiffrementPret,
 }: {
   comptesInitiaux: CompteSerialise[];
+  organisations: { id: string; name: string; isActive: boolean }[];
+  orgActive: string;
   chiffrementPret: boolean;
 }) {
   const [comptes, setComptes] = useState<CompteSerialise[]>(comptesInitiaux);
@@ -27,7 +31,7 @@ export default function ComptesClient({
   const [testEnCours, setTestEnCours] = useState<string | null>(null);
 
   async function recharger() {
-    const res = await fetch('/api/admin/social/accounts');
+    const res = await fetch(`/api/admin/social/accounts?org=${encodeURIComponent(orgActive)}`);
     if (res.ok) setComptes(await res.json());
   }
 
@@ -39,6 +43,7 @@ export default function ComptesClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          organizationId: orgActive,
           network,
           label,
           externalId,
@@ -102,10 +107,33 @@ export default function ComptesClient({
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
       <div style={{ marginBottom: '16px' }}>
-        <Link href="/admin/publications" style={{ fontSize: '0.8rem', color: '#6B7280', textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)' }}>
+        <Link href={`/admin/publications?org=${encodeURIComponent(orgActive)}`} style={{ fontSize: '0.8rem', color: '#6B7280', textDecoration: 'none', fontFamily: 'var(--font-cinzel, serif)' }}>
           ← Retour aux publications
         </Link>
       </div>
+
+      {organisations.length > 1 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          {organisations.map((o) => (
+            <Link
+              key={o.id}
+              href={`/admin/publications/comptes?org=${encodeURIComponent(o.id)}`}
+              style={{
+                padding: '7px 16px',
+                borderRadius: '9999px',
+                border: `1px solid ${o.id === orgActive ? VIOLET : '#D1D5DB'}`,
+                background: o.id === orgActive ? VIOLET : '#FFFFFF',
+                color: o.id === orgActive ? '#FFFFFF' : o.isActive ? '#374151' : '#9CA3AF',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              {o.name}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <div>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
-import { ORGANIZATION_ID } from '@/lib/social-constants';
 import { serialiserPost } from '@/lib/social-posts';
 import { traiterJobsEchus } from '@/lib/social-publish';
 
@@ -24,7 +23,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
   const post = await prisma.socialPost.findFirst({
-    where: { id, organizationId: ORGANIZATION_ID },
+    where: { id },
     include: { targets: { include: { account: true } }, jobs: true },
   });
   if (!post) return NextResponse.json({ error: 'Publication introuvable.' }, { status: 404 });
