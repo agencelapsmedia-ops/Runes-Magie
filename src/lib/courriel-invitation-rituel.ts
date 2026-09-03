@@ -31,7 +31,7 @@ export function htmlInvitationRituel(lienDesabonnement: string): string {
       <p style="margin:4px 0;color:#C9A84C;font-size:17px;"><strong>Samedi 5 septembre, de 13 h à 14 h 30</strong></p>
       <p style="margin:4px 0;color:#E8DCC8;">Le Temple des Arcanes — Boutique Runes &amp; Magie <em>(sous-sol)</em></p>
       <p style="margin:4px 0;color:#E8DCC8;">149 rue Saint-Eustache, Saint-Eustache</p>
-      <p style="margin:12px 0 0;color:#2EC4B6;font-size:15px;letter-spacing:1px;"><strong>20 PLACES SEULEMENT</strong></p>
+      <p style="margin:12px 0 0;color:#2EC4B6;font-size:15px;letter-spacing:1px;"><strong>ENTRÉE GRATUITE POUR TOUS — 20 PLACES</strong></p>
     </div>
     <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Le Temple des Arcanes vous accueille dans son ambiance feutrée d'époque, avec ses murs de pierre ancestraux, au sous-sol de la Tourelle du vieux Saint-Eustache (1903) — un lieu rempli de magie et de bienveillance, inclusif et ouvert d'esprit pour tous.</p>
     <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Ce rituel-ci se place sous le signe de la <strong style="color:#C9A84C;">transition</strong> : les récoltes, les réserves que l'on met de côté, le ralentissement qui s'installe. C'est le temps de consommer les fruits de son labeur, de purifier son environnement comme ses relations, et de redécorer l'intérieur — la maison autant que le soi.</p>
