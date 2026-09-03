@@ -20,6 +20,12 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
     match: ['/admin/calendrier', '/admin/consultations'],
   },
   {
+    label: 'Événements',
+    href: '/admin/evenements',
+    icon: 'ᛃ',
+    match: ['/admin/evenements'],
+  },
+  {
     label: 'Élèves & Clients',
     href: '/admin/eleves',
     icon: 'ᛗ',
@@ -36,7 +42,7 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
     href: '/admin/site',
     icon: 'ᛟ',
     match: [
-      '/admin/site', '/admin/evenements', '/admin/publications', '/admin/services',
+      '/admin/site', '/admin/publications', '/admin/services',
       '/admin/offerings', '/admin/formations', '/admin/todo',
     ],
   },
