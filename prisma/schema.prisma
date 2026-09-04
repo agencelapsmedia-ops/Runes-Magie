@@ -1375,3 +1375,15 @@ model Receipt {
   @@unique([appointmentId, kind])
   @@index([clientId, paidAt])
 }
+
+/// Demandes de réinitialisation de mot de passe — sert UNIQUEMENT au plafond
+/// de 5 demandes par heure et par adresse. Une ligne par demande reçue (même
+/// pour une adresse inconnue : sinon le plafond révélerait quels comptes
+/// existent). Les lignes de plus de 24 h sont purgées à chaque demande.
+model PasswordResetRequest {
+  id        String   @id @default(cuid())
+  email     String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+}

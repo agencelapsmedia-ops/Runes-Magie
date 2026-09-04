@@ -12,7 +12,13 @@ export const dynamic = 'force-dynamic';
  * l'adresse existe ou non : sinon la route dirait publiquement qui a un compte
  * chez nous (énumération de comptes). Le jeton est celui de l'activation —
  * signé sur le hash courant, donc à usage unique et périmé au bout de 7 jours.
+ *
+ * Plafond : 5 demandes par heure et par adresse, comptées en base (les instances
+ * serverless ne partagent pas de mémoire). La demande est enregistrée AVANT de
+ * savoir si le compte existe, sinon le plafond lui-même trahirait les adresses
+ * connues.
  */
+const PLAFOND_PAR_HEURE = 5;
 export async function POST(req: Request) {
   let corps: { email?: unknown };
   try {
@@ -25,6 +31,24 @@ export async function POST(req: Request) {
   if (!email || !email.includes('@')) {
     return NextResponse.json({ error: 'Adresse courriel invalide.' }, { status: 400 });
   }
+
+  const uneHeure = new Date(Date.now() - 60 * 60 * 1000);
+  const demandesRecentes = await prisma.passwordResetRequest.count({
+    where: { email, createdAt: { gte: uneHeure } },
+  });
+  if (demandesRecentes >= PLAFOND_PAR_HEURE) {
+    return NextResponse.json(
+      { error: 'Trop de demandes pour cette adresse. Réessaie dans une heure.' },
+      { status: 429 },
+    );
+  }
+  await prisma.passwordResetRequest.create({ data: { email } });
+
+  // Purge opportuniste : la table ne sert qu'au comptage sur une heure, rien
+  // au-delà de 24 h n'a de valeur. Un échec ici ne doit pas bloquer la demande.
+  prisma.passwordResetRequest
+    .deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } })
+    .catch((erreur) => console.error('[auth] purge des demandes de réinitialisation', erreur));
 
   const user = await prisma.holisticUser.findUnique({
     where: { email },
