@@ -7,6 +7,9 @@ function DefinirMotDePasseForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get('token') ?? '';
+  // Le même écran sert à l'activation d'un nouveau compte et à la
+  // réinitialisation depuis « mot de passe oublié » : seuls les libellés changent.
+  const reinitialisation = params.get('mode') === 'reinitialisation';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +57,7 @@ function DefinirMotDePasseForm() {
     <div style={{ minHeight: '100vh', background: 'var(--noir-nuit)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
       <div style={{ maxWidth: '440px', width: '100%', background: 'var(--charbon-mystere)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '8px', padding: '40px 32px' }}>
         <h1 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.4rem', color: 'var(--or-ancien)', marginBottom: '24px', textAlign: 'center' }}>
-          Définir mon mot de passe
+          {reinitialisation ? 'Nouveau mot de passe' : 'Définir mon mot de passe'}
         </h1>
         {done ? (
           <p style={{ color: 'var(--turquoise-cristal)', textAlign: 'center', fontSize: '1rem' }}>
@@ -78,7 +81,7 @@ function DefinirMotDePasseForm() {
               disabled={pending}
               style={{ width: '100%', marginTop: '24px', padding: '12px', background: 'linear-gradient(135deg,#4A2D7A,#2D1B4E)', color: 'var(--or-ancien)', border: '1px solid rgba(201,168,76,0.4)', borderRadius: '4px', fontSize: '0.9rem', cursor: pending ? 'default' : 'pointer', opacity: pending ? 0.6 : 1 }}
             >
-              {pending ? '…' : 'Activer mon compte'}
+              {pending ? '…' : reinitialisation ? 'Enregistrer' : 'Activer mon compte'}
             </button>
           </form>
         )}

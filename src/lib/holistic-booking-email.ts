@@ -637,6 +637,44 @@ export async function sendSetPasswordEmail(data: BookingEmailData, token: string
   }
 }
 
+/**
+ * Courriel « mot de passe oublié ».
+ *
+ * Réutilise le même jeton signé que l'activation de compte : lié au hash courant,
+ * donc à usage unique et valide 7 jours. Le lien mène à la même page, en mode
+ * réinitialisation (libellés adaptés).
+ */
+export async function sendResetPasswordEmail(
+  to: string,
+  firstName: string,
+  token: string,
+): Promise<void> {
+  const url = `${APP_URL}/soins/auth/definir-mot-de-passe?mode=reinitialisation&token=${encodeURIComponent(token)}`;
+  const html = emailShell(`
+    <h2 style="color:#C9A84C;font-size:22px;margin:0 0 16px;">Réinitialiser ton mot de passe</h2>
+    <p style="color:#F5F0E8;font-size:16px;line-height:1.6;">
+      Bonjour ${firstName}, tu as demandé à changer ton mot de passe. Choisis-en un nouveau :
+    </p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${url}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#4A2D7A,#2D1B4E);color:#C9A84C;text-decoration:none;border-radius:4px;font-size:14px;letter-spacing:0.05em;">Choisir un nouveau mot de passe</a>
+    </div>
+    <p style="color:rgba(245,240,232,0.5);font-size:13px;line-height:1.6;margin:24px 0 0;padding-top:20px;border-top:1px solid rgba(74,45,122,0.3);">
+      Ce lien est valide 7 jours et ne fonctionne qu'une seule fois.
+      Si tu n'es pas à l'origine de cette demande, ignore ce courriel : ton mot de passe reste inchangé.
+      Une question ? Écris-nous à <a href="mailto:info@runesetmagie.ca" style="color:#2EC4B6;">info@runesetmagie.ca</a>.
+    </p>
+  `);
+  if (!resend) {
+    console.log('[Email holistique] Réinitialisation mot de passe (Resend non configuré) :', to);
+    return;
+  }
+  try {
+    await resend.emails.send({ from: FROM, to, subject: 'Réinitialiser ton mot de passe — Runes & Magie', html });
+  } catch (err) {
+    console.error('[Email holistique] Échec envoi réinitialisation mot de passe', err);
+  }
+}
+
 /** Courriel de confirmation d'un RDV manuel réglé COMPTANT (compte déjà existant). */
 export async function sendManualCashConfirmationToClient(data: BookingEmailData): Promise<void> {
   const html = emailShell(`

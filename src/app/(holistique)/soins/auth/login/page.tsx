@@ -233,6 +233,16 @@ function LoginPageInner() {
             </button>
           </form>
 
+          {/* Mot de passe oublié */}
+          <p className="text-center mt-4 font-philosopher text-sm">
+            <Link
+              href="/soins/auth/mot-de-passe-oublie"
+              className="text-parchemin/50 hover:text-turquoise-cristal transition-colors duration-200 underline underline-offset-2"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </p>
+
           {/* Séparateur */}
           <div
             className="h-px my-6"
