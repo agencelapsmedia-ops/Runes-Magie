@@ -88,21 +88,22 @@ model BookingSetting {
 
 // ─── To-do du projet (module kanban de l'admin) ─────────────────────────────
 model TodoTask {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
-  description String    @default("")
-  status      String    @default("A_FAIRE") // A_FAIRE | EN_COURS | EN_VERIFICATION | TERMINE
-  priority    String    @default("MOYENNE") // URGENTE | HAUTE | MOYENNE | BASSE
+  description String           @default("")
+  status      String           @default("A_FAIRE") // A_FAIRE | EN_COURS | EN_VERIFICATION | TERMINE
+  priority    String           @default("MOYENNE") // URGENTE | HAUTE | MOYENNE | BASSE
   label       String? // étiquette de catégorie (Site web, Boutique, Marketing…)
   assignee    String? // nom simple de la personne assignée
   startsOn    DateTime? // date de début
   dueOn       DateTime? // date d'échéance
-  sortOrder   Int       @default(0)
+  sortOrder   Int              @default(0)
   archivedAt  DateTime? // tâche archivée (masquée du tableau)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   notes       TodoNote[]
   attachments TodoAttachment[]
+  lapsActions LapsAction[]
 
   @@index([status, sortOrder])
 }
@@ -126,6 +127,38 @@ model TodoAttachment {
   createdAt DateTime @default(now())
 
   @@index([taskId, createdAt])
+}
+
+// ─── Laps Media — actions facturables et paiements ──────────────────────────
+// Registre du travail réalisé par Laps Media pour Runes & Magie. Le kanban
+// TodoTask dit ce qu'il reste À FAIRE ; ces lignes-ci disent ce qui A ÉTÉ FAIT,
+// quand, en combien de temps, et ce qu'il reste à payer.
+model LapsAction {
+  id          String    @id @default(cuid())
+  title       String // nom facturé — réécrit à la main, souvent plus court que la tâche d'origine
+  description String    @default("") // descriptif des actions réalisées
+  doneOn      DateTime // date à laquelle l'action a été faite
+  minutes     Int // durée totale, en minutes (saisie heures + minutes)
+  billable    Boolean   @default(true) // hors facturation : compté au rapport, jamais au solde
+  hourlyRate  Float     @default(74.99) // taux figé à la saisie : l'historique ne bouge pas si le taux change
+  todoTaskId  String? // tâche du kanban dont l'action est issue, si importée
+  todoTask    TodoTask? @relation(fields: [todoTaskId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([doneOn])
+  @@index([billable])
+}
+
+model LapsPayment {
+  id        String   @id @default(cuid())
+  amount    Float
+  paidOn    DateTime
+  method    String   @default("INTERAC") // INTERAC | VIREMENT | COMPTANT | AUTRE
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([paidOn])
 }
 
 // ─── Chat Noctura (guide virtuel du site public) ────────────────────────────
@@ -283,11 +316,11 @@ model CloverSyncQueue {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique
+  id              String        @id @default(cuid())
+  orderNumber     String        @unique
   type            String
-  status          String      @default("new")
-  deliveryMethod  String      @default("pickup")
+  status          String        @default("new")
+  deliveryMethod  String        @default("pickup")
   customerName    String
   customerEmail   String
   customerPhone   String?
@@ -296,17 +329,17 @@ model Order {
   subtotal        Float
   shippingCost    Float?
   total           Float
-  stripeSessionId String?     @unique
+  stripeSessionId String?       @unique
   stripePaymentId String?
   paidAt          DateTime?
-  notes           String?     @default("")
+  notes           String?       @default("")
   // ── Espace membre : rattachement au compte + facture Stripe ──
   userId          String?
   user            HolisticUser? @relation("UserOrders", fields: [userId], references: [id], onDelete: SetNull)
-  invoiceUrl      String?       // URL de la facture PDF hébergée par Stripe
-  invoiceNumber   String?       // Numéro de facture Stripe
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  invoiceUrl      String? // URL de la facture PDF hébergée par Stripe
+  invoiceNumber   String? // Numéro de facture Stripe
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   items           OrderItem[]
 
   @@index([userId])
@@ -329,33 +362,33 @@ model OrderItem {
 // ════════════════════════════════════════════════════════════════
 
 model HolisticUser {
-  id                String                 @id @default(cuid())
-  email             String                 @unique
-  hashedPassword    String
-  role              String                 @default("CLIENT") // CLIENT | PRACTITIONER | ADMIN
-  firstName         String
-  lastName          String
-  phone             String?
-  locale            String                 @default("fr")
+  id                   String                       @id @default(cuid())
+  email                String                       @unique
+  hashedPassword       String
+  role                 String                       @default("CLIENT") // CLIENT | PRACTITIONER | ADMIN
+  firstName            String
+  lastName             String
+  phone                String?
+  locale               String                       @default("fr")
   // Photo de profil. URL publique Supabase (bucket products, dossier membres).
   // Traitée par le navigateur avant téléversement : carrée, 512 px, WebP < 200 Ko.
-  avatarUrl         String?
+  avatarUrl            String?
   // Décharge électronique LCCJTI
-  dischargeSignedAt DateTime?
-  dischargeIp       String?
-  dischargeHash     String?
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  practitioner      Practitioner?
-  clientBookings    HolisticAppointment[]  @relation("ClientAppointments")
-  reviews           HolisticReview[]
-  notifications     HolisticNotification[]
+  dischargeSignedAt    DateTime?
+  dischargeIp          String?
+  dischargeHash        String?
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  practitioner         Practitioner?
+  clientBookings       HolisticAppointment[]        @relation("ClientAppointments")
+  reviews              HolisticReview[]
+  notifications        HolisticNotification[]
   // ── Espace membre (boutique-école) ──
-  orders            Order[]                @relation("UserOrders")
-  entitlements      MemberEntitlement[]
-  courseProgress    CourseProgress[]
+  orders               Order[]                      @relation("UserOrders")
+  entitlements         MemberEntitlement[]
+  courseProgress       CourseProgress[]
   // ── Événements (rituels, veillées) ──
-  eventRegistrations EventRegistration[]
+  eventRegistrations   EventRegistration[]
   // ── Formations avec Noctura ──
   formationEnrollments FormationEnrollment[]
   formationCredits     FormationCreditTransaction[]
@@ -363,18 +396,18 @@ model HolisticUser {
 }
 
 model Practitioner {
-  id                 String                 @id @default(cuid())
-  userId             String                 @unique
-  user               HolisticUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slug               String                 @unique
-  status             String                 @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
-  bio                String                 @default("")
-  specialties        String[]               @default([])
-  yearsExperience    Int                    @default(0)
-  hourlyRate         Float                  @default(80)
-  photoUrl           String?
-  stripeAccountId    String?
-  stripeAccountReady Boolean                @default(false)
+  id                        String                      @id @default(cuid())
+  userId                    String                      @unique
+  user                      HolisticUser                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                      String                      @unique
+  status                    String                      @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
+  bio                       String                      @default("")
+  specialties               String[]                    @default([])
+  yearsExperience           Int                         @default(0)
+  hourlyRate                Float                       @default(80)
+  photoUrl                  String?
+  stripeAccountId           String?
+  stripeAccountReady        Boolean                     @default(false)
   // Google Agenda — OAuth dédié par praticienne (Phase 1, additif/nullable)
   googleRefreshToken        String?
   googleCalendarEmail       String?
@@ -386,32 +419,32 @@ model Practitioner {
   // null = lien sain ; sinon, cause du dernier refus de Google.
   googleSyncError           String?
   googleSyncCheckedAt       DateTime?
-  certificationUrls  String[]               @default([])
-  insuranceUrl       String?
-  insuranceNumber    String?
-  adminNote          String?
-  approvedAt         DateTime?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  certificationUrls         String[]                    @default([])
+  insuranceUrl              String?
+  insuranceNumber           String?
+  adminNote                 String?
+  approvedAt                DateTime?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
   // V2 — plateforme unifiée (additifs, défauts safe)
-  isOwner            Boolean                @default(false)
-  commissionPct      Float                  @default(35)
-  addressLine        String?
-  city               String?
-  postalCode         String?
-  userV2Id           String?                @unique
-  userV2             User?                  @relation(fields: [userV2Id], references: [id])
+  isOwner                   Boolean                     @default(false)
+  commissionPct             Float                       @default(35)
+  addressLine               String?
+  city                      String?
+  postalCode                String?
+  userV2Id                  String?                     @unique
+  userV2                    User?                       @relation(fields: [userV2Id], references: [id])
   // Relations existantes (legacy, à ne pas casser)
-  availabilities     HolisticAvailability[]
-  appointments       HolisticAppointment[]  @relation("PractitionerAppointments")
-  reviews            HolisticReview[]
-  pendingChanges     PendingPractitionerChange[]
+  availabilities            HolisticAvailability[]
+  appointments              HolisticAppointment[]       @relation("PractitionerAppointments")
+  reviews                   HolisticReview[]
+  pendingChanges            PendingPractitionerChange[]
   // Relations V2 (nouveaux modèles)
-  offerings          Offering[]
-  offeringProviders  OfferingProvider[]     @relation("OfferingProviders")
-  schedule           Availability[]
-  bookings           Booking[]              @relation("PractitionerBookings")
-  bookingReviews     Review[]               @relation("PractitionerBookingReviews")
+  offerings                 Offering[]
+  offeringProviders         OfferingProvider[]          @relation("OfferingProviders")
+  schedule                  Availability[]
+  bookings                  Booking[]                   @relation("PractitionerBookings")
+  bookingReviews            Review[]                    @relation("PractitionerBookingReviews")
 }
 
 // Demandes de modification de profil / disponibilités soumises par le praticien
@@ -421,15 +454,15 @@ model PendingPractitionerChange {
   id             String       @id @default(cuid())
   practitionerId String
   practitioner   Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  type           String       // PROFILE | AVAILABILITY
+  type           String // PROFILE | AVAILABILITY
   // Payload JSON des changements demandés. Pour PROFILE : { bio?, specialties?, yearsExperience?, hourlyRate?, photoUrl?, firstName?, lastName? }
   // Pour AVAILABILITY : { blocks: [{ dayOfWeek, startTime, endTime, isActive }] } — remplace l'ensemble
   payload        Json
   status         String       @default("PENDING") // PENDING | APPROVED | REJECTED
   requestedAt    DateTime     @default(now())
   reviewedAt     DateTime?
-  reviewedById   String?      // adminUserId de celui qui a tranché
-  adminNote      String?      // raison du rejet, commentaire, etc.
+  reviewedById   String? // adminUserId de celui qui a tranché
+  adminNote      String? // raison du rejet, commentaire, etc.
 
   @@index([practitionerId, status])
   @@index([status, requestedAt])
@@ -450,36 +483,36 @@ model HolisticAvailability {
 }
 
 model HolisticAppointment {
-  id             String                 @id @default(cuid())
-  clientId       String
-  client         HolisticUser           @relation("ClientAppointments", fields: [clientId], references: [id])
-  practitionerId String
-  practitioner   Practitioner           @relation("PractitionerAppointments", fields: [practitionerId], references: [id])
-  startsAt       DateTime
-  endsAt         DateTime
-  status         String                 @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
-  dailyRoomUrl   String?
-  dailyRoomName  String?
-  googleEventId  String? // id de l'événement Google Agenda (sync sortante)
+  id                String       @id @default(cuid())
+  clientId          String
+  client            HolisticUser @relation("ClientAppointments", fields: [clientId], references: [id])
+  practitionerId    String
+  practitioner      Practitioner @relation("PractitionerAppointments", fields: [practitionerId], references: [id])
+  startsAt          DateTime
+  endsAt            DateTime
+  status            String       @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
+  dailyRoomUrl      String?
+  dailyRoomName     String?
+  googleEventId     String? // id de l'événement Google Agenda (sync sortante)
   reminder3dSentAt  DateTime? // rappel client 3 jours avant (anti-doublon)
   reminder24hSentAt DateTime? // rappel client 24h avant (anti-doublon)
-  cancelledAt    DateTime?
-  cancelledBy    String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
-  notes          String?
-  paymentMode    String? // RDV manuel : CASH | STRIPE_LINK | INTERAC (null = parcours public Stripe)
+  cancelledAt       DateTime?
+  cancelledBy       String? // "CLIENT" | "PRACTITIONER" | "ADMIN"
+  notes             String?
+  paymentMode       String? // RDV manuel : CASH | STRIPE_LINK | INTERAC (null = parcours public Stripe)
 
   // ─── Modèle acompte + solde (Phase 2 MVP - paiement en 2 temps) ──────────
   // Pour services individuels : acompte de 25 $ à la résa, solde facturé après la séance.
   // Pour services de groupe (capacity > 1) : paiement complet à la résa, pas d'acompte.
-  totalAmount             Float?    // prix total de la séance (offering.price ou hourlyRate × heures)
-  depositAmount           Float?    // montant de l'acompte facturé à la résa (25 $ par défaut)
-  remainingAmount         Float?    // ce qu'il reste à facturer (totalAmount - depositAmount)
-  stripeCustomerId        String?   // Stripe Customer ID — pour réutiliser la carte
-  stripePaymentMethodId   String?   // PaymentMethod ID sauvegardé — pour charger le solde off-session
-  depositPaidAt           DateTime? // moment où l'acompte a été reçu (webhook Stripe)
-  remainderChargedAt      DateTime? // moment où le solde a été chargé (clic praticienne)
-  remainderPaymentIntentId String?  // PaymentIntent ID du paiement du solde (pour reçu)
-  completionOutcome       String?   // CHARGED | GIFTED | NO_SHOW (set quand la praticienne clique « Terminer »)
+  totalAmount              Float? // prix total de la séance (offering.price ou hourlyRate × heures)
+  depositAmount            Float? // montant de l'acompte facturé à la résa (25 $ par défaut)
+  remainingAmount          Float? // ce qu'il reste à facturer (totalAmount - depositAmount)
+  stripeCustomerId         String? // Stripe Customer ID — pour réutiliser la carte
+  stripePaymentMethodId    String? // PaymentMethod ID sauvegardé — pour charger le solde off-session
+  depositPaidAt            DateTime? // moment où l'acompte a été reçu (webhook Stripe)
+  remainderChargedAt       DateTime? // moment où le solde a été chargé (clic praticienne)
+  remainderPaymentIntentId String? // PaymentIntent ID du paiement du solde (pour reçu)
+  completionOutcome        String? // CHARGED | GIFTED | NO_SHOW (set quand la praticienne clique « Terminer »)
 
   // ─── Lien formation (module Formations avec Noctura) ─────────────────────
   // Un RDV lié à une formation consomme un crédit de la banque au lieu du flux
@@ -488,11 +521,11 @@ model HolisticAppointment {
   formationEnrollment   FormationEnrollment? @relation(fields: [formationEnrollmentId], references: [id])
   formationCourseId     String? // FormationCourse visé par la rencontre (facultatif)
 
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  payment        HolisticPayment?
-  review         HolisticReview?
-  notifications  HolisticNotification[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  payment       HolisticPayment?
+  review        HolisticReview?
+  notifications HolisticNotification[]
 
   @@index([formationEnrollmentId])
 }
@@ -570,48 +603,48 @@ model User {
 }
 
 model Offering {
-  id              String       @id @default(cuid())
+  id               String             @id @default(cuid())
   // Praticien "principal/propriétaire" du service. Le client peut aussi en
   // choisir un autre via la relation many-to-many `providers` ci-dessous.
-  practitionerId  String
-  practitioner    Practitioner @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-  type            String // SOIN | COURS | CEREMONIE | GUIDANCE | ATELIER | CONSULTATION | SERVICE_EXTERIEUR | ... (libre)
-  slug            String       @unique
-  name            String
-  description     String
-  longDescription String       @default("")
-  durationMinutes Int
-  bufferMinutes   Int          @default(15)
+  practitionerId   String
+  practitioner     Practitioner       @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  type             String // SOIN | COURS | CEREMONIE | GUIDANCE | ATELIER | CONSULTATION | SERVICE_EXTERIEUR | ... (libre)
+  slug             String             @unique
+  name             String
+  description      String
+  longDescription  String             @default("")
+  durationMinutes  Int
+  bufferMinutes    Int                @default(15)
   // Prix : à la carte (par personne), pour 2 personnes (duo), package complet
-  price            Float        // prix de base à la carte / par personne
+  price            Float // prix de base à la carte / par personne
   // Service de FORMATION (module Formations) : 'RF' | 'TP'. Réserver ce service
   // inscrit automatiquement la cliente comme élève et lie le RDV à son cours actuel.
   formationCode    String?
-  priceForTwo      Float?       // tarif spécial pour duo (couple, ami·e, etc.)
-  pricePackage     Float?       // forfait complet (ex: pack de N cours)
-  pricePackageMsrp Float?       // valeur d'origine du forfait (pour afficher l'économie)
-  numSessions      Int?         // nombre de séances dans le forfait (ex: 20 cours)
-  currency         String       @default("CAD")
-  modes            String[]     @default(["IN_PERSON"]) // IN_PERSON | VIRTUAL
-  capacity         Int          @default(1)
-  colorHex         String       @default("#6B3FA0")
-  emoji            String       @default("*")
+  priceForTwo      Float? // tarif spécial pour duo (couple, ami·e, etc.)
+  pricePackage     Float? // forfait complet (ex: pack de N cours)
+  pricePackageMsrp Float? // valeur d'origine du forfait (pour afficher l'économie)
+  numSessions      Int? // nombre de séances dans le forfait (ex: 20 cours)
+  currency         String             @default("CAD")
+  modes            String[]           @default(["IN_PERSON"]) // IN_PERSON | VIRTUAL
+  capacity         Int                @default(1)
+  colorHex         String             @default("#6B3FA0")
+  emoji            String             @default("*")
   imageUrl         String?
-  features         String[]     @default([])
+  features         String[]           @default([])
   // Textes personnalisés de la page de présentation (overrides JSON par-dessus
   // les valeurs par défaut générées). Voir src/lib/service-landing.ts.
   landingContent   Json?
-  isActive         Boolean      @default(true)
-  isFeatured       Boolean      @default(false)
-  sortOrder        Int          @default(0)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  isActive         Boolean            @default(true)
+  isFeatured       Boolean            @default(false)
+  sortOrder        Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   bookings         Booking[]
   // Praticien·ne·s additionnel·le·s pouvant offrir ce service (en plus du primaire)
   providers        OfferingProvider[]
   // Catégorie (gérée dans /admin/site/categories) — une seule par service
   categoryId       String?
-  category         ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category         ServiceCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@index([type, isActive, isFeatured])
   @@index([practitionerId, isActive])
@@ -978,16 +1011,16 @@ model ContentSource {
 // Le lot est instantané à créer ; ses items sont générés en tâche de fond
 // (cron social-generate + relances depuis l'interface), 2 par passage.
 model ContentBatch {
-  id             String   @id @default(cuid())
+  id             String             @id @default(cuid())
   organizationId String
   title          String
   serieKey       String // RUNE_DU_JOUR | MYTHOLOGIE | CITATIONS | PROMOS | LIBRE (src/lib/social-series.ts)
   templateKey    String // gabarit visuel (src/lib/social-render/registry.ts)
   quantite       Int
-  params         Json     @default("{}") // { format, heureLocale, cadenceJours, dateDebut, accountIds, consignes }
-  status         String   @default("EN_COURS") // EN_COURS | TERMINE | ERREUR | ANNULE
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  params         Json               @default("{}") // { format, heureLocale, cadenceJours, dateDebut, accountIds, consignes }
+  status         String             @default("EN_COURS") // EN_COURS | TERMINE | ERREUR | ANNULE
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   items          ContentBatchItem[]
 
   @@index([organizationId, status])
@@ -1016,25 +1049,25 @@ model ContentBatchItem {
 // Le token est CHIFFRÉ (AES-256-GCM, src/lib/social-crypto.ts) : jamais en
 // clair en base, dans les logs ni dans les réponses API (seulement tokenLastFour).
 model SocialAccount {
-  id                   String          @id @default(cuid())
-  organizationId       String          @default("runes-et-magie")
+  id                   String             @id @default(cuid())
+  organizationId       String             @default("runes-et-magie")
   network              String // FACEBOOK | INSTAGRAM (extensible : TIKTOK | YOUTUBE)
   label                String // nom affiché (ex. « Page Runes & Magie »)
   externalId           String // page-id Facebook OU ig-user-id Instagram
-  encryptedAccessToken String          @db.Text
+  encryptedAccessToken String             @db.Text
   tokenLastFour        String? // 4 derniers caractères, pour identification visuelle
   tokenExpiresAt       DateTime? // indicatif — un token « longue durée » peut être invalidé à tout moment
-  connectionStatus     String          @default("CONNECTED") // CONNECTED | EXPIRED | INVALID | PERMISSION_MISSING
+  connectionStatus     String             @default("CONNECTED") // CONNECTED | EXPIRED | INVALID | PERMISSION_MISSING
   lastTestedAt         DateTime?
   lastTestSucceeded    Boolean?
-  lastTestError        String?         @db.Text
-  isActive             Boolean         @default(true)
+  lastTestError        String?            @db.Text
+  isActive             Boolean            @default(true)
   // Le compte Instagram professionnel est rattaché à une Page Facebook :
   parentAccountId      String?
-  parentAccount        SocialAccount?  @relation("SocialAccountParent", fields: [parentAccountId], references: [id])
-  childAccounts        SocialAccount[] @relation("SocialAccountParent")
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  parentAccount        SocialAccount?     @relation("SocialAccountParent", fields: [parentAccountId], references: [id])
+  childAccounts        SocialAccount[]    @relation("SocialAccountParent")
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
   targets              SocialPostTarget[]
   jobs                 SocialPublishJob[]
 
@@ -1045,23 +1078,23 @@ model SocialAccount {
 // Une publication : contenu de base + déclinaisons par réseau.
 // Le statut est TOUJOURS calculé par le serveur (jamais posé par le client).
 model SocialPost {
-  id               String    @id @default(cuid())
-  organizationId   String    @default("runes-et-magie")
+  id               String             @id @default(cuid())
+  organizationId   String             @default("runes-et-magie")
   title            String // titre interne (jamais publié)
-  type             String    @default("PUBLICATION") // PUBLICATION | CARROUSEL | STORY | REEL | PRODUIT | PROMO_SOIN | CITATION | PLEINE_LUNE | FORMATION | EVENEMENT | TEMOIGNAGE
-  baseText         String    @default("") // texte / idée de base
-  callToAction     String    @default("")
+  type             String             @default("PUBLICATION") // PUBLICATION | CARROUSEL | STORY | REEL | PRODUIT | PROMO_SOIN | CITATION | PLEINE_LUNE | FORMATION | EVENEMENT | TEMOIGNAGE
+  baseText         String             @default("") // texte / idée de base
+  callToAction     String             @default("")
   link             String? // lien à inclure dans le texte
-  hashtags         String    @default("") // hashtags de base, séparés par espaces
-  images           Json      @default("[]") // [{ url, alt }] — 0 à 10, URLs Supabase Storage publiques
-  variants         Json      @default("{}") // { FACEBOOK: { texte, hashtags }, INSTAGRAM: {...} } — éditable après génération IA
+  hashtags         String             @default("") // hashtags de base, séparés par espaces
+  images           Json               @default("[]") // [{ url, alt }] — 0 à 10, URLs Supabase Storage publiques
+  variants         Json               @default("{}") // { FACEBOOK: { texte, hashtags }, INSTAGRAM: {...} } — éditable après génération IA
   complianceReport Json? // dernier rapport « Vérifier la conformité Meta »
   batchId          String? // lot de génération d'origine (référence souple, pas de FK)
-  status           String    @default("BROUILLON") // BROUILLON | A_APPROUVER | PROGRAMMEE | PUBLIEE | ERREUR
+  status           String             @default("BROUILLON") // BROUILLON | A_APPROUVER | PROGRAMMEE | PUBLIEE | ERREUR
   scheduledAt      DateTime? // UTC — affiché/saisi en heure de Montréal (America/Toronto)
   publishedAt      DateTime? // quand tous les jobs ont réussi
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   targets          SocialPostTarget[]
   jobs             SocialPublishJob[]
 
@@ -1146,9 +1179,9 @@ model Event {
 }
 
 model EventRegistration {
-  id      String @id @default(cuid())
+  id      String       @id @default(cuid())
   eventId String
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
   userId  String
   user    HolisticUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1172,12 +1205,14 @@ model EventRegistration {
   createdAt      DateTime                @default(now())
   cancelledAt    DateTime?
 
-  /** La personne accepte que son prénom apparaisse publiquement dans la liste
+  /**
+   * La personne accepte que son prénom apparaisse publiquement dans la liste
    * des participants (« Le cercle »). Opt-in explicite requis par la Loi 25 —
    * la croyance/pratique spirituelle qu'implique la présence à un rituel est
    * une catégorie de donnée particulièrement protégée. Défaut false : les
-   * inscriptions déjà en base ne deviennent jamais publiques rétroactivement. */
-  showPublicly   Boolean                 @default(false)
+   * inscriptions déjà en base ne deviennent jamais publiques rétroactivement.
+   */
+  showPublicly Boolean @default(false)
 
   @@unique([eventId, userId])
   @@index([eventId, status])
@@ -1194,22 +1229,22 @@ model EventRegistration {
 
 // Programme de formation (Runes, Tarot…).
 model Formation {
-  id           String                @id @default(cuid())
-  code         String                @unique // "RF" | "TP"
-  title        String
-  subtitle     String                @default("")
-  description  String                @default("")
-  defaultPrice Float? // prix indicatif de la formation complète
+  id              String                @id @default(cuid())
+  code            String                @unique // "RF" | "TP"
+  title           String
+  subtitle        String                @default("")
+  description     String                @default("")
+  defaultPrice    Float? // prix indicatif de la formation complète
   // Tarification (2026-08) : cours à la carte 89,99 $ (+1 crédit) ;
   // bloc de 10 cours 675 $ (67,50 $/cours, rabais) → +10 crédits.
   // Les crédits sont PARTAGÉS entre formations (Runes ou Tarot).
   pricePerCourse  Float? // 89,99 $
   pricePerBlock10 Float? // 675 $
-  isActive     Boolean               @default(true)
-  courses      FormationCourse[]
-  enrollments  FormationEnrollment[]
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  isActive        Boolean               @default(true)
+  courses         FormationCourse[]
+  enrollments     FormationEnrollment[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 }
 
 // Un cours du plan (RF01…), examen ou slot de spécialisation inclus.
@@ -1267,17 +1302,17 @@ model FormationEnrollment {
 // État d'un cours pour une inscription. La complétion vient de Noctura/admin,
 // jamais de la cliente.
 model EnrollmentCourseProgress {
-  id           String              @id @default(cuid())
-  enrollmentId String
-  enrollment   FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  courseId     String
-  course       FormationCourse     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  state        String              @default("LOCKED") // LOCKED | UNLOCKED | COMPLETED
-  unlockedAt   DateTime?
-  completedAt  DateTime?
-  completedBy  String? // nom/id de qui a validé (Noctura, admin)
-  origin       String              @default("AUTO") // AUTO | MANUAL
-  note         String              @default("")
+  id             String              @id @default(cuid())
+  enrollmentId   String
+  enrollment     FormationEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  courseId       String
+  course         FormationCourse     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  state          String              @default("LOCKED") // LOCKED | UNLOCKED | COMPLETED
+  unlockedAt     DateTime?
+  completedAt    DateTime?
+  completedBy    String? // nom/id de qui a validé (Noctura, admin)
+  origin         String              @default("AUTO") // AUTO | MANUAL
+  note           String              @default("")
   // Pour un slot de spécialisation : id du FormationCourse optionnel choisi.
   chosenCourseId String?
 
@@ -1290,20 +1325,20 @@ model EnrollmentCourseProgress {
 // enrollmentId est un simple contexte facultatif.
 // Jamais de « remaining = remaining - 1 » hors transaction.
 model FormationCreditTransaction {
-  id            String              @id @default(cuid())
-  clientId      String?
-  client        HolisticUser?       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  enrollmentId  String?
-  enrollment    FormationEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  delta         Int // +10 allocation, -1 utilisation, +1 remboursement…
-  type          String // ALLOCATION | USE | REFUND | ADJUSTMENT | BONUS | CORRECTION
-  reason        String              @default("")
-  createdBy     String? // qui (Noctura, admin, "SYSTEM")
-  appointmentId String?             @unique // RDV lié pour USE (anti double-débit)
+  id                    String               @id @default(cuid())
+  clientId              String?
+  client                HolisticUser?        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  enrollmentId          String?
+  enrollment            FormationEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  delta                 Int // +10 allocation, -1 utilisation, +1 remboursement…
+  type                  String // ALLOCATION | USE | REFUND | ADJUSTMENT | BONUS | CORRECTION
+  reason                String               @default("")
+  createdBy             String? // qui (Noctura, admin, "SYSTEM")
+  appointmentId         String?              @unique // RDV lié pour USE (anti double-débit)
   // Remboursement lié à l'annulation d'un RDV : l'unicité en BASE garantit
   // qu'un même RDV ne peut être remboursé qu'une seule fois (anti-course).
-  refundOfAppointmentId String?     @unique
-  createdAt     DateTime            @default(now())
+  refundOfAppointmentId String?              @unique
+  createdAt             DateTime             @default(now())
 
   @@index([enrollmentId])
 }

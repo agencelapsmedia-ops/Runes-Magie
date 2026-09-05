@@ -47,6 +47,12 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
     ],
   },
   {
+    label: 'Laps Media',
+    href: '/admin/lapsmedia',
+    icon: 'ᛚ',
+    match: ['/admin/lapsmedia'],
+  },
+  {
     label: 'Mon profil & réglages',
     href: '/admin/mon-espace',
     icon: 'ᚱ',
