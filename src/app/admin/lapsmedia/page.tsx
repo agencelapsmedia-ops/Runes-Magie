@@ -48,8 +48,26 @@ interface Bilan {
 interface TacheTodo {
   id: string;
   title: string;
+  description: string;
   status: string;
+  priority: string;
+  label: string | null;
 }
+
+/** Les quatre étapes du kanban, dans l'ordre où elles sont affichées. */
+const COLONNES = [
+  { key: 'A_FAIRE', label: 'À faire', accent: '#6B3FA0' },
+  { key: 'EN_COURS', label: 'En cours', accent: '#1D4ED8' },
+  { key: 'EN_VERIFICATION', label: 'En vérification', accent: '#92400E' },
+  { key: 'TERMINE', label: 'Terminé', accent: '#065F46' },
+];
+
+const COULEUR_PRIORITE: Record<string, string> = {
+  URGENTE: '#DC2626',
+  HAUTE: '#C2410C',
+  MOYENNE: '#A16207',
+  BASSE: '#9CA3AF',
+};
 
 /** Date du jour au format d'un <input type="date">, en heure de Montréal. */
 function aujourdhui(): string {
@@ -128,6 +146,10 @@ export default function LapsMediaPage() {
   const [paiement, setPaiement] = useState({ ...paiementVide });
   const [paiementEnCours, setPaiementEnCours] = useState(false);
 
+  // Panneau to-do en haut de page
+  const [tacheForm, setTacheForm] = useState({ title: '', priority: 'MOYENNE', status: 'A_FAIRE' });
+  const [tacheEnCours, setTacheEnCours] = useState(false);
+
   async function charger() {
     try {
       const [ra, rp, rb, rt] = await Promise.all([
@@ -198,6 +220,53 @@ export default function LapsMediaPage() {
   function importerTache(id: string) {
     const tache = taches.find((t) => t.id === id);
     setForme((f) => ({ ...f, todoTaskId: id, title: tache ? tache.title : f.title }));
+  }
+
+  /** Depuis une carte du to-do : ouvre le formulaire d'action déjà prérempli. */
+  function consigner(t: TacheTodo) {
+    setEditingId(null);
+    setForme({
+      ...formeVide,
+      doneOn: aujourdhui(),
+      title: t.title,
+      description: t.description,
+      todoTaskId: t.id,
+    });
+    setFormOuvert(true);
+    setError(null);
+    document.getElementById('formulaire-action')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  /** Ajout rapide d'une tâche au kanban, sans quitter la page. */
+  async function creerTache() {
+    if (!tacheForm.title.trim()) return setError('Le titre de la tâche est requis.');
+    setTacheEnCours(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tacheForm),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Échec');
+      setTacheForm({ title: '', priority: 'MOYENNE', status: 'A_FAIRE' });
+      await charger();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setTacheEnCours(false);
+    }
+  }
+
+  /** Déplacement d'une tâche d'une étape à l'autre depuis le panneau. */
+  async function deplacerTache(id: string, status: string) {
+    const res = await fetch(`/api/admin/todos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) return setError('Déplacement impossible.');
+    await charger();
   }
 
   async function enregistrerAction() {
@@ -308,6 +377,106 @@ export default function LapsMediaPage() {
         <p style={{ color: '#6B7280' }}>Chargement…</p>
       ) : (
         <>
+          {/* ── To-do du projet ──────────────────────────────────────────── */}
+          <div style={{ ...carte, marginBottom: '22px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+              <p style={{ ...etiquette, margin: 0 }}>To-do du projet</p>
+              <Link href="/admin/todo" style={{ fontSize: '0.78rem', color: '#6B3FA0' }}>
+                Ouvrir le tableau complet →
+              </Link>
+            </div>
+
+            {/* Ajout rapide : une tâche peut naître ici, sans passer par le kanban */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              <input
+                value={tacheForm.title}
+                onChange={(e) => setTacheForm({ ...tacheForm, title: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Enter') void creerTache(); }}
+                placeholder="Nouvelle tâche à faire…"
+                style={{ ...champ, flex: '1 1 260px', width: 'auto' }}
+              />
+              <select
+                value={tacheForm.priority}
+                onChange={(e) => setTacheForm({ ...tacheForm, priority: e.target.value })}
+                style={{ ...champ, width: 'auto' }}
+              >
+                <option value="URGENTE">Urgente</option>
+                <option value="HAUTE">Haute</option>
+                <option value="MOYENNE">Moyenne</option>
+                <option value="BASSE">Basse</option>
+              </select>
+              <select
+                value={tacheForm.status}
+                onChange={(e) => setTacheForm({ ...tacheForm, status: e.target.value })}
+                style={{ ...champ, width: 'auto' }}
+              >
+                {COLONNES.map((c) => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+              <button onClick={creerTache} disabled={tacheEnCours} style={bouton('#6B3FA0')}>
+                {tacheEnCours ? 'Ajout…' : '+ Ajouter'}
+              </button>
+            </div>
+
+            {taches.length === 0 ? (
+              <p style={{ color: '#6B7280', fontSize: '0.86rem', margin: 0 }}>Aucune tâche en cours.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px', alignItems: 'start' }}>
+                {COLONNES.map((col) => {
+                  const lignes = taches.filter((t) => t.status === col.key);
+                  return (
+                    <div key={col.key} style={{ background: '#F3F4F6', borderRadius: '10px', padding: '10px', minHeight: '80px' }}>
+                      <p style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: col.accent, margin: '2px 4px 10px' }}>
+                        {col.label} <span style={{ color: '#9CA3AF' }}>({lignes.length})</span>
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {lignes.map((t) => (
+                          <div
+                            key={t.id}
+                            style={{
+                              background: '#FFFFFF',
+                              borderRadius: '8px',
+                              padding: '10px',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
+                              borderLeft: `4px solid ${COULEUR_PRIORITE[t.priority] ?? '#9CA3AF'}`,
+                            }}
+                          >
+                            <p style={{ margin: 0, fontSize: '0.84rem', fontWeight: 600, color: '#1F2937', lineHeight: 1.35 }}>
+                              {t.title}
+                            </p>
+                            {t.label && (
+                              <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '0.66rem', fontWeight: 600, padding: '2px 8px', borderRadius: '9999px', background: '#EDE9FE', color: '#6B3FA0' }}>
+                                {t.label}
+                              </span>
+                            )}
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <button
+                                onClick={() => consigner(t)}
+                                style={{ background: 'none', border: 'none', padding: 0, color: '#065F46', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}
+                              >
+                                Consigner une action
+                              </button>
+                              <select
+                                value={t.status}
+                                onChange={(e) => deplacerTache(t.id, e.target.value)}
+                                style={{ fontSize: '0.7rem', border: '1px solid #E5E7EB', borderRadius: '5px', padding: '2px 4px', color: '#6B7280' }}
+                              >
+                                {COLONNES.map((c) => (
+                                  <option key={c.key} value={c.key}>{c.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* ── Bandeau du solde ─────────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
             {[
@@ -381,14 +550,16 @@ export default function LapsMediaPage() {
           </div>
 
           {formOuvert && (
-            <div style={{ ...carte, marginBottom: '22px' }}>
+            <div id="formulaire-action" style={{ ...carte, marginBottom: '22px' }}>
               <p style={{ ...etiquette, marginBottom: '14px' }}>
                 {editingId ? 'Modifier l’action' : 'Nouvelle action'}
               </p>
 
               {!editingId && taches.length > 0 && (
                 <div style={{ marginBottom: '14px' }}>
-                  <label style={etiquette}>Importer une tâche du to-do (le nom reste modifiable)</label>
+                  <label style={etiquette}>
+                    Rattacher à une tâche du to-do — facultatif
+                  </label>
                   <select
                     value={forme.todoTaskId}
                     onChange={(e) => importerTache(e.target.value)}
@@ -401,6 +572,10 @@ export default function LapsMediaPage() {
                       </option>
                     ))}
                   </select>
+                  <p style={{ margin: '5px 0 0', fontSize: '0.75rem', color: '#9CA3AF' }}>
+                    Laisse « Aucune » pour une action qui n’existe pas dans le to-do. Le nom facturé
+                    reste modifiable dans tous les cas.
+                  </p>
                 </div>
               )}
 
