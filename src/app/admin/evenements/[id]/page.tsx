@@ -13,6 +13,8 @@ interface Inscrit {
   phone: string | null;
   note: string | null;
   createdAt: string;
+  /** Pointage du jour : null tant que personne n'a été pointé. */
+  attendance: 'PRESENT' | 'ABSENT' | null;
   /** A consenti (à l'inscription) à apparaître dans la liste publique « Le cercle ». */
   showPublicly: boolean;
 }
@@ -28,6 +30,22 @@ const thStyle: React.CSSProperties = {
 };
 const tdStyle: React.CSSProperties = { padding: '14px 16px', fontSize: '0.85rem', color: '#4B5563', verticalAlign: 'top' };
 
+/** Style d'un bouton de pointage — plein quand c'est l'état retenu. */
+function stylePointage(actif: boolean, ton: 'present' | 'absent'): React.CSSProperties {
+  const couleur = ton === 'present' ? '#065F46' : '#991B1B';
+  const fond = ton === 'present' ? '#D1FAE5' : '#FEE2E2';
+  return {
+    padding: '5px 10px',
+    borderRadius: '6px',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    background: actif ? fond : '#fff',
+    color: actif ? couleur : '#9CA3AF',
+    border: `1px solid ${actif ? couleur : '#E5E7EB'}`,
+  };
+}
+
 export default function FicheEvenementPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
@@ -39,6 +57,8 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
   const [errorDesinscription, setErrorDesinscription] = useState<string | null>(null);
   const [aDesinscrire, setADesinscrire] = useState<Inscrit | null>(null);
   const [desinscrivant, setDesinscrivant] = useState(false);
+  const [pointageEnCours, setPointageEnCours] = useState<string | null>(null);
+  const [errorPointage, setErrorPointage] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     try {
@@ -72,6 +92,39 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     void charger();
   }, [charger]);
+
+  /**
+   * Pointe une personne. Re-cliquer sur le bouton déjà actif remet la ligne à
+   * « non pointé » : c'est la sortie de secours d'un clic malheureux, et il
+   * faut pouvoir distinguer « pas encore pointé » d'« absent ».
+   */
+  async function pointer(inscrit: Inscrit, valeur: 'PRESENT' | 'ABSENT') {
+    const cible = inscrit.attendance === valeur ? null : valeur;
+    setPointageEnCours(inscrit.id);
+    setErrorPointage(null);
+
+    // Bascule optimiste : le pointage se fait au Temple, souvent sur un
+    // téléphone, et attendre l'aller-retour réseau à chaque nom rendrait la
+    // liste pénible. En cas d'échec on remet la valeur d'origine.
+    setInscrits((liste) => liste.map((i) => (i.id === inscrit.id ? { ...i, attendance: cible } : i)));
+
+    try {
+      const res = await fetch(`/api/admin/evenements/${id}/inscrits/${inscrit.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendance: cible }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec du pointage.');
+    } catch (e) {
+      setInscrits((liste) =>
+        liste.map((i) => (i.id === inscrit.id ? { ...i, attendance: inscrit.attendance } : i)),
+      );
+      setErrorPointage(e instanceof Error ? e.message : 'Erreur inattendue.');
+    } finally {
+      setPointageEnCours(null);
+    }
+  }
 
   async function confirmerDesinscription() {
     if (!aDesinscrire) return;
@@ -131,7 +184,17 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
         Inscrits ({inscrits.length} / {evenement.capacity})
       </h2>
 
-      <ActionsInscrits evenementId={id} dejaAnnule={!!evenement.cancelledAt} onAnnule={() => void charger()} />
+      <ActionsInscrits
+        evenementId={id}
+        dejaAnnule={!!evenement.cancelledAt}
+        estPasse={new Date(evenement.startsAt) < new Date()}
+        onAnnule={() => void charger()}
+        onPointe={() => void charger()}
+      />
+
+      {errorPointage && (
+        <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '10px' }}>{errorPointage}</p>
+      )}
 
       {errorInscrits ? (
         <div style={{ background: '#FEF2F2', borderRadius: '12px', padding: '30px', textAlign: 'center', border: '1px solid #FCA5A5' }}>
@@ -150,6 +213,7 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
                 <th style={thStyle}>Courriel</th>
                 <th style={thStyle}>Téléphone</th>
                 <th style={thStyle}>Inscrit le</th>
+                <th style={{ ...thStyle, textAlign: 'center' }}>Présence</th>
                 <th style={thStyle}>Message</th>
                 <th style={{ ...thStyle, textAlign: 'center' }}>Cercle public</th>
                 <th style={{ padding: '12px 16px' }} />
@@ -162,6 +226,28 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
                   <td style={tdStyle}>{i.email}</td>
                   <td style={tdStyle}>{i.phone || '—'}</td>
                   <td style={tdStyle}>{formaterDateEvenement(i.createdAt)}</td>
+                  <td style={{ ...tdStyle, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'inline-flex', gap: '6px', opacity: pointageEnCours === i.id ? 0.5 : 1 }}>
+                      <button
+                        type="button"
+                        onClick={() => void pointer(i, 'PRESENT')}
+                        disabled={pointageEnCours === i.id}
+                        title="Cette personne est venue"
+                        style={stylePointage(i.attendance === 'PRESENT', 'present')}
+                      >
+                        Présent·e
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void pointer(i, 'ABSENT')}
+                        disabled={pointageEnCours === i.id}
+                        title="Cette personne ne s'est pas présentée"
+                        style={stylePointage(i.attendance === 'ABSENT', 'absent')}
+                      >
+                        Absent·e
+                      </button>
+                    </span>
+                  </td>
                   <td style={{ ...tdStyle, maxWidth: '260px', whiteSpace: 'pre-line' }}>{i.note || '—'}</td>
                   <td style={{ ...tdStyle, textAlign: 'center' }} title={i.showPublicly ? 'Apparaît dans « Le cercle » (a consenti à l\'inscription)' : 'N\'apparaît pas dans « Le cercle » (consentement non donné)'}>
                     <span

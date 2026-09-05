@@ -1163,6 +1163,12 @@ model EventRegistration {
   status         EventRegistrationStatus @default(CONFIRMED)
   cancelToken    String                  @unique @default(cuid())
   reminderSentAt DateTime?
+  /// Pointage du jour du rituel. null = pas encore pointé (cas de tout événement
+  /// à venir), sinon 'PRESENT' | 'ABSENT'. Champ séparé plutôt qu'un troisième
+  /// statut : `status: 'CONFIRMED'` sert partout de filtre (places restantes,
+  /// CSV, envoi de messages, cron de rappel) et un nouvel état le casserait.
+  attendance     String?
+  attendanceAt   DateTime?
   createdAt      DateTime                @default(now())
   cancelledAt    DateTime?
 

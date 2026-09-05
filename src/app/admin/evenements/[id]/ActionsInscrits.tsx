@@ -6,8 +6,12 @@ interface Props {
   evenementId: string;
   /** true si l'événement est déjà annulé — masque le bouton « Annuler ». */
   dejaAnnule: boolean;
+  /** true si la date du rituel est passée — conditionne le pointage groupé. */
+  estPasse: boolean;
   /** Appelé après une annulation réussie, pour rafraîchir la fiche. */
   onAnnule: () => void;
+  /** Appelé après un pointage groupé, pour recharger la liste des inscrits. */
+  onPointe: () => void;
 }
 
 const boutonStyle: React.CSSProperties = {
@@ -54,8 +58,8 @@ function Modale({ titre, onFermer, children }: { titre: string; onFermer: () => 
   );
 }
 
-export default function ActionsInscrits({ evenementId, dejaAnnule, onAnnule }: Props) {
-  const [modale, setModale] = useState<'message' | 'annuler' | null>(null);
+export default function ActionsInscrits({ evenementId, dejaAnnule, estPasse, onAnnule, onPointe }: Props) {
+  const [modale, setModale] = useState<'message' | 'annuler' | 'presences' | null>(null);
   const [sujet, setSujet] = useState('');
   const [message, setMessage] = useState('');
   const [motif, setMotif] = useState('');
@@ -126,12 +130,47 @@ export default function ActionsInscrits({ evenementId, dejaAnnule, onAnnule }: P
     }
   }
 
+  /** Marque tous les inscrits confirmés présents, d'un coup. */
+  async function marquerTousPresents() {
+    setEnvoi(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/evenements/${evenementId}/presences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendance: 'PRESENT' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec du pointage.');
+      fermer();
+      const nombre = data.pointes ?? 0;
+      setConfirmation(`${nombre} personne${nombre > 1 ? 's' : ''} marquée${nombre > 1 ? 's' : ''} présente${nombre > 1 ? 's' : ''}. Corrigez les absents ligne par ligne.`);
+      onPointe();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur inattendue.');
+    } finally {
+      setEnvoi(false);
+    }
+  }
+
   return (
     <>
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        <a href={`/api/admin/evenements/${evenementId}/feuille-presence-pdf`} style={boutonStyle}>
+          🗒 Feuille de présence (PDF)
+        </a>
         <a href={`/api/admin/evenements/${evenementId}/inscrits?format=csv`} style={boutonStyle}>
           ⭳ Exporter en CSV
         </a>
+        {estPasse && !dejaAnnule && (
+          <button
+            type="button"
+            onClick={() => setModale('presences')}
+            style={{ ...boutonStyle, cursor: 'pointer', color: '#065F46', border: '1px solid #6EE7B7' }}
+          >
+            ✓ Tout marquer présent
+          </button>
+        )}
         <button type="button" onClick={() => setModale('message')} style={{ ...boutonStyle, cursor: 'pointer' }}>
           ✉ Écrire à tous les inscrits
         </button>
@@ -147,6 +186,30 @@ export default function ActionsInscrits({ evenementId, dejaAnnule, onAnnule }: P
       </div>
 
       {confirmation && <p style={{ color: '#065F46', fontSize: '0.85rem', marginBottom: '14px' }}>{confirmation}</p>}
+
+      {modale === 'presences' && (
+        <Modale titre="Marquer tout le monde présent ?" onFermer={fermer}>
+          <p style={{ fontSize: '0.9rem', color: '#4B5563', marginBottom: '18px' }}>
+            Tous les inscrits confirmés de ce rituel seront marqués présents,{' '}
+            <strong>y compris ceux déjà pointés absents</strong>. Corrigez ensuite les
+            absents ligne par ligne dans la liste.
+          </p>
+          {error && <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '14px' }}>{error}</p>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button type="button" onClick={fermer} disabled={envoi} style={{ padding: '9px 16px', background: 'transparent', color: '#6B7280', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={marquerTousPresents}
+              disabled={envoi}
+              style={{ padding: '9px 18px', background: '#065F46', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', opacity: envoi ? 0.6 : 1 }}
+            >
+              {envoi ? 'Pointage…' : 'Tout marquer présent'}
+            </button>
+          </div>
+        </Modale>
+      )}
 
       {modale === 'message' && (
         <Modale titre="Écrire à tous les inscrits" onFermer={fermer}>

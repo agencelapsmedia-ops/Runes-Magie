@@ -10,6 +10,8 @@ export interface InscriptionAffichee {
   dateFormatee: string;
   location: string;
   isOnline: boolean;
+  /** Pointage de Noctura : true seulement si la présence a été constatée. */
+  presente?: boolean;
 }
 
 const sectionTitle =
@@ -110,11 +112,18 @@ function LigneAVenir({
   );
 }
 
-/** Ligne d'une inscription passée : lecture seule, aucun bouton d'annulation. */
+/**
+ * Ligne d'un rituel passé : lecture seule.
+ *
+ * La pastille « Vécu » n'apparaît que si la présence a été pointée. Son absence
+ * ne veut pas dire que la personne n'est pas venue — seulement que le rituel
+ * n'a pas encore été pointé — donc rien n'est affiché dans ce cas plutôt qu'une
+ * mention négative qui serait fausse.
+ */
 function LignePassee({ inscription }: { inscription: InscriptionAffichee }) {
   return (
     <div
-      className="flex items-center gap-3 rounded-sm border p-4"
+      className="flex items-center justify-between gap-3 rounded-sm border p-4"
       style={{ background: 'rgba(26, 26, 46, 0.5)', borderColor: 'rgba(74, 45, 122, 0.25)' }}
     >
       <div>
@@ -123,6 +132,14 @@ function LignePassee({ inscription }: { inscription: InscriptionAffichee }) {
           {inscription.dateFormatee}
         </p>
       </div>
+      {inscription.presente && (
+        <span
+          className="flex-shrink-0 rounded-full border px-3 py-1 font-cinzel text-[0.62rem] uppercase tracking-widest"
+          style={{ color: 'var(--or-ancien)', borderColor: 'rgba(201, 168, 76, 0.4)', background: 'rgba(201, 168, 76, 0.08)' }}
+        >
+          ᛉ Vécu
+        </span>
+      )}
     </div>
   );
 }
@@ -130,9 +147,12 @@ function LignePassee({ inscription }: { inscription: InscriptionAffichee }) {
 export default function MesInscriptions({
   aVenir: aVenirInitial,
   passees,
+  vecus,
 }: {
   aVenir: InscriptionAffichee[];
   passees: InscriptionAffichee[];
+  /** Nombre de rituels dont la présence a été constatée. */
+  vecus: number;
 }) {
   const [aVenir, setAVenir] = useState(aVenirInitial);
 
@@ -142,6 +162,27 @@ export default function MesInscriptions({
 
   return (
     <div>
+      {(vecus > 0 || passees.length > 0) && (
+        <div
+          className="mb-10 flex items-center gap-4 rounded-sm border p-5"
+          style={{ background: 'var(--charbon-mystere)', borderColor: 'rgba(201, 168, 76, 0.25)' }}
+        >
+          <span className="font-cinzel text-3xl" style={{ color: 'var(--or-ancien)' }}>
+            ᛉ
+          </span>
+          <div>
+            <p className="font-cinzel text-2xl" style={{ color: 'var(--or-ancien)' }}>
+              {vecus > 0 ? vecus : passees.length}
+            </p>
+            <p className="font-cormorant text-base italic text-parchemin/55">
+              {vecus > 0
+                ? `rituel${vecus > 1 ? 's' : ''} vécu${vecus > 1 ? 's' : ''} avec le cercle`
+                : `rituel${passees.length > 1 ? 's' : ''} auquel${passees.length > 1 ? 's' : ''} vous étiez inscrit${passees.length > 1 ? 'e·s' : 'e'}`}
+            </p>
+          </div>
+        </div>
+      )}
+
       <section className="mb-10">
         <h2 className={sectionTitle}>À venir</h2>
         {aVenir.length === 0 ? (
@@ -170,7 +211,7 @@ export default function MesInscriptions({
 
       {passees.length > 0 && (
         <section>
-          <h2 className={sectionTitle}>Passées</h2>
+          <h2 className={sectionTitle}>Mon histoire avec le cercle</h2>
           <div className="flex flex-col gap-2">
             {passees.map((inscription) => (
               <LignePassee key={inscription.id} inscription={inscription} />

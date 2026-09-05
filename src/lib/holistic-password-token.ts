@@ -12,8 +12,11 @@ import { prisma } from '@/lib/db';
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 function getSecret(): string {
-  const s = process.env.AUTH_SECRET;
-  if (!s) throw new Error('AUTH_SECRET manquant — requis pour signer les jetons de mot de passe');
+  // NEXTAUTH_SECRET est la clé réellement définie en production ; AUTH_SECRET n'a
+  // jamais existé côté Vercel, ce qui faisait échouer en silence tout envoi de lien
+  // (« mot de passe oublié » comme activation de compte).
+  const s = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!s) throw new Error('AUTH_SECRET/NEXTAUTH_SECRET manquant — requis pour signer les jetons de mot de passe');
   return s;
 }
 

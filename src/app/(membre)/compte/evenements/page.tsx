@@ -6,7 +6,7 @@ import { MembreHeader } from '@/components/membre/MembrePage';
 import MesInscriptions, { type InscriptionAffichee } from './MesInscriptions';
 
 export const metadata: Metadata = {
-  title: 'Mes événements | Runes & Magie',
+  title: 'Mes rituels | Runes & Magie',
   robots: { index: false, follow: false },
 };
 
@@ -34,8 +34,13 @@ export default async function EvenementsMembrePage() {
       dateFormatee: formaterDateEvenement(inscription.event.startsAt),
       location: inscription.event.location,
       isOnline: inscription.event.isOnline,
+      presente: inscription.attendance === 'PRESENT',
     };
   }
+
+  // Présences constatées par le pointage. Une inscription passée non pointée
+  // n'est pas comptée : on n'affirme à la cliente que ce qui a été vérifié.
+  const vecus = inscriptions.filter((inscription) => inscription.attendance === 'PRESENT').length;
 
   const aVenir = inscriptions
     .filter((inscription) => inscription.event.startsAt.getTime() >= maintenant)
@@ -52,10 +57,10 @@ export default async function EvenementsMembrePage() {
     <div>
       <MembreHeader
         emoji="🔥"
-        title="Mes événements"
-        subtitle="Vos inscriptions aux rituels, veillées et célébrations"
+        title="Mes rituels"
+        subtitle="Vos prochaines places et les rituels que vous avez vécus"
       />
-      <MesInscriptions aVenir={aVenir} passees={passees} />
+      <MesInscriptions aVenir={aVenir} passees={passees} vecus={vecus} />
     </div>
   );
 }

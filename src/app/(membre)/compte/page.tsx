@@ -12,8 +12,8 @@ const CARDS = [
   {
     href: '/compte/evenements',
     emoji: '🔥',
-    title: 'Mes événements',
-    desc: 'Vos inscriptions aux rituels, veillées et célébrations.',
+    title: 'Mes rituels',
+    desc: 'Vos prochaines places et les rituels que vous avez vécus.',
   },
   {
     href: '/compte/merestegere',
@@ -142,10 +142,18 @@ export default async function CompteDashboardPage() {
   );
   const completedCount = appointments.filter((a) => a.status === 'COMPLETED').length;
 
+  // Rituels dont la présence a été pointée par Noctura — pas les inscriptions.
+  const ritualsCount = userId
+    ? await prisma.eventRegistration.count({
+        where: { userId, status: 'CONFIRMED', attendance: 'PRESENT' },
+      })
+    : 0;
+
   const stats = [
     { label: 'Consultations', value: appointments.length, symbol: 'ᚠ' },
     { label: 'À venir', value: upcoming.length, symbol: 'ᛏ' },
     { label: 'Complétées', value: completedCount, symbol: 'ᛉ' },
+    { label: 'Rituels vécus', value: ritualsCount, symbol: 'ᛝ' },
   ];
 
   const sectionTitle =
@@ -167,7 +175,7 @@ export default async function CompteDashboardPage() {
       </header>
 
       {/* Statistiques */}
-      <div className="mb-10 grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {stats.map((stat) => (
           <div
             key={stat.label}

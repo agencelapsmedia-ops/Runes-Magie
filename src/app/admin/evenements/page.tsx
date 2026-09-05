@@ -59,6 +59,26 @@ export default function EvenementsAdminPage() {
           </h1>
           <p style={{ color: '#6B7280', fontSize: '0.95rem' }}>Rituels, ateliers et cercles — création et suivi des inscriptions.</p>
         </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <Link
+          href="/admin/evenements/rapports"
+          style={{
+            padding: '10px 20px',
+            background: '#fff',
+            color: '#6B3FA0',
+            border: '1px solid #C4B5FD',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            fontFamily: 'var(--font-cinzel, serif)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          ᛉ Rapports
+        </Link>
         <Link
           href="/admin/evenements/nouveau"
           style={{
@@ -78,6 +98,7 @@ export default function EvenementsAdminPage() {
         >
           + Nouvel événement
         </Link>
+        </div>
       </div>
 
       {error && <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '14px' }}>{error}</p>}
