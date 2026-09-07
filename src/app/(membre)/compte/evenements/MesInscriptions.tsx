@@ -12,6 +12,8 @@ export interface InscriptionAffichee {
   isOnline: boolean;
   /** Pointage de Noctura : true seulement si la présence a été constatée. */
   presente?: boolean;
+  /** Noms des personnes amenées, s'il y en a. */
+  accompagnateurs?: string[];
 }
 
 const sectionTitle =
@@ -74,6 +76,11 @@ function LigneAVenir({
           {inscription.location}
           {inscription.isOnline ? ' (en ligne)' : ''}
         </p>
+        {inscription.accompagnateurs && inscription.accompagnateurs.length > 0 && (
+          <p className="mt-1 font-cormorant text-sm text-turquoise-cristal/70">
+            Avec {inscription.accompagnateurs.join(', ')}
+          </p>
+        )}
         {erreur && <p className="mt-2 font-cormorant text-sm text-magenta-rituel">{erreur}</p>}
       </div>
 

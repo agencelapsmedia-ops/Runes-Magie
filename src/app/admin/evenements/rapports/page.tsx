@@ -76,7 +76,9 @@ export default async function RapportsEvenementsPage({
     { label: 'Inscriptions confirmées', value: String(global.confirmees), color: '#1E40AF', bg: '#DBEAFE', border: '#93C5FD', rune: 'ᚦ' },
     { label: 'Participants différents', value: String(global.participants), color: '#065F46', bg: '#D1FAE5', border: '#6EE7B7', rune: 'ᛗ' },
     { label: 'Revenus (2 rituels et +)', value: String(global.fideles), color: '#92400E', bg: '#FEF3C7', border: '#FCD34D', rune: 'ᛉ' },
+    { label: 'Accompagnateurs', value: String(global.accompagnateurs), color: '#1E40AF', bg: '#DBEAFE', border: '#93C5FD', rune: 'ᚹ' },
     { label: 'Présences pointées', value: String(global.presences), color: '#065F46', bg: '#D1FAE5', border: '#6EE7B7', rune: 'ᚨ' },
+    { label: 'Personnes présentes', value: String(global.personnesPresentes), color: '#065F46', bg: '#D1FAE5', border: '#6EE7B7', rune: 'ᛞ' },
     { label: 'Remplissage moyen', value: `${global.remplissageMoyen} %`, color: '#6B3FA0', bg: '#EDE9FE', border: '#C4B5FD', rune: 'ᚲ' },
   ];
 
@@ -195,6 +197,8 @@ export default async function RapportsEvenementsPage({
                 <th style={thStyle}>Rituel</th>
                 <th style={thNombre}>Places</th>
                 <th style={thNombre}>Inscrits</th>
+                <th style={thNombre}>Amenés</th>
+                <th style={thNombre}>Personnes</th>
                 <th style={thNombre}>Remplissage</th>
                 <th style={thNombre}>Présents</th>
                 <th style={thNombre}>Absents</th>
@@ -216,8 +220,14 @@ export default async function RapportsEvenementsPage({
                   </td>
                   <td style={nombreStyle}>{r.capacite}</td>
                   <td style={{ ...nombreStyle, fontWeight: 600, color: '#1F2937' }}>{r.confirmes}</td>
+                  <td style={nombreStyle}>{r.accompagnateurs || '—'}</td>
+                  <td style={{ ...nombreStyle, fontWeight: 600, color: '#1F2937' }}>{r.personnes}</td>
                   <td style={nombreStyle}>{r.remplissage} %</td>
-                  <td style={nombreStyle}>{r.presents + r.absents === 0 ? '—' : r.presents}</td>
+                  <td style={nombreStyle}>
+                    {r.presents + r.absents === 0
+                      ? '—'
+                      : r.presents + r.presentsAccompagnateurs}
+                  </td>
                   <td style={nombreStyle}>{r.presents + r.absents === 0 ? '—' : r.absents}</td>
                   <td style={nombreStyle}>{r.nouveaux}</td>
                   <td style={nombreStyle}>{r.revenants}</td>

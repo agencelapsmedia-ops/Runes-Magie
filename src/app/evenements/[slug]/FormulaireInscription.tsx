@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import { MAX_ACCOMPAGNATEURS } from '@/lib/evenements-constantes';
 
 interface FormulaireInscriptionProps {
   slug: string;
@@ -33,16 +34,54 @@ export default function FormulaireInscription({
   // Non coché par défaut : le consentement à apparaître publiquement doit être
   // un choix actif, jamais un défaut (Loi 25).
   const [afficherPubliquement, setAfficherPubliquement] = useState(false);
+  // Personnes amenées. Une ligne = une place de plus : le groupe entier tient
+  // dans les places restantes, ou l'inscription est refusée en bloc.
+  const [accompagnateurs, setAccompagnateurs] = useState<
+    { firstName: string; lastName: string; email: string }[]
+  >([]);
+
+  const maximumAmenables = Math.min(MAX_ACCOMPAGNATEURS, Math.max(0, restantes - 1));
+
+  function changerNombre(nombre: number) {
+    setAccompagnateurs((actuels) => {
+      if (nombre <= actuels.length) return actuels.slice(0, nombre);
+      const ajout = Array.from({ length: nombre - actuels.length }, () => ({
+        firstName: '',
+        lastName: '',
+        email: '',
+      }));
+      return [...actuels, ...ajout];
+    });
+  }
+
+  function modifier(index: number, champ: 'firstName' | 'lastName' | 'email', valeur: string) {
+    setAccompagnateurs((actuels) =>
+      actuels.map((a, i) => (i === index ? { ...a, [champ]: valeur } : a)),
+    );
+  }
 
   async function inscrireMembre(evenementFormulaire: FormEvent<HTMLFormElement>) {
     evenementFormulaire.preventDefault();
     setErreur(null);
+
+    if (accompagnateurs.some((a) => !a.firstName.trim() || !a.lastName.trim())) {
+      setErreur('Indiquez le prénom et le nom de chaque personne que vous amenez.');
+      return;
+    }
+
     setChargement(true);
     try {
       const reponse = await fetch(`/api/evenements/${slug}/inscription`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ afficherPubliquement }),
+        body: JSON.stringify({
+          afficherPubliquement,
+          accompagnateurs: accompagnateurs.map((a) => ({
+            firstName: a.firstName.trim(),
+            lastName: a.lastName.trim(),
+            email: a.email.trim() || null,
+          })),
+        }),
       });
       const donnees = await reponse.json();
       if (!reponse.ok) {
@@ -158,6 +197,64 @@ export default function FormulaireInscription({
         {restantes} place{restantes > 1 ? 's' : ''} restante{restantes > 1 ? 's' : ''} sur{' '}
         {capacite}.
       </p>
+
+      {maximumAmenables > 0 && (
+        <div className="mt-5 border-t border-violet-royal/30 pt-4">
+          <label
+            htmlFor="nombre-accompagnateurs"
+            className="font-cinzel text-xs uppercase tracking-widest text-or-ancien"
+          >
+            J&apos;amène quelqu&apos;un
+          </label>
+          <p className="mt-1 font-cormorant text-sm text-parchemin-vieilli/50">
+            Chaque personne amenée occupe une place. Nous avons besoin de leur nom pour savoir qui
+            sera au Temple.
+          </p>
+          <select
+            id="nombre-accompagnateurs"
+            value={accompagnateurs.length}
+            onChange={(evenementChange) => changerNombre(Number(evenementChange.target.value))}
+            className="mt-3 rounded-sm border border-violet-royal/50 bg-noir-nuit px-3 py-2 font-cormorant text-parchemin-vieilli"
+          >
+            <option value={0}>Je viens seule</option>
+            {Array.from({ length: maximumAmenables }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n} personne{n > 1 ? 's' : ''} avec moi
+              </option>
+            ))}
+          </select>
+
+          {accompagnateurs.map((accompagnateur, index) => (
+            <div key={index} className="mt-3 grid gap-2 sm:grid-cols-3">
+              <input
+                value={accompagnateur.firstName}
+                onChange={(e) => modifier(index, 'firstName', e.target.value)}
+                placeholder={`Prénom (personne ${index + 1})`}
+                className="rounded-sm border border-violet-royal/50 bg-noir-nuit px-3 py-2 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/35"
+              />
+              <input
+                value={accompagnateur.lastName}
+                onChange={(e) => modifier(index, 'lastName', e.target.value)}
+                placeholder="Nom"
+                className="rounded-sm border border-violet-royal/50 bg-noir-nuit px-3 py-2 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/35"
+              />
+              <input
+                type="email"
+                value={accompagnateur.email}
+                onChange={(e) => modifier(index, 'email', e.target.value)}
+                placeholder="Courriel (facultatif)"
+                className="rounded-sm border border-violet-royal/50 bg-noir-nuit px-3 py-2 font-cormorant text-parchemin-vieilli placeholder:text-parchemin-vieilli/35"
+              />
+            </div>
+          ))}
+
+          {accompagnateurs.length > 0 && (
+            <p className="mt-3 font-cormorant text-sm text-turquoise-cristal">
+              Vous réservez {accompagnateurs.length + 1} places au total.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 flex items-start gap-3">
         <input

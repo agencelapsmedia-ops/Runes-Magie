@@ -41,10 +41,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Événement introuvable.' }, { status: 404 });
   }
 
-  const resultat = await prisma.eventRegistration.updateMany({
-    where: { eventId: id, status: 'CONFIRMED' },
-    data: { attendance: valeur, attendanceAt: valeur ? new Date() : null },
-  });
+  const horodatage = valeur ? new Date() : null;
+  // Les accompagnateurs sont pointés avec leur hôte : « tout marquer présent »
+  // doit vouloir dire tout le monde dans la salle, pas seulement les membres.
+  const [inscriptions, accompagnateurs] = await prisma.$transaction([
+    prisma.eventRegistration.updateMany({
+      where: { eventId: id, status: 'CONFIRMED' },
+      data: { attendance: valeur, attendanceAt: horodatage },
+    }),
+    prisma.eventGuest.updateMany({
+      where: { registration: { eventId: id, status: 'CONFIRMED' } },
+      data: { attendance: valeur, attendanceAt: horodatage },
+    }),
+  ]);
 
-  return NextResponse.json({ pointes: resultat.count });
+  return NextResponse.json({
+    pointes: inscriptions.count + accompagnateurs.count,
+    inscriptions: inscriptions.count,
+    accompagnateurs: accompagnateurs.count,
+  });
 }

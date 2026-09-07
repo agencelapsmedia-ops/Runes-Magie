@@ -19,6 +19,8 @@ export interface DonneesCourrielEvenement {
   aApporter?: string | null;
   note?: string | null;
   jetonAnnulation: string;
+  /** Noms des personnes amenées, s'il y en a. */
+  accompagnateurs?: string[];
 }
 
 /** Pause entre deux envois — le débit Resend par défaut est de 2 requêtes/seconde. */
@@ -56,6 +58,9 @@ function blocDetails(d: DonneesCourrielEvenement): string {
       `<p style="margin:4px 0;color:#E8DCC8;">${lieu}</p>` +
       (d.aApporter
         ? `<p style="margin:12px 0 4px;color:#C9A84C;font-size:13px;letter-spacing:1px;">À APPORTER</p><p style="margin:0;color:#E8DCC8;">${encoderHtml(d.aApporter)}</p>`
+        : '') +
+      (d.accompagnateurs && d.accompagnateurs.length > 0
+        ? `<p style="margin:12px 0 4px;color:#C9A84C;font-size:13px;letter-spacing:1px;">VOUS VENEZ AVEC</p><p style="margin:0;color:#E8DCC8;">${d.accompagnateurs.map(encoderHtml).join(', ')}</p>`
         : ''),
   );
 }

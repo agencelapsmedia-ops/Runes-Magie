@@ -1,11 +1,23 @@
 import { Prisma, type EventRegistration } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { MAX_ACCOMPAGNATEURS } from '@/lib/evenements-constantes';
 
 export class EvenementIntrouvable extends Error {}
 export class EvenementIndisponible extends Error {}
 export class EvenementPasse extends Error {}
 export class EvenementComplet extends Error {}
 export class DejaInscrit extends Error {}
+
+export { MAX_ACCOMPAGNATEURS } from '@/lib/evenements-constantes';
+
+export class TropDAccompagnateurs extends Error {}
+
+export interface Accompagnateur {
+  firstName: string;
+  lastName: string;
+  /** Facultatif : ces personnes n'ont pas de compte. */
+  email: string | null;
+}
 
 export interface ParamsInscription {
   eventId: string;
@@ -17,12 +29,26 @@ export interface ParamsInscription {
   note: string | null;
   /** Consentement à apparaître dans la liste publique « Le cercle ». */
   showPublicly: boolean;
+  /** Personnes amenées par l'inscrite ; chacune occupe une place. */
+  accompagnateurs: Accompagnateur[];
+}
+
+/**
+ * Places occupées : une par inscription confirmée, plus une par accompagnateur.
+ * La capacité compte des personnes dans la salle, pas des comptes membres.
+ */
+export async function placesOccupees(eventId: string): Promise<number> {
+  const [inscrits, accompagnateurs] = await Promise.all([
+    prisma.eventRegistration.count({ where: { eventId, status: 'CONFIRMED' } }),
+    prisma.eventGuest.count({ where: { registration: { eventId, status: 'CONFIRMED' } } }),
+  ]);
+  return inscrits + accompagnateurs;
 }
 
 export async function placesRestantes(eventId: string): Promise<number> {
   const [evenement, pris] = await Promise.all([
     prisma.event.findUnique({ where: { id: eventId }, select: { capacity: true } }),
-    prisma.eventRegistration.count({ where: { eventId, status: 'CONFIRMED' } }),
+    placesOccupees(eventId),
   ]);
   if (!evenement) return 0;
   return Math.max(0, evenement.capacity - pris);
@@ -71,15 +97,28 @@ export async function inscrire(params: ParamsInscription): Promise<EventRegistra
         if (!evenement.isPublished || evenement.cancelledAt) throw new EvenementIndisponible();
         if (evenement.startsAt.getTime() < Date.now()) throw new EvenementPasse();
 
+        if (params.accompagnateurs.length > MAX_ACCOMPAGNATEURS) {
+          throw new TropDAccompagnateurs();
+        }
+
         const existante = await tx.eventRegistration.findUnique({
           where: { eventId_userId: { eventId: params.eventId, userId: params.userId } },
         });
         if (existante && existante.status === 'CONFIRMED') throw new DejaInscrit();
 
-        const pris = await tx.eventRegistration.count({
-          where: { eventId: params.eventId, status: 'CONFIRMED' },
-        });
-        if (pris >= evenement.capacity) throw new EvenementComplet();
+        // Places prises = inscrites confirmées + leurs accompagnateurs. La
+        // demande en cours occupe 1 place pour elle-même, plus une par personne
+        // amenée : elle est refusée en bloc si le groupe ne rentre pas.
+        const [inscrits, invites] = await Promise.all([
+          tx.eventRegistration.count({
+            where: { eventId: params.eventId, status: 'CONFIRMED' },
+          }),
+          tx.eventGuest.count({
+            where: { registration: { eventId: params.eventId, status: 'CONFIRMED' } },
+          }),
+        ]);
+        const demandees = 1 + params.accompagnateurs.length;
+        if (inscrits + invites + demandees > evenement.capacity) throw new EvenementComplet();
 
         // Réinscription après annulation : on réactive la ligne existante.
         // La contrainte @@unique([eventId, userId]) interdit d'en créer une seconde.
@@ -87,23 +126,33 @@ export async function inscrire(params: ParamsInscription): Promise<EventRegistra
         // (et non de l'ancienne inscription annulée) : la personne peut très
         // bien avoir changé d'avis entre les deux inscriptions.
         if (existante) {
+          // Les accompagnateurs de l'inscription annulée sont remplacés par ceux
+          // de la nouvelle demande : la personne ne vient pas forcément avec le
+          // même monde qu'à sa première réservation.
+          await tx.eventGuest.deleteMany({ where: { registrationId: existante.id } });
           return tx.eventRegistration.update({
             where: { id: existante.id },
             data: {
               status: 'CONFIRMED',
               cancelledAt: null,
               reminderSentAt: null,
+              attendance: null,
+              attendanceAt: null,
               note: params.note,
               phone: params.phone,
               email: params.email,
               firstName: params.firstName,
               lastName: params.lastName,
               showPublicly: params.showPublicly,
+              guests: { create: params.accompagnateurs },
             },
           });
         }
 
-        return tx.eventRegistration.create({ data: { ...params, status: 'CONFIRMED' } });
+        const { accompagnateurs, ...inscription } = params;
+        return tx.eventRegistration.create({
+          data: { ...inscription, status: 'CONFIRMED', guests: { create: accompagnateurs } },
+        });
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     ),

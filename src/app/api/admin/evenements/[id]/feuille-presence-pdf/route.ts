@@ -32,14 +32,31 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     // Tri alphabétique et non par date d'inscription : au Temple, on cherche un
     // nom dans une liste, pas l'ordre dans lequel les gens se sont inscrits.
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    include: { guests: { orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] } },
   });
 
-  const lignes: LigneFeuille[] = inscrits.map((i) => ({
-    nom: `${i.firstName} ${i.lastName}`.trim(),
-    courriel: i.email,
-    telephone: i.phone,
-    attendance: i.attendance,
-  }));
+  // Chaque personne attendue a sa propre ligne à cocher : l'accompagnateur
+  // suit immédiatement l'inscrite qui l'amène, pour qu'on les coche ensemble
+  // à l'accueil.
+  const lignes: LigneFeuille[] = [];
+  for (const i of inscrits) {
+    lignes.push({
+      nom: `${i.firstName} ${i.lastName}`.trim(),
+      courriel: i.email,
+      telephone: i.phone,
+      attendance: i.attendance,
+    });
+    for (const a of i.guests) {
+      lignes.push({
+        nom: `${a.firstName} ${a.lastName}`.trim(),
+        courriel: a.email ?? '',
+        telephone: null,
+        attendance: a.attendance,
+        amenePar: i.firstName,
+      });
+    }
+  }
+  const nbAccompagnateurs = inscrits.reduce((somme, i) => somme + i.guests.length, 0);
 
   const buffer = await renderToBuffer(
     FeuillePresencePdf({
@@ -48,6 +65,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       lieu: evenement.isOnline ? 'En ligne' : evenement.location,
       capacite: evenement.capacity,
       inscrits: lignes,
+      accompagnateurs: nbAccompagnateurs,
     }),
   );
 

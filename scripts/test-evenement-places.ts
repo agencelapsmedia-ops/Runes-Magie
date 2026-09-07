@@ -70,6 +70,7 @@ async function main() {
           phone: null,
           note: null,
           showPublicly: false,
+          accompagnateurs: [],
         }),
       ),
     );

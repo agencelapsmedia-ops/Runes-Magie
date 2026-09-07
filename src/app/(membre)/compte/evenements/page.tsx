@@ -19,7 +19,7 @@ export default async function EvenementsMembrePage() {
   const inscriptions = userId
     ? await prisma.eventRegistration.findMany({
         where: { userId, status: 'CONFIRMED' },
-        include: { event: true },
+        include: { event: true, guests: { orderBy: { createdAt: 'asc' } } },
         orderBy: { event: { startsAt: 'asc' } },
       })
     : [];
@@ -35,6 +35,7 @@ export default async function EvenementsMembrePage() {
       location: inscription.event.location,
       isOnline: inscription.event.isOnline,
       presente: inscription.attendance === 'PRESENT',
+      accompagnateurs: inscription.guests.map((a) => `${a.firstName} ${a.lastName}`.trim()),
     };
   }
 

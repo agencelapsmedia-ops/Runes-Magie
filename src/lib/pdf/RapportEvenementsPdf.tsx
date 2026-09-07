@@ -144,8 +144,16 @@ export function RapportEvenementsPdf({ rapport }: { rapport: RapportEvenements }
             <Text style={styles.totalValue}>{global.fideles}</Text>
           </View>
           <View style={styles.totalBlock}>
+            <Text style={styles.totalLabel}>Accompagnateurs</Text>
+            <Text style={styles.totalValue}>{global.accompagnateurs}</Text>
+          </View>
+          <View style={styles.totalBlock}>
             <Text style={styles.totalLabel}>Présences</Text>
             <Text style={styles.totalValue}>{global.presences}</Text>
+          </View>
+          <View style={styles.totalBlock}>
+            <Text style={styles.totalLabel}>Personnes venues</Text>
+            <Text style={styles.totalValue}>{global.personnesPresentes}</Text>
           </View>
           <View style={styles.totalBlock}>
             <Text style={styles.totalLabel}>Remplissage</Text>
@@ -171,6 +179,7 @@ export function RapportEvenementsPdf({ rapport }: { rapport: RapportEvenements }
             <Text style={styles.rTitre}>Rituel</Text>
             <Text style={styles.rNombre}>Places</Text>
             <Text style={styles.rNombre}>Inscrits</Text>
+            <Text style={styles.rNombre}>Amenés</Text>
             <Text style={styles.rTaux}>Taux</Text>
             <Text style={styles.rNombre}>Présents</Text>
             <Text style={styles.rNombre}>Nouv.</Text>
@@ -190,8 +199,11 @@ export function RapportEvenementsPdf({ rapport }: { rapport: RapportEvenements }
               <Text style={styles.rTitre}>{r.annule ? `${r.titre} (annulé)` : r.titre}</Text>
               <Text style={styles.rNombre}>{r.capacite}</Text>
               <Text style={styles.rNombre}>{r.confirmes}</Text>
+              <Text style={styles.rNombre}>{r.accompagnateurs || '—'}</Text>
               <Text style={styles.rTaux}>{r.remplissage} %</Text>
-              <Text style={styles.rNombre}>{r.presents + r.absents === 0 ? '—' : r.presents}</Text>
+              <Text style={styles.rNombre}>
+                {r.presents + r.absents === 0 ? '—' : r.presents + r.presentsAccompagnateurs}
+              </Text>
               <Text style={styles.rNombre}>{r.nouveaux}</Text>
               <Text style={styles.rNombre}>{r.revenants}</Text>
             </View>

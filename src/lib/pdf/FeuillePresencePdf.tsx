@@ -12,6 +12,8 @@ export interface LigneFeuille {
   telephone: string | null;
   /** Pointage déjà enregistré, pré-coché sur la feuille. */
   attendance: string | null;
+  /** Prénom de l'inscrite qui amène cette personne ; absent pour une inscrite. */
+  amenePar?: string | null;
 }
 
 export interface FeuillePresenceProps {
@@ -20,6 +22,8 @@ export interface FeuillePresenceProps {
   lieu: string;
   capacite: number;
   inscrits: LigneFeuille[];
+  /** Nombre de lignes qui sont des accompagnateurs, pour le décompte en tête. */
+  accompagnateurs?: number;
   genereLe?: Date;
 }
 
@@ -104,6 +108,7 @@ export function FeuillePresencePdf({
   lieu,
   capacite,
   inscrits,
+  accompagnateurs = 0,
   genereLe = new Date(),
 }: FeuillePresenceProps) {
   return (
@@ -121,7 +126,11 @@ export function FeuillePresencePdf({
         <Text style={styles.meta}>{dateFormatee}</Text>
         <Text style={styles.meta}>{lieu}</Text>
         <Text style={styles.compte}>
-          {inscrits.length} inscrit{inscrits.length > 1 ? 's' : ''} sur {capacite} places
+          {inscrits.length} personne{inscrits.length > 1 ? 's' : ''} attendue
+          {inscrits.length > 1 ? 's' : ''} sur {capacite} places
+          {accompagnateurs > 0
+            ? ` — dont ${accompagnateurs} accompagnateur${accompagnateurs > 1 ? 's' : ''}`
+            : ''}
         </Text>
 
         {inscrits.length === 0 ? (
@@ -144,7 +153,9 @@ export function FeuillePresencePdf({
                   <View style={[styles.case, ...(i.attendance === 'PRESENT' ? [styles.caseCochee] : [])]} />
                 </View>
                 <Text style={styles.colNom}>{i.nom}</Text>
-                <Text style={styles.colCourriel}>{i.courriel}</Text>
+                <Text style={styles.colCourriel}>
+                  {i.amenePar ? `Amené·e par ${i.amenePar}` : i.courriel}
+                </Text>
                 <Text style={styles.colTel}>{i.telephone || '—'}</Text>
               </View>
             ))}

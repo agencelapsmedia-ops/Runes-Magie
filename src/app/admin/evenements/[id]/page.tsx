@@ -1,9 +1,17 @@
 'use client';
 
-import { use, useCallback, useEffect, useState } from 'react';
+import { Fragment, use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import FormulaireEvenement, { type Evenement, formaterDateEvenement } from '../FormulaireEvenement';
 import ActionsInscrits from './ActionsInscrits';
+
+interface Accompagnateur {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  attendance: 'PRESENT' | 'ABSENT' | null;
+}
 
 interface Inscrit {
   id: string;
@@ -17,6 +25,8 @@ interface Inscrit {
   attendance: 'PRESENT' | 'ABSENT' | null;
   /** A consenti (à l'inscription) à apparaître dans la liste publique « Le cercle ». */
   showPublicly: boolean;
+  /** Personnes amenées, sans compte sur le site. Chacune occupe une place. */
+  guests: Accompagnateur[];
 }
 
 const thStyle: React.CSSProperties = {
@@ -126,6 +136,45 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  /** Même geste que `pointer`, sur une personne amenée. */
+  async function pointerAccompagnateur(
+    inscrit: Inscrit,
+    accompagnateur: Accompagnateur,
+    valeur: 'PRESENT' | 'ABSENT',
+  ) {
+    const cible = accompagnateur.attendance === valeur ? null : valeur;
+    setPointageEnCours(accompagnateur.id);
+    setErrorPointage(null);
+
+    const remplacer = (attendance: 'PRESENT' | 'ABSENT' | null) =>
+      setInscrits((liste) =>
+        liste.map((i) =>
+          i.id !== inscrit.id
+            ? i
+            : {
+                ...i,
+                guests: i.guests.map((g) => (g.id === accompagnateur.id ? { ...g, attendance } : g)),
+              },
+        ),
+      );
+
+    remplacer(cible);
+    try {
+      const res = await fetch(`/api/admin/evenements/${id}/accompagnateurs/${accompagnateur.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendance: cible }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec du pointage.');
+    } catch (e) {
+      remplacer(accompagnateur.attendance);
+      setErrorPointage(e instanceof Error ? e.message : 'Erreur inattendue.');
+    } finally {
+      setPointageEnCours(null);
+    }
+  }
+
   async function confirmerDesinscription() {
     if (!aDesinscrire) return;
     setDesinscrivant(true);
@@ -145,6 +194,9 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
       setDesinscrivant(false);
     }
   }
+
+  const nbAccompagnateurs = inscrits.reduce((somme, i) => somme + i.guests.length, 0);
+  const personnesAttendues = inscrits.length + nbAccompagnateurs;
 
   if (loading) {
     return <p style={{ color: '#6B7280', fontFamily: 'sans-serif' }}>Chargement…</p>;
@@ -180,9 +232,15 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
         <FormulaireEvenement evenement={evenement} onSaved={(ev) => setEvenement(ev)} />
       </div>
 
-      <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.2rem', color: '#2D1B4E', marginBottom: '14px' }}>
-        Inscrits ({inscrits.length} / {evenement.capacity})
+      <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.2rem', color: '#2D1B4E', marginBottom: '4px' }}>
+        Inscrits ({personnesAttendues} / {evenement.capacity})
       </h2>
+      <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '14px' }}>
+        {inscrits.length} inscription{inscrits.length > 1 ? 's' : ''}
+        {nbAccompagnateurs > 0
+          ? ` + ${nbAccompagnateurs} accompagnateur${nbAccompagnateurs > 1 ? 's' : ''} — ${personnesAttendues} personnes attendues`
+          : ''}
+      </p>
 
       <ActionsInscrits
         evenementId={id}
@@ -221,7 +279,8 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
             </thead>
             <tbody>
               {inscrits.map((i) => (
-                <tr key={i.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
+                <Fragment key={i.id}>
+                <tr style={{ borderBottom: i.guests.length > 0 ? 'none' : '1px solid #F3F4F6' }}>
                   <td style={{ ...tdStyle, fontWeight: 600, color: '#1F2937' }}>{i.firstName} {i.lastName}</td>
                   <td style={tdStyle}>{i.email}</td>
                   <td style={tdStyle}>{i.phone || '—'}</td>
@@ -270,6 +329,47 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
                     </button>
                   </td>
                 </tr>
+
+                {/* Les personnes amenées : rattachées visuellement à leur hôte,
+                    pointables une par une, parce qu'un accompagnateur peut très
+                    bien ne pas venir alors que l'inscrite est là. */}
+                {i.guests.map((a) => (
+                  <tr key={a.id} style={{ borderBottom: '1px solid #F3F4F6', background: '#FAFAFA' }}>
+                    <td style={{ ...tdStyle, paddingLeft: '34px', color: '#4B5563' }}>
+                      <span style={{ color: '#9CA3AF', marginRight: '6px' }}>↳</span>
+                      {a.firstName} {a.lastName}
+                    </td>
+                    <td style={tdStyle}>{a.email || '—'}</td>
+                    <td style={tdStyle}>—</td>
+                    <td style={{ ...tdStyle, fontSize: '0.78rem', color: '#9CA3AF' }}>
+                      Amené·e par {i.firstName}
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'inline-flex', gap: '6px', opacity: pointageEnCours === a.id ? 0.5 : 1 }}>
+                        <button
+                          type="button"
+                          onClick={() => void pointerAccompagnateur(i, a, 'PRESENT')}
+                          disabled={pointageEnCours === a.id}
+                          style={stylePointage(a.attendance === 'PRESENT', 'present')}
+                        >
+                          Présent·e
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void pointerAccompagnateur(i, a, 'ABSENT')}
+                          disabled={pointageEnCours === a.id}
+                          style={stylePointage(a.attendance === 'ABSENT', 'absent')}
+                        >
+                          Absent·e
+                        </button>
+                      </span>
+                    </td>
+                    <td style={tdStyle}>—</td>
+                    <td style={{ ...tdStyle, textAlign: 'center' }} />
+                    <td style={{ ...tdStyle, textAlign: 'right' }} />
+                  </tr>
+                ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

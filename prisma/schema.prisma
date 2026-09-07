@@ -1214,8 +1214,33 @@ model EventRegistration {
    */
   showPublicly Boolean @default(false)
 
+  /// Les personnes amenées par l'inscrite, qui n'ont pas de compte sur le site.
+  /// Elles occupent chacune une place et se pointent séparément : sans elles,
+  /// le nombre de personnes réellement présentes au Temple était introuvable.
+  guests EventGuest[]
+
   @@unique([eventId, userId])
   @@index([eventId, status])
+}
+
+model EventGuest {
+  id             String            @id @default(cuid())
+  registrationId String
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  firstName String
+  lastName  String
+  /// Facultatif : l'accompagnateur n'a pas de compte, on ne bloque jamais une
+  /// inscription sur cette donnée.
+  email     String?
+
+  /// Même convention que EventRegistration.attendance :
+  /// null = pas encore pointé, sinon 'PRESENT' | 'ABSENT'.
+  attendance   String?
+  attendanceAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([registrationId])
 }
 
 // ════════════════════════════════════════════════════════════════

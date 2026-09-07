@@ -20,6 +20,12 @@ export interface LigneRituel {
   debut: Date;
   capacite: number;
   confirmes: number;
+  /** Personnes amenées par les confirmées (sans compte sur le site). */
+  accompagnateurs: number;
+  /** Confirmées + accompagnateurs : le monde réellement attendu dans la salle. */
+  personnes: number;
+  /** Accompagnateurs pointés présents. */
+  presentsAccompagnateurs: number;
   annulees: number;
   presents: number;
   absents: number;
@@ -57,6 +63,10 @@ export interface RapportEvenements {
     confirmees: number;
     annulees: number;
     participants: number;
+    /** Accompagnateurs attendus, toutes périodes retenues confondues. */
+    accompagnateurs: number;
+    /** Personnes présentes, accompagnateurs compris — le vrai monde venu. */
+    personnesPresentes: number;
     presences: number;
     /** Inscriptions confirmées à des rituels déjà pointés, pour situer `presences`. */
     pointees: number;
@@ -96,7 +106,10 @@ export async function construireRapportEvenements(options?: {
     include: {
       registrations: {
         orderBy: { createdAt: 'asc' },
-        include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true } },
+          guests: { select: { attendance: true } },
+        },
       },
     },
   });
@@ -122,17 +135,25 @@ export async function construireRapportEvenements(options?: {
       Math.max(0, Math.round((evenement.startsAt.getTime() - r.createdAt.getTime()) / 86_400_000)),
     );
 
+    const accompagnateurs = confirmes.flatMap((r) => r.guests);
+    const personnes = confirmes.length + accompagnateurs.length;
+
     return {
       id: evenement.id,
       titre: evenement.title,
       debut: evenement.startsAt,
       capacite: evenement.capacity,
       confirmes: confirmes.length,
+      accompagnateurs: accompagnateurs.length,
+      personnes,
+      presentsAccompagnateurs: accompagnateurs.filter((a) => a.attendance === 'PRESENT').length,
       annulees: evenement.registrations.filter((r) => r.status === 'CANCELLED').length,
       presents: confirmes.filter((r) => r.attendance === 'PRESENT').length,
       absents: confirmes.filter((r) => r.attendance === 'ABSENT').length,
       nonPointes: confirmes.filter((r) => !r.attendance).length,
-      remplissage: evenement.capacity > 0 ? Math.round((confirmes.length / evenement.capacity) * 100) : 0,
+      // Remplissage en PERSONNES : une inscrite qui amène deux amies remplit
+      // trois places, et c'est bien ce que la salle ressent.
+      remplissage: evenement.capacity > 0 ? Math.round((personnes / evenement.capacity) * 100) : 0,
       nouveaux,
       revenants: confirmes.length - nouveaux,
       delaiMedian: mediane(delais),
@@ -191,6 +212,11 @@ export async function construireRapportEvenements(options?: {
       confirmees,
       annulees,
       participants: participants.filter((p) => p.inscriptions > 0).length,
+      accompagnateurs: rituels.reduce((somme, r) => somme + r.accompagnateurs, 0),
+      personnesPresentes: rituels.reduce(
+        (somme, r) => somme + r.presents + r.presentsAccompagnateurs,
+        0,
+      ),
       presences: rituels.reduce((somme, r) => somme + r.presents, 0),
       pointees: rituels.reduce((somme, r) => somme + r.presents + r.absents, 0),
       remplissageMoyen:

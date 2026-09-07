@@ -34,23 +34,47 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const inscrits = await prisma.eventRegistration.findMany({
     where: { eventId: id, status: 'CONFIRMED' },
     orderBy: { createdAt: 'asc' },
+    include: { guests: { orderBy: { createdAt: 'asc' } } },
   });
 
   const url = new URL(req.url);
   if (url.searchParams.get('format') === 'csv') {
-    const lignes = [
-      ['Prénom', 'Nom', 'Courriel', 'Téléphone', 'Inscrit le', 'Présence', 'Message', 'Cercle public'],
-      ...inscrits.map((i) => [
+    // Une ligne par PERSONNE attendue, accompagnateurs compris : le fichier
+    // sert à compter le monde présent, pas les comptes membres.
+    const presence = (valeur: string | null) =>
+      valeur === 'PRESENT' ? 'Présent·e' : valeur === 'ABSENT' ? 'Absent·e' : 'Non pointé';
+
+    const lignes: string[][] = [
+      ['Type', 'Prénom', 'Nom', 'Courriel', 'Téléphone', 'Inscrit le', 'Présence', 'Message', 'Cercle public', 'Amenée par'],
+    ];
+    for (const i of inscrits) {
+      lignes.push([
+        'Inscrite',
         i.firstName,
         i.lastName,
         i.email,
         i.phone ?? '',
         i.createdAt.toISOString().slice(0, 10),
-        i.attendance === 'PRESENT' ? 'Présent·e' : i.attendance === 'ABSENT' ? 'Absent·e' : 'Non pointé',
+        presence(i.attendance),
         i.note ?? '',
         i.showPublicly ? 'Oui' : 'Non',
-      ]),
-    ];
+        '',
+      ]);
+      for (const a of i.guests) {
+        lignes.push([
+          'Accompagnateur',
+          a.firstName,
+          a.lastName,
+          a.email ?? '',
+          '',
+          i.createdAt.toISOString().slice(0, 10),
+          presence(a.attendance),
+          '',
+          'Non',
+          `${i.firstName} ${i.lastName}`.trim(),
+        ]);
+      }
+    }
 
     const csv = '﻿' + lignes.map((l) => l.map(cellule).join(';')).join('\r\n');
     return new NextResponse(csv, {
@@ -61,5 +85,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     });
   }
 
-  return NextResponse.json({ inscrits });
+  const accompagnateurs = inscrits.reduce((somme, i) => somme + i.guests.length, 0);
+  return NextResponse.json({
+    inscrits,
+    // Ce que l'écran doit afficher : des personnes attendues, pas des lignes.
+    totaux: {
+      inscrites: inscrits.length,
+      accompagnateurs,
+      personnes: inscrits.length + accompagnateurs,
+    },
+  });
 }
