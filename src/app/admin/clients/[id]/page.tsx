@@ -42,6 +42,24 @@ const PAYMENT_STATUS_STYLES: Record<string, { bg: string; fg: string; border: st
   FAILED: { bg: '#FEE2E2', fg: '#991B1B', border: '#FCA5A5', label: 'Échoué' },
 };
 
+// Les notes d'un RDV sont stockées au format « Service : … / Mode : … / texte libre »
+// (même format pour le parcours public et le RDV manuel créé depuis le calendrier).
+// On sépare le soin et le mode du texte saisi par la praticienne pour les afficher
+// distinctement dans la fiche.
+function decomposerNotes(notes: string | null) {
+  let service: string | null = null;
+  let mode: string | null = null;
+  const libres: string[] = [];
+  for (const ligne of (notes ?? '').split('\n')) {
+    const s = ligne.match(/^\s*Service\s*:\s*(.+)$/);
+    const m = ligne.match(/^\s*Mode\s*:\s*(.+)$/);
+    if (s && service === null) service = s[1].trim();
+    else if (m && mode === null) mode = m[1].trim();
+    else libres.push(ligne);
+  }
+  return { service, mode, libre: libres.join('\n').trim() || null };
+}
+
 export default async function ClientDetailPage({
   params,
 }: {
@@ -186,7 +204,7 @@ export default async function ClientDetailPage({
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                {['Date', 'Praticien', 'Durée', 'Statut', 'Paiement', 'Montant'].map((h) => (
+                {['Date', 'Praticien', 'Soin & notes', 'Durée', 'Statut', 'Paiement', 'Montant'].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -212,6 +230,7 @@ export default async function ClientDetailPage({
                 );
                 const statusStyle = STATUS_STYLES[b.status] ?? STATUS_STYLES.PENDING;
                 const paymentStyle = b.payment ? PAYMENT_STATUS_STYLES[b.payment.status] ?? PAYMENT_STATUS_STYLES.PENDING : null;
+                const infos = decomposerNotes(b.notes);
                 return (
                   <tr
                     key={b.id}
@@ -236,6 +255,33 @@ export default async function ClientDetailPage({
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#4B5563' }}>
                       {b.practitioner.user.firstName} {b.practitioner.user.lastName}
+                    </td>
+                    <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#4B5563', maxWidth: '340px' }}>
+                      {infos.service && (
+                        <div style={{ fontWeight: 600, color: '#2D1B4E' }}>{infos.service}</div>
+                      )}
+                      {infos.mode && (
+                        <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{infos.mode}</div>
+                      )}
+                      {infos.libre && (
+                        <p
+                          style={{
+                            margin: '6px 0 0',
+                            whiteSpace: 'pre-line',
+                            background: '#F9FAFB',
+                            border: '1px solid #E5E7EB',
+                            borderRadius: '6px',
+                            padding: '6px 10px',
+                            fontSize: '0.8rem',
+                            color: '#4B5563',
+                          }}
+                        >
+                          {infos.libre}
+                        </p>
+                      )}
+                      {!infos.service && !infos.mode && !infos.libre && (
+                        <span style={{ color: '#D1D5DB' }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#4B5563' }}>
                       {durationMin} min
