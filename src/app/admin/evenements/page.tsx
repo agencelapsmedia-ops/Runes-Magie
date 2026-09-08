@@ -34,6 +34,27 @@ export default function EvenementsAdminPage() {
   const [evenements, setEvenements] = useState<Evenement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [suppression, setSuppression] = useState<string | null>(null);
+
+  /**
+   * Suppression définitive. Le serveur refuse (409) tant qu'une personne est
+   * inscrite — on affiche alors son message, qui invite à annuler plutôt.
+   */
+  async function supprimer(ev: Evenement) {
+    if (!window.confirm(`Supprimer définitivement « ${ev.title} » ?\n\nCette action est irréversible.`)) return;
+    setSuppression(ev.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/evenements/${ev.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec de la suppression.');
+      setEvenements((liste) => liste.filter((e) => e.id !== ev.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur inattendue.');
+    } finally {
+      setSuppression(null);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -132,10 +153,29 @@ export default function EvenementsAdminPage() {
                   <td style={{ padding: '14px 16px' }}>
                     <EtatBadge evenement={ev} />
                   </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                  <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <Link href={`/admin/evenements/${ev.id}`} style={{ color: '#6B3FA0', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
                       Voir la fiche →
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => void supprimer(ev)}
+                      disabled={suppression === ev.id}
+                      style={{
+                        marginLeft: '14px',
+                        padding: '5px 10px',
+                        background: '#fff',
+                        color: '#991B1B',
+                        border: '1px solid #FCA5A5',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: suppression === ev.id ? 'wait' : 'pointer',
+                        opacity: suppression === ev.id ? 0.6 : 1,
+                      }}
+                    >
+                      {suppression === ev.id ? 'Suppression…' : 'Supprimer'}
+                    </button>
                   </td>
                 </tr>
               ))}

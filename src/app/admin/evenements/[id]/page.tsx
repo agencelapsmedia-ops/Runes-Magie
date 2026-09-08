@@ -2,6 +2,7 @@
 
 import { Fragment, use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import FormulaireEvenement, { type Evenement, formaterDateEvenement } from '../FormulaireEvenement';
 import ActionsInscrits from './ActionsInscrits';
 
@@ -69,6 +70,29 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
   const [desinscrivant, setDesinscrivant] = useState(false);
   const [pointageEnCours, setPointageEnCours] = useState<string | null>(null);
   const [errorPointage, setErrorPointage] = useState<string | null>(null);
+  const [suppression, setSuppression] = useState(false);
+  const [errorSuppression, setErrorSuppression] = useState<string | null>(null);
+  const router = useRouter();
+
+  /**
+   * Suppression définitive de l'événement. Le serveur refuse (409) tant qu'une
+   * personne est inscrite — son message invite alors à annuler plutôt.
+   */
+  async function supprimerEvenement() {
+    if (!window.confirm('Supprimer définitivement cet événement ?\n\nCette action est irréversible.')) return;
+    setSuppression(true);
+    setErrorSuppression(null);
+    try {
+      const res = await fetch(`/api/admin/evenements/${id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Échec de la suppression.');
+      router.push('/admin/evenements');
+      router.refresh();
+    } catch (e) {
+      setErrorSuppression(e instanceof Error ? e.message : 'Erreur inattendue.');
+      setSuppression(false);
+    }
+  }
 
   const charger = useCallback(async () => {
     try {
@@ -226,6 +250,29 @@ export default function FicheEvenementPage({ params }: { params: Promise<{ id: s
           {formaterDateEvenement(evenement.startsAt)}
           {evenement.cancelledAt && <span style={{ color: '#991B1B', fontWeight: 600 }}> — Annulé</span>}
         </p>
+        <button
+          type="button"
+          onClick={() => void supprimerEvenement()}
+          disabled={suppression}
+          style={{
+            marginTop: '12px',
+            padding: '8px 16px',
+            background: '#fff',
+            color: '#991B1B',
+            border: '1px solid #FCA5A5',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            fontFamily: 'var(--font-cinzel, serif)',
+            cursor: suppression ? 'wait' : 'pointer',
+            opacity: suppression ? 0.6 : 1,
+          }}
+        >
+          {suppression ? 'Suppression…' : 'Supprimer l’événement'}
+        </button>
+        {errorSuppression && (
+          <p style={{ color: '#DC2626', fontSize: '0.85rem', marginTop: '8px' }}>{errorSuppression}</p>
+        )}
       </div>
 
       <div style={{ marginBottom: '32px' }}>
