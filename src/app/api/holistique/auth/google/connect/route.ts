@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getGoogleAuthUrl, isGoogleCalendarConfigured } from '@/lib/google-calendar';
+import { encoderEtatGoogle, RETOUR_GOOGLE_DEFAUT } from '@/lib/google-oauth-retour';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/holistique/auth/google/connect
+ * GET /api/holistique/auth/google/connect?retour=/admin/calendrier
  * Redirige la praticienne connectée vers l'écran de consentement Google.
+ * `retour` (chemin local, optionnel) : page où revenir après le consentement —
+ * le bandeau vit désormais aussi dans l'admin (/admin/calendrier), pas
+ * seulement au pupitre praticien.
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const retour = new URL(req.url).searchParams.get('retour') ?? RETOUR_GOOGLE_DEFAUT;
   const session = await auth();
   const practitionerId = (session?.user as { practitionerId?: string } | undefined)?.practitionerId;
   if (!practitionerId) {
@@ -20,5 +25,5 @@ export async function GET() {
       { status: 503 },
     );
   }
-  return NextResponse.redirect(getGoogleAuthUrl(practitionerId));
+  return NextResponse.redirect(getGoogleAuthUrl(encoderEtatGoogle(practitionerId, retour)));
 }

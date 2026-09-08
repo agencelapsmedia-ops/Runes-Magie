@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/db';
+import { auth } from '@/lib/auth';
 import { isInternalEmail } from '@/lib/holistic-clients';
+import { verifierConnexionGoogle } from '@/lib/google-calendar';
+import GoogleCalendarBanner from '@/app/(holistique)/soins/dashboard/praticien/GoogleCalendarBanner';
 import CalendrierClient from './CalendrierClient';
 
 // Toujours frais : les rendez-vous changent en continu (réservations publiques + manuelles).
@@ -152,13 +155,46 @@ export default async function CalendrierAdminPage() {
     }
   }
 
+  // Google Agenda de la praticienne connectée (Noctura, connexion unique) :
+  // le bandeau connecter / resynchroniser / déconnecter vivait seulement au
+  // pupitre praticien ; il est ici aussi, là où elle regarde son agenda.
+  // Les routes OAuth exigent un `practitionerId` de session — un AdminUser pur
+  // (sans fiche praticienne) ne voit donc pas le bandeau.
+  const session = await auth();
+  const practitionerIdSession =
+    (session?.user as { practitionerId?: string | null } | undefined)?.practitionerId ?? null;
+  const praticienneGoogle = practitionerIdSession
+    ? await prisma.practitioner.findUnique({
+        where: { id: practitionerIdSession },
+        select: { googleCalendarConnectedAt: true, googleCalendarEmail: true },
+      })
+    : null;
+  const googleSyncError =
+    praticienneGoogle && practitionerIdSession
+      ? await verifierConnexionGoogle(practitionerIdSession, 30)
+      : null;
+
   return (
-    <CalendrierClient
-      rdvs={rdvs}
-      praticiennes={praticiennes}
-      practitionerOptions={practitionerOptions}
-      practitionerPrincipale={practitionerPrincipale}
-      clientesRecentes={clientesRecentes}
-    />
+    <>
+      {praticienneGoogle && (
+        // Le bandeau vient du pupitre (thème sombre) : fond nuit pour rester
+        // lisible dans le shell clair de l'admin, même geste que Mon profil.
+        <div className="mb-6 rounded-2xl px-5 pb-4" style={{ background: 'var(--noir-nuit)' }}>
+          <GoogleCalendarBanner
+            connected={!!praticienneGoogle.googleCalendarConnectedAt}
+            googleEmail={praticienneGoogle.googleCalendarEmail}
+            syncError={googleSyncError}
+            retour="/admin/calendrier"
+          />
+        </div>
+      )}
+      <CalendrierClient
+        rdvs={rdvs}
+        praticiennes={praticiennes}
+        practitionerOptions={practitionerOptions}
+        practitionerPrincipale={practitionerPrincipale}
+        clientesRecentes={clientesRecentes}
+      />
+    </>
   );
 }

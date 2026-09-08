@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { exchangeCodeForTokens, syncFutureConfirmedAppointments } from '@/lib/google-calendar';
+import { decoderRetourGoogle } from '@/lib/google-oauth-retour';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/holistique/auth/google/callback
  * Callback OAuth Google : échange le code, stocke le refresh token sur la
- * praticienne (identifiée par sa session), puis redirige vers le dashboard.
+ * praticienne (identifiée par sa session), puis redirige vers la page
+ * d'origine (pupitre praticien ou /admin/calendrier, portée par le `state`).
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const back = new URL('/soins/dashboard/praticien', url.origin);
+  const back = new URL(decoderRetourGoogle(url.searchParams.get('state')), url.origin);
 
   const session = await auth();
   const practitionerId = (session?.user as { practitionerId?: string } | undefined)?.practitionerId;

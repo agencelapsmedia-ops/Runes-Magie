@@ -13,9 +13,20 @@ interface Props {
    * que plus rien ne se synchronisait.
    */
   syncError?: string | null;
+  /**
+   * Page où revenir après le consentement Google ou la déconnexion. Le
+   * bandeau vit au pupitre praticien et dans l'admin (/admin/calendrier).
+   */
+  retour?: string;
 }
 
-export default function GoogleCalendarBanner({ connected, googleEmail, syncError }: Props) {
+export default function GoogleCalendarBanner({
+  connected,
+  googleEmail,
+  syncError,
+  retour = '/soins/dashboard/praticien',
+}: Props) {
+  const lienConnexion = `/api/holistique/auth/google/connect?retour=${encodeURIComponent(retour)}`;
   const searchParams = useSearchParams();
   const googleStatus = searchParams.get('google'); // 'connected' | 'error' | 'denied' | null
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +65,7 @@ export default function GoogleCalendarBanner({ connected, googleEmail, syncError
           setError('Impossible de déconnecter Google Agenda.');
           return;
         }
-        window.location.href = '/soins/dashboard/praticien';
+        window.location.href = retour;
       } catch {
         setError('Impossible de joindre le serveur.');
       }
@@ -135,9 +146,8 @@ export default function GoogleCalendarBanner({ connected, googleEmail, syncError
         </div>
         {/* Route d'API, pas une page : le consentement OAuth exige une vraie
             navigation du navigateur, que <Link> ne ferait pas. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
-          href="/api/holistique/auth/google/connect"
+          href={lienConnexion}
           style={{
             padding: '12px 22px',
             background: 'linear-gradient(to right, var(--violet-royal), var(--violet-profond))',
@@ -316,9 +326,8 @@ export default function GoogleCalendarBanner({ connected, googleEmail, syncError
         </div>
         {/* Route d'API, pas une page : le consentement OAuth exige une vraie
             navigation du navigateur, que <Link> ne ferait pas. */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
-          href="/api/holistique/auth/google/connect"
+          href={lienConnexion}
           style={{
             padding: '12px 24px',
             background: 'linear-gradient(to right, var(--teal-profond), var(--teal-magique))',
