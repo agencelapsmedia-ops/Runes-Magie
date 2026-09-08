@@ -12,6 +12,7 @@ import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
 import type { DateClickArg } from '@fullcalendar/interaction';
 import ManualAppointmentButton from '@/components/holistique/ManualAppointmentButton';
 import FeuilleRendezVous from './FeuilleRendezVous';
+import { decomposerNotes } from '@/lib/appointment-notes';
 
 export interface RdvSerialise {
   id: string;
@@ -130,6 +131,9 @@ export default function CalendrierClient({
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [showMove, setShowMove] = useState(false);
   const [moveTo, setMoveTo] = useState('');
+  // Note du RDV modifiable sur place (texte libre seulement, l'en-tête reste fixe)
+  const [noteEnEdition, setNoteEnEdition] = useState(false);
+  const [noteBrouillon, setNoteBrouillon] = useState('');
 
   /** Exécute une action serveur ; ferme la fiche + rafraîchit si demandé. */
   async function runAction(request: () => Promise<Response>, opts: { closeOnSuccess?: boolean; successMsg?: string }) {
@@ -153,6 +157,31 @@ export default function CalendrierClient({
     } finally {
       setActionBusy(false);
     }
+  }
+
+  /** Enregistre le texte libre de la note ; la fiche ouverte reflète aussitôt la nouvelle note. */
+  async function enregistrerNote() {
+    if (!rdvOuvert) return;
+    const id = rdvOuvert.id;
+    await runAction(
+      async () => {
+        const res = await fetch(`/api/holistique/appointments/${id}/notes`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: noteBrouillon }),
+        });
+        if (res.ok) {
+          // runAction lit le corps à son tour : on travaille sur une copie.
+          const j = await res.clone().json().catch(() => null);
+          if (j && 'notes' in j) {
+            setRdvOuvert((r) => (r && r.id === id ? { ...r, notes: j.notes ?? null } : r));
+          }
+          setNoteEnEdition(false);
+        }
+        return res;
+      },
+      { successMsg: 'Note enregistrée ✓' },
+    );
   }
 
   // Couleur stable par praticienne (ordre de la liste des praticiennes approuvées).
@@ -233,10 +262,13 @@ export default function CalendrierClient({
       setActionMsg(null);
       setShowMove(false);
       setMoveTo('');
+      setNoteEnEdition(false);
+      setNoteBrouillon('');
     }
   }
 
   const statut = rdvOuvert ? STATUT_LABELS[rdvOuvert.status] ?? STATUT_LABELS.PENDING : null;
+  const notesRdv = decomposerNotes(rdvOuvert?.notes ?? null);
 
   return (
     <div>
@@ -468,11 +500,55 @@ export default function CalendrierClient({
                   {rdvOuvert.paymentMode === 'CASH' ? 'Comptant' : rdvOuvert.paymentMode === 'INTERAC' ? 'Interac' : 'Lien Stripe'}
                 </p>
               )}
-              {rdvOuvert.notes && (
-                <p style={{ margin: 0, whiteSpace: 'pre-line', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '10px 12px', fontSize: '0.85rem' }}>
-                  {rdvOuvert.notes}
-                </p>
-              )}
+              {/* Notes : l'en-tête (Service / Mode) est fixe, le texte libre se modifie sur place */}
+              <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '10px 12px', fontSize: '0.85rem' }}>
+                {notesRdv.entete.length > 0 && (
+                  <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{notesRdv.entete.join('\n')}</p>
+                )}
+                {noteEnEdition ? (
+                  <div style={{ marginTop: notesRdv.entete.length > 0 ? '8px' : 0 }}>
+                    <textarea
+                      value={noteBrouillon}
+                      onChange={(e) => setNoteBrouillon(e.target.value)}
+                      autoFocus
+                      placeholder="Note pour ce rendez-vous…"
+                      style={{ width: '100%', boxSizing: 'border-box', minHeight: '72px', padding: '8px 10px', border: '1px solid #C4B5FD', borderRadius: '6px', fontSize: '0.85rem', color: '#1F2937', fontFamily: 'inherit', resize: 'vertical' }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                      <button
+                        type="button"
+                        disabled={actionBusy}
+                        onClick={enregistrerNote}
+                        style={{ padding: '6px 12px', background: '#6B3FA0', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', opacity: actionBusy ? 0.6 : 1 }}
+                      >
+                        Enregistrer la note
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actionBusy}
+                        onClick={() => setNoteEnEdition(false)}
+                        style={{ padding: '6px 12px', background: '#FFFFFF', color: '#6B7280', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {notesRdv.libre && (
+                      <p style={{ margin: notesRdv.entete.length > 0 ? '8px 0 0' : 0, whiteSpace: 'pre-line', color: '#1F2937' }}>{notesRdv.libre}</p>
+                    )}
+                    <button
+                      type="button"
+                      disabled={actionBusy}
+                      onClick={() => { setNoteBrouillon(notesRdv.libre ?? ''); setNoteEnEdition(true); }}
+                      style={{ display: 'block', marginTop: '8px', padding: 0, background: 'none', border: 'none', color: '#6B3FA0', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      {notesRdv.libre ? 'Modifier la note' : 'Ajouter une note'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Actions selon l'état du RDV */}

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { isInternalEmail } from '@/lib/holistic-clients';
 import EmailClientButton from './EmailClientButton';
 import EditClientButton from './EditClientButton';
+import { decomposerNotes } from '@/lib/appointment-notes';
 
 async function getClientDetail(id: string) {
   return prisma.holisticUser.findUnique({
@@ -41,24 +42,6 @@ const PAYMENT_STATUS_STYLES: Record<string, { bg: string; fg: string; border: st
   REFUNDED: { bg: '#E0E7FF', fg: '#3730A3', border: '#A5B4FC', label: 'Remboursé' },
   FAILED: { bg: '#FEE2E2', fg: '#991B1B', border: '#FCA5A5', label: 'Échoué' },
 };
-
-// Les notes d'un RDV sont stockées au format « Service : … / Mode : … / texte libre »
-// (même format pour le parcours public et le RDV manuel créé depuis le calendrier).
-// On sépare le soin et le mode du texte saisi par la praticienne pour les afficher
-// distinctement dans la fiche.
-function decomposerNotes(notes: string | null) {
-  let service: string | null = null;
-  let mode: string | null = null;
-  const libres: string[] = [];
-  for (const ligne of (notes ?? '').split('\n')) {
-    const s = ligne.match(/^\s*Service\s*:\s*(.+)$/);
-    const m = ligne.match(/^\s*Mode\s*:\s*(.+)$/);
-    if (s && service === null) service = s[1].trim();
-    else if (m && mode === null) mode = m[1].trim();
-    else libres.push(ligne);
-  }
-  return { service, mode, libre: libres.join('\n').trim() || null };
-}
 
 export default async function ClientDetailPage({
   params,
