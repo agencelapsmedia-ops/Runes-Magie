@@ -43,20 +43,21 @@ const navItems: { label: string; href: string; icon: string; exact?: boolean; ma
     icon: 'ᛟ',
     match: [
       '/admin/site', '/admin/publications', '/admin/services',
-      '/admin/offerings', '/admin/formations', '/admin/todo',
+      '/admin/offerings', '/admin/formations', '/admin/praticiens',
+      '/admin/revenus-holistique',
     ],
   },
   {
     label: 'Laps Media',
     href: '/admin/lapsmedia',
     icon: 'ᛚ',
-    match: ['/admin/lapsmedia'],
+    match: ['/admin/lapsmedia', '/admin/todo'],
   },
   {
     label: 'Mon profil & réglages',
     href: '/admin/mon-espace',
     icon: 'ᚱ',
-    match: ['/admin/mon-espace', '/admin/praticiens', '/admin/revenus-holistique'],
+    match: ['/admin/mon-espace'],
   },
 ];
 

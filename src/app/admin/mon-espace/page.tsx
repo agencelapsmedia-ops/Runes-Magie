@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import ProfileEditor from '@/app/(holistique)/soins/dashboard/praticien/profil/ProfileEditor';
@@ -9,9 +8,10 @@ export const dynamic = 'force-dynamic';
 
 /**
  * « Mon profil & réglages » — refonte Espace Noctura unifié (2026-08-22).
- * Regroupe dans l'admin ce qui vivait au pupitre praticien : profil public,
- * disponibilités, et liens vers les réglages (services, praticiennes, revenus).
- * Réutilise ProfileEditor et AvailabilityEditor tels quels.
+ * Regroupe dans l'admin ce qui vivait au pupitre praticien : profil public
+ * et disponibilités. Réutilise ProfileEditor et AvailabilityEditor tels quels.
+ * Les liens services / revenus / praticiennes vivent dans « Contenu du site »
+ * (/admin/site) depuis 2026-09-08 ; la to-do est passée dans Laps Media.
  */
 export default async function MonEspacePage() {
   const session = await auth();
@@ -41,28 +41,12 @@ export default async function MonEspacePage() {
       })
     : [];
 
-  const liens = [
-    { href: '/admin/offerings', label: 'ᚹ Mes services & soins', desc: 'Prix, durées et descriptions des séances.' },
-    { href: '/admin/revenus-holistique', label: 'ᚠ Mes revenus', desc: 'Paiements, commissions et versements.' },
-    { href: '/admin/praticiens', label: 'ᛗ Praticiennes', desc: 'Fiches et inscriptions de l’équipe.' },
-    { href: '/admin/todo', label: 'ᛏ To-do liste', desc: 'Les tâches du projet.' },
-  ];
-
   return (
     <div className="max-w-3xl">
       <h1 className="mb-1 font-cinzel text-2xl text-[#2D1B4E]">Mon profil &amp; réglages</h1>
       <p className="mb-6 text-sm text-gray-500">
-        Ton profil public, tes disponibilités et les réglages de la plateforme — tout au même endroit.
+        Ton profil public et tes disponibilités.
       </p>
-
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {liens.map((l) => (
-          <Link key={l.href} href={l.href} className="rounded-xl border border-gray-200 bg-white p-4 text-sm font-semibold text-[#4A2D7A] hover:border-[#6B3FA0]">
-            {l.label}
-            <span className="mt-1 block text-xs font-normal text-gray-500">{l.desc}</span>
-          </Link>
-        ))}
-      </div>
 
       {practitioner ? (
         <>

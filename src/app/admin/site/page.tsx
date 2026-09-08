@@ -26,6 +26,24 @@ const cards = [
     href: '/admin/site/tuiles',
     desc: 'Les cartes de l’accueil et la bande Boutique : titre, image, icône, lien.',
   },
+  {
+    rune: 'ᚹ',
+    label: 'Mes services & soins',
+    href: '/admin/offerings',
+    desc: 'Prix, durées et descriptions des séances.',
+  },
+  {
+    rune: 'ᚠ',
+    label: 'Mes revenus',
+    href: '/admin/revenus-holistique',
+    desc: 'Paiements, commissions et versements.',
+  },
+  {
+    rune: 'ᛗ',
+    label: 'Praticiennes',
+    href: '/admin/praticiens',
+    desc: 'Fiches et inscriptions de l’équipe.',
+  },
 ];
 
 export default function SiteHubPage() {
@@ -41,7 +59,7 @@ export default function SiteHubPage() {
         </Link>
         <h1 className="font-cinzel-decorative text-3xl text-violet-profond mt-2 mb-1">Site</h1>
         <p className="font-cormorant italic text-lg text-gray-500">
-          Navigation, sliders et structure du site public
+          Navigation, sliders, services et équipe du site public
         </p>
       </div>
 
