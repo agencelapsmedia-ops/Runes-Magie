@@ -95,39 +95,86 @@ const formeVide = {
 
 const paiementVide = { amount: '', paidOn: '', method: 'INTERAC', note: '' };
 
+/** Police d'interface : le corps du site est en serif, illisible dans un formulaire. */
+const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
 const carte: React.CSSProperties = {
   background: '#FFFFFF',
-  borderRadius: '12px',
-  padding: '18px',
-  boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+  borderRadius: '14px',
+  padding: '20px',
+  border: '1px solid #ECE7F4',
+  boxShadow: '0 1px 2px rgba(45,27,78,0.04), 0 8px 24px -18px rgba(45,27,78,0.35)',
 };
+/**
+ * Le `color: inherit` du preflight Tailwind fait hériter aux champs la couleur
+ * parchemin du <body>, d'où du texte blanc sur fond blanc. On fixe donc
+ * explicitement fond, couleur et color-scheme sur chaque champ.
+ */
 const champ: React.CSSProperties = {
-  padding: '8px 10px',
-  border: '1px solid #D1D5DB',
-  borderRadius: '6px',
+  padding: '9px 12px',
+  border: '1px solid #D8D2E4',
+  borderRadius: '9px',
   fontSize: '0.88rem',
+  fontFamily: SANS,
+  lineHeight: 1.4,
   width: '100%',
+  background: '#FFFFFF',
+  color: '#1F2937',
+  colorScheme: 'light',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  boxShadow: 'inset 0 1px 2px rgba(45,27,78,0.05)',
 };
 const etiquette: React.CSSProperties = {
   display: 'block',
-  fontSize: '0.72rem',
+  fontSize: '0.7rem',
   fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  color: '#6B7280',
-  marginBottom: '5px',
+  letterSpacing: '0.08em',
+  color: '#7C7490',
+  fontFamily: SANS,
+  marginBottom: '6px',
 };
 const bouton = (fond: string): React.CSSProperties => ({
-  padding: '9px 18px',
+  padding: '10px 18px',
   background: fond,
   color: '#fff',
   border: 'none',
-  borderRadius: '8px',
+  borderRadius: '9px',
   fontSize: '0.85rem',
   fontWeight: 600,
   cursor: 'pointer',
   fontFamily: 'var(--font-cinzel, serif)',
+  letterSpacing: '0.02em',
+  boxShadow: '0 1px 2px rgba(45,27,78,0.18)',
 });
+/** Lien-action discret (Modifier, Supprimer…) — même gabarit partout. */
+const lienAction = (couleur: string): React.CSSProperties => ({
+  background: 'none',
+  border: 'none',
+  padding: '2px 0',
+  color: couleur,
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  fontFamily: SANS,
+  cursor: 'pointer',
+});
+
+/** Styles que l'attribut `style` ne sait pas exprimer : placeholder et focus. */
+const CSS_LOCAL = `
+  .laps ::placeholder { color: #A9A2BA; opacity: 1; }
+  .laps input:focus, .laps select:focus, .laps textarea:focus {
+    outline: none;
+    border-color: #6B3FA0;
+    box-shadow: 0 0 0 3px rgba(107,63,160,0.16);
+  }
+  .laps select { background-image: linear-gradient(45deg, transparent 50%, #7C7490 50%), linear-gradient(135deg, #7C7490 50%, transparent 50%);
+    background-position: right 14px center, right 9px center;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+  .laps option { color: #1F2937; background: #FFFFFF; }
+  .laps input[type="checkbox"] { accent-color: #6B3FA0; width: 16px; height: 16px; }
+  .laps tbody tr:hover { background: #FAF8FD; }
+`;
 
 export default function LapsMediaPage() {
   const [actions, setActions] = useState<LapsAction[]>([]);
@@ -351,21 +398,61 @@ export default function LapsMediaPage() {
   }
 
   return (
-    <div style={{ padding: '28px 20px', maxWidth: '1180px', margin: '0 auto' }}>
-      <h1
+    <div className="laps" style={{ padding: '28px 20px 60px', maxWidth: '1180px', margin: '0 auto', fontFamily: SANS }}>
+      <style>{CSS_LOCAL}</style>
+
+      <header
         style={{
-          fontFamily: 'var(--font-cinzel-decorative, serif)',
-          fontSize: '1.9rem',
-          color: '#2D1B4E',
-          margin: '0 0 6px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          gap: '18px',
+          flexWrap: 'wrap',
+          marginBottom: '24px',
+          paddingBottom: '18px',
+          borderBottom: '1px solid #ECE7F4',
         }}
       >
-        Laps Media
-      </h1>
-      <p style={{ color: '#6B7280', fontSize: '0.92rem', margin: '0 0 22px' }}>
-        Les actions réalisées pour Runes &amp; Magie, le temps qu’elles ont pris et le solde à régler.
-        Taux : {montantLisible(TAUX_HORAIRE)} de l’heure.
-      </p>
+        <div style={{ flex: '1 1 380px' }}>
+          <h1
+            style={{
+              fontFamily: 'var(--font-cinzel-decorative, serif)',
+              fontSize: '1.9rem',
+              color: '#2D1B4E',
+              margin: '0 0 6px',
+            }}
+          >
+            Laps Media
+          </h1>
+          <p style={{ color: '#6B7280', fontSize: '0.9rem', margin: 0, lineHeight: 1.55 }}>
+            Les actions réalisées pour Runes &amp; Magie, le temps qu’elles ont pris et le solde à régler.
+            Taux : {montantLisible(TAUX_HORAIRE)} de l’heure.
+          </p>
+        </div>
+        {bilan && (
+          <div
+            style={{
+              background: bilan.solde > 0 ? '#FDF2F2' : '#F0FAF4',
+              border: `1px solid ${bilan.solde > 0 ? '#F4D3D3' : '#CDEBDA'}`,
+              borderRadius: '12px',
+              padding: '10px 16px',
+              textAlign: 'right',
+            }}
+          >
+            <p style={{ ...etiquette, margin: 0 }}>Solde dû</p>
+            <p
+              style={{
+                margin: '2px 0 0',
+                fontSize: '1.35rem',
+                fontWeight: 700,
+                color: bilan.solde > 0 ? '#991B1B' : '#065F46',
+              }}
+            >
+              {montantLisible(bilan.solde)}
+            </p>
+          </div>
+        )}
+      </header>
 
       {error && (
         <p style={{ color: '#991B1B', background: '#FEE2E2', padding: '10px 14px', borderRadius: '8px', fontSize: '0.86rem' }}>
@@ -426,7 +513,7 @@ export default function LapsMediaPage() {
                 {COLONNES.map((col) => {
                   const lignes = taches.filter((t) => t.status === col.key);
                   return (
-                    <div key={col.key} style={{ background: '#F3F4F6', borderRadius: '10px', padding: '10px', minHeight: '80px' }}>
+                    <div key={col.key} style={{ background: '#FAF8FD', border: '1px solid #EFEBF7', borderRadius: '12px', padding: '12px', minHeight: '86px' }}>
                       <p style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: col.accent, margin: '2px 4px 10px' }}>
                         {col.label} <span style={{ color: '#9CA3AF' }}>({lignes.length})</span>
                       </p>
@@ -453,14 +540,14 @@ export default function LapsMediaPage() {
                             <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <button
                                 onClick={() => consigner(t)}
-                                style={{ background: 'none', border: 'none', padding: 0, color: '#065F46', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}
+                                style={{ ...lienAction('#065F46'), fontSize: '0.74rem' }}
                               >
                                 Consigner une action
                               </button>
                               <select
                                 value={t.status}
                                 onChange={(e) => deplacerTache(t.id, e.target.value)}
-                                style={{ fontSize: '0.7rem', border: '1px solid #E5E7EB', borderRadius: '5px', padding: '2px 4px', color: '#6B7280' }}
+                                style={{ ...champ, width: 'auto', fontSize: '0.72rem', padding: '4px 8px', color: '#4B5563', boxShadow: 'none' }}
                               >
                                 {COLONNES.map((c) => (
                                   <option key={c.key} value={c.key}>{c.label}</option>
@@ -540,7 +627,7 @@ export default function LapsMediaPage() {
               <select
                 value={filtre}
                 onChange={(e) => setFiltre(e.target.value as typeof filtre)}
-                style={{ padding: '6px 10px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.85rem' }}
+                style={{ ...champ, width: 'auto', padding: '7px 12px' }}
               >
                 <option value="toutes">Toutes</option>
                 <option value="facturables">Facturables</option>
@@ -735,19 +822,19 @@ export default function LapsMediaPage() {
                           <div style={{ display: 'flex', gap: '10px', marginTop: '8px', justifyContent: 'flex-end' }}>
                             <button
                               onClick={() => ouvrirEdition(a)}
-                              style={{ background: 'none', border: 'none', color: '#6B3FA0', fontSize: '0.78rem', cursor: 'pointer' }}
+                              style={lienAction('#6B3FA0')}
                             >
                               Modifier
                             </button>
                             <button
                               onClick={() => basculerFacturable(a)}
-                              style={{ background: 'none', border: 'none', color: '#A16207', fontSize: '0.78rem', cursor: 'pointer' }}
+                              style={lienAction('#A16207')}
                             >
                               {a.billable ? 'Ne pas facturer' : 'Facturer'}
                             </button>
                             <button
                               onClick={() => supprimerAction(a)}
-                              style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: '0.78rem', cursor: 'pointer' }}
+                              style={lienAction('#DC2626')}
                             >
                               Supprimer
                             </button>
@@ -857,7 +944,7 @@ export default function LapsMediaPage() {
                   </div>
                   <button
                     onClick={() => supprimerPaiement(p)}
-                    style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: '0.78rem', cursor: 'pointer' }}
+                    style={lienAction('#DC2626')}
                   >
                     Supprimer
                   </button>
