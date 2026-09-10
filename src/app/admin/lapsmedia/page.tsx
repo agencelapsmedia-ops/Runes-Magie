@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import NotesEtFichiersTache from '../todo/NotesEtFichiersTache';
 import {
   LIBELLE_METHODE,
   METHODES_PAIEMENT,
@@ -181,6 +183,8 @@ export default function LapsMediaPage() {
   const [paiements, setPaiements] = useState<LapsPaiement[]>([]);
   const [bilan, setBilan] = useState<Bilan | null>(null);
   const [taches, setTaches] = useState<TacheTodo[]>([]);
+  // Fiche rapide (notes signées + fichiers) ouverte sur place, sans quitter la page.
+  const [tacheOuverte, setTacheOuverte] = useState<TacheTodo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -544,23 +548,25 @@ export default function LapsMediaPage() {
                               >
                                 Consigner une action
                               </button>
-                              {/* Fiche complète (notes signées, fichiers joints) sur la page To-do. */}
-                              <Link
-                                href={`/admin/todo?tache=${t.id}`}
+                              {/* Fiche rapide sur place : notes signées + fichiers joints. */}
+                              <button
+                                type="button"
+                                onClick={() => setTacheOuverte(t)}
                                 style={{
                                   padding: '4px 12px',
                                   background: '#6B3FA0',
                                   color: '#fff',
+                                  border: 'none',
                                   borderRadius: '6px',
                                   fontSize: '0.74rem',
                                   fontWeight: 600,
                                   fontFamily: SANS,
-                                  textDecoration: 'none',
+                                  cursor: 'pointer',
                                   lineHeight: 1.4,
                                 }}
                               >
                                 Ouvrir
-                              </Link>
+                              </button>
                               <select
                                 value={t.status}
                                 onChange={(e) => deplacerTache(t.id, e.target.value)}
@@ -970,6 +976,41 @@ export default function LapsMediaPage() {
             </div>
           )}
         </>
+      )}
+      {tacheOuverte && typeof document !== 'undefined' && createPortal(
+        <div
+          onClick={() => setTacheOuverte(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', zIndex: 1000, overflowY: 'auto' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            style={{ background: '#fff', borderRadius: '12px', padding: '22px 24px', width: '100%', maxWidth: '520px', fontFamily: SANS, boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '6px' }}>
+              <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.1rem', color: '#2D1B4E', margin: 0, lineHeight: 1.3 }}>
+                {tacheOuverte.title}
+              </h2>
+              <button type="button" onClick={() => setTacheOuverte(null)} aria-label="Fermer" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '1.3rem', lineHeight: 1 }}>×</button>
+            </div>
+            {tacheOuverte.description && (
+              <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: '#4B5563', whiteSpace: 'pre-line' }}>{tacheOuverte.description}</p>
+            )}
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '14px', marginTop: '8px' }}>
+              <NotesEtFichiersTache taskId={tacheOuverte.id} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '18px', gap: '8px', flexWrap: 'wrap' }}>
+              <Link href={`/admin/todo?tache=${tacheOuverte.id}`} style={{ fontSize: '0.78rem', color: '#6B3FA0', fontWeight: 600, textDecoration: 'none' }}>
+                Modifier la tâche (titre, priorité, dates…) →
+              </Link>
+              <button type="button" onClick={() => setTacheOuverte(null)} style={{ padding: '8px 16px', background: '#6B3FA0', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
