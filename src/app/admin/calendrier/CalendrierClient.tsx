@@ -83,8 +83,8 @@ function renderEvent(arg: EventContentArg) {
     <div style={{ overflow: 'hidden', lineHeight: 1.18, padding: '1px 3px' }}>
       {arg.timeText && <div style={{ fontSize: '0.62rem', opacity: 0.85 }}>{arg.timeText}</div>}
       <div style={{ fontWeight: 700, fontSize: '0.72rem', ...ellipsis }}>{arg.event.title}</div>
-      {soin && <div style={{ fontSize: '0.66rem', opacity: 0.92, ...ellipsis }}>{soin}</div>}
-      {payTag && <div style={{ fontSize: '0.62rem', fontWeight: 600, marginTop: '1px', ...ellipsis }}>{payTag}</div>}
+      {soin && <div className="rdv-soin" style={{ fontSize: '0.66rem', opacity: 0.92, ...ellipsis }}>{soin}</div>}
+      {payTag && <div className="rdv-pay" style={{ fontSize: '0.62rem', fontWeight: 600, marginTop: '1px', ...ellipsis }}>{payTag}</div>}
     </div>
   );
 }
@@ -363,16 +363,19 @@ export default function CalendrierClient({
           </div>
         ) : (
           <FullCalendar
-            // `initialView` n'est appliqué qu'au montage par FullCalendar (pas réactif) :
-            // la `key` force un remontage si on bascule téléphone ↔ ordinateur (redimension
-            // de la fenêtre en direct), pour que la bonne vue de départ s'applique.
+            // La `key` force un remontage propre si on bascule téléphone ↔ ordinateur
+            // (redimension de la fenêtre en direct) : barre d'outils et densité des cases
+            // changent, et FullCalendar ne relit ses options de départ qu'au montage.
             key={surTelephone ? 'telephone' : 'ordinateur'}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
             locale={frLocale}
-            initialView={surTelephone ? 'listDay' : 'timeGridWeek'}
+            // Toujours ouvrir sur le mois (demande d'Annabelle, 2026-09-10), téléphone compris :
+            // c'est la vue d'ensemble qu'elle consulte en premier. Semaine / jour restent
+            // accessibles d'un tap dans la barre d'outils.
+            initialView="dayGridMonth"
             headerToolbar={
               surTelephone
-                ? { left: 'prev,next', center: 'title', right: 'listDay,timeGridWeek,dayGridMonth' }
+                ? { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listDay' }
                 : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
             }
             buttonText={{ today: "Aujourd'hui", month: 'Mois', week: 'Semaine', day: 'Jour', list: 'Jour' }}
@@ -387,7 +390,8 @@ export default function CalendrierClient({
             allDaySlot={false}
             nowIndicator
             height="auto"
-            dayMaxEventRows={4}
+            // Téléphone : cases étroites, on plafonne à 2 blocs par jour puis « +N ».
+            dayMaxEventRows={surTelephone ? 2 : 4}
             eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
             slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
           />
@@ -703,6 +707,15 @@ export default function CalendrierClient({
         .fc .fc-daygrid-more-link { color: #6B3FA0; font-weight: 600; }
         .fc-event.rdv-annule .fc-event-title, .fc-event.rdv-annule .fc-event-time { text-decoration: line-through; }
         .fc-event.rdv-attente { opacity: 0.75; border-style: dashed !important; }
+        /* Téléphone, vue mois : une seule ligne (l'heure + le nom) par bloc, la barre
+           d'outils empilée pour que le titre du mois ne soit pas écrasé. */
+        @media (max-width: 1023px) {
+          .fc .fc-daygrid-event .rdv-soin, .fc .fc-daygrid-event .rdv-pay { display: none; }
+          .fc .fc-daygrid-event { font-size: 0.66rem; }
+          .fc .fc-toolbar.fc-header-toolbar { flex-direction: column; gap: 8px; }
+          .fc .fc-toolbar-title { font-size: 1rem; }
+          .fc .fc-daygrid-day-number { font-size: 0.78rem; padding: 2px 4px; }
+        }
       `}</style>
     </div>
   );

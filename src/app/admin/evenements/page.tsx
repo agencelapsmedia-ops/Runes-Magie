@@ -131,7 +131,51 @@ export default function EvenementsAdminPage() {
           <p style={{ color: '#9CA3AF', fontSize: '0.9rem' }}>Aucun événement pour l&apos;instant.</p>
         </div>
       ) : (
-        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+        <>
+        {/* Téléphone (< lg) : une carte par événement — le tableau à 5 colonnes
+            débordait de l'écran et forçait un défilement horizontal. */}
+        <div className="lg:hidden" style={{ display: 'grid', gap: '12px' }}>
+          {evenements.map((ev) => (
+            <div key={ev.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '14px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '6px' }}>
+                <Link href={`/admin/evenements/${ev.id}`} style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1F2937', textDecoration: 'none', lineHeight: 1.3 }}>
+                  {ev.title}
+                </Link>
+                <EtatBadge evenement={ev} />
+              </div>
+              <p style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#4B5563' }}>{formaterDateEvenement(ev.startsAt)}</p>
+              <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: '#4B5563' }}>
+                {ev._count?.registrations ?? 0} / {ev.capacity} inscrits
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <Link href={`/admin/evenements/${ev.id}`} style={{ color: '#6B3FA0', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+                  Voir la fiche →
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void supprimer(ev)}
+                  disabled={suppression === ev.id}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#fff',
+                    color: '#991B1B',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: suppression === ev.id ? 'wait' : 'pointer',
+                    opacity: suppression === ev.id ? 0.6 : 1,
+                  }}
+                >
+                  {suppression === ev.id ? 'Suppression…' : 'Supprimer'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Ordinateur (≥ lg) : tableau. */}
+        <div className="hidden lg:block" style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden', overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
@@ -182,6 +226,7 @@ export default function EvenementsAdminPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
