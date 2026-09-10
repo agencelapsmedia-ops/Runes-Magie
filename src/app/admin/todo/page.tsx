@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { uploadFile } from '@/lib/supabase';
 
 interface TodoNote {
@@ -73,7 +74,20 @@ const emptyForm = {
   title: '', description: '', priority: 'MOYENNE', label: '', assignee: '', startsOn: '', dueOn: '', status: 'A_FAIRE',
 };
 
+/**
+ * `useSearchParams` oblige Next à envelopper la page dans une frontière Suspense
+ * (sinon le build refuse de pré-rendre la page). Le vrai composant est en dessous.
+ */
 export default function TodoAdminPage() {
+  return (
+    <Suspense fallback={<p style={{ color: '#6B7280', fontFamily: 'sans-serif' }}>Chargement…</p>}>
+      <TodoAdmin />
+    </Suspense>
+  );
+}
+
+function TodoAdmin() {
+  const searchParams = useSearchParams();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -182,9 +196,7 @@ export default function TodoAdminPage() {
 
   // Lien profond `/admin/todo?tache=ID` (depuis la page Laps Media, par exemple) :
   // on ouvre la fiche de cette tâche dès que la liste est chargée, une seule fois.
-  const [tacheDemandee] = useState<string | null>(() =>
-    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('tache'),
-  );
+  const tacheDemandee = searchParams.get('tache');
   const [tacheOuverteAuto, setTacheOuverteAuto] = useState(false);
   useEffect(() => {
     if (!tacheDemandee || tacheOuverteAuto || loading) return;

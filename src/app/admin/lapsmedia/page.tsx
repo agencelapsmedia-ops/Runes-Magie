@@ -545,7 +545,20 @@ export default function LapsMediaPage() {
                                 Consigner une action
                               </button>
                               {/* Fiche complète (notes signées, fichiers joints) sur la page To-do. */}
-                              <Link href={`/admin/todo?tache=${t.id}`} style={{ ...lienAction('#6B3FA0'), fontSize: '0.74rem', textDecoration: 'none' }}>
+                              <Link
+                                href={`/admin/todo?tache=${t.id}`}
+                                style={{
+                                  padding: '4px 12px',
+                                  background: '#6B3FA0',
+                                  color: '#fff',
+                                  borderRadius: '6px',
+                                  fontSize: '0.74rem',
+                                  fontWeight: 600,
+                                  fontFamily: SANS,
+                                  textDecoration: 'none',
+                                  lineHeight: 1.4,
+                                }}
+                              >
                                 Ouvrir
                               </Link>
                               <select
