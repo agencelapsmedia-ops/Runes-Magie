@@ -14,7 +14,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const content = typeof body?.content === 'string' ? body.content.trim() : '';
   if (!content) return NextResponse.json({ error: 'La note est vide.' }, { status: 400 });
   if (content.length > 5000) return NextResponse.json({ error: 'Note trop longue (5000 caractères max).' }, { status: 400 });
-  // Auteur : nom libre choisi dans la fiche (Noctura, Odlaguir…), optionnel.
+  // Auteur : nom libre choisi dans la fiche (Noctura, Odalguir…), optionnel.
   const author = typeof body?.author === 'string' ? body.author.trim().slice(0, 60) : '';
 
   const task = await prisma.todoTask.findUnique({ where: { id }, select: { id: true } });

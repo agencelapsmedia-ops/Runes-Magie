@@ -12,10 +12,10 @@ interface TodoNote {
 
 /**
  * Qui peut signer une note. Demande d'Annabelle (2026-09-10) : savoir d'un coup
- * d'œil si la note vient de Noctura ou d'Odlaguir. Liste volontairement courte et
+ * d'œil si la note vient de Noctura ou d'Odalguir. Liste volontairement courte et
  * modifiable ici ; le dernier choix est mémorisé dans le navigateur.
  */
-const AUTEURS_NOTES = ['Noctura', 'Odlaguir'];
+const AUTEURS_NOTES = ['Noctura', 'Odalguir'];
 const CLE_AUTEUR = 'todo-note-auteur';
 interface TodoAttachment {
   id: string;
@@ -459,33 +459,17 @@ export default function TodoAdminPage() {
                     </div>
                   ))}
                 </div>
-                {/* Qui signe la note : un tap sur le nom, mémorisé pour les prochaines. */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.72rem', color: '#6B7280' }}>Note ajoutée par</span>
-                  {AUTEURS_NOTES.map((nom) => {
-                    const actif = nom === noteAuthor;
-                    return (
-                      <button
-                        key={nom}
-                        type="button"
-                        onClick={() => choisirAuteur(nom)}
-                        aria-pressed={actif}
-                        style={{
-                          padding: '4px 12px',
-                          borderRadius: '9999px',
-                          border: `1px solid ${actif ? '#6B3FA0' : '#D1D5DB'}`,
-                          background: actif ? '#6B3FA0' : '#fff',
-                          color: actif ? '#fff' : '#4B5563',
-                          fontSize: '0.74rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {nom}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Qui signe la note : menu déroulant, dernier choix mémorisé pour les prochaines. */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '0.72rem', color: '#6B7280' }}>
+                  Note ajoutée par
+                  <select
+                    value={noteAuthor}
+                    onChange={(e) => choisirAuteur(e.target.value)}
+                    style={{ ...inputStyle, marginTop: 0, width: 'auto', padding: '5px 10px', fontSize: '0.78rem', fontWeight: 600, color: '#6B3FA0' }}
+                  >
+                    {AUTEURS_NOTES.map((nom) => <option key={nom} value={nom}>{nom}</option>)}
+                  </select>
+                </label>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <textarea
                     value={noteText}
