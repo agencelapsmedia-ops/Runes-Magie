@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import NotesEtFichiersTache from './NotesEtFichiersTache';
+import NotesEtFichiersTache, { AUTEURS_NOTES } from './NotesEtFichiersTache';
 
 interface Todo {
   id: string;
@@ -334,7 +334,12 @@ function TodoAdmin() {
                 <datalist id="todo-labels">{labels.map((l) => <option key={l} value={l} />)}</datalist>
               </label>
               <label style={{ ...labelStyle, flex: 1 }}>Assignée à
-                <input value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })} placeholder="Annabelle, Laps Media…" style={inputStyle} />
+                {/* Menu déroulant limité aux deux personnes (demande du 2026-09-10) ; même liste que les auteurs de notes. */}
+                <select value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })} style={inputStyle}>
+                  <option value="">— Personne —</option>
+                  {AUTEURS_NOTES.map((nom) => <option key={nom} value={nom}>{nom}</option>)}
+                  {form.assignee && !AUTEURS_NOTES.includes(form.assignee) && <option value={form.assignee}>{form.assignee}</option>}
+                </select>
               </label>
             </div>
 
