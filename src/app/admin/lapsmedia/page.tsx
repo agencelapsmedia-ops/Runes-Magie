@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import NotesEtFichiersTache from '../todo/NotesEtFichiersTache';
+import NotesEtFichiersTache, { AUTEURS_NOTES } from '../todo/NotesEtFichiersTache';
 import {
   LIBELLE_METHODE,
   METHODES_PAIEMENT,
@@ -54,7 +54,33 @@ interface TacheTodo {
   status: string;
   priority: string;
   label: string | null;
+  assignee: string | null;
+  startsOn: string | null;
+  dueOn: string | null;
 }
+
+/** Champs modifiables de la fiche rapide (mêmes règles que /admin/todo). */
+interface FicheTache {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  label: string;
+  assignee: string;
+  startsOn: string;
+  dueOn: string;
+}
+const versDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : '');
+const ficheDepuis = (t: TacheTodo): FicheTache => ({
+  title: t.title,
+  description: t.description,
+  status: t.status,
+  priority: t.priority,
+  label: t.label ?? '',
+  assignee: t.assignee ?? '',
+  startsOn: versDateInput(t.startsOn),
+  dueOn: versDateInput(t.dueOn),
+});
 
 /** Les quatre étapes du kanban, dans l'ordre où elles sont affichées. */
 const COLONNES = [
@@ -112,6 +138,15 @@ const carte: React.CSSProperties = {
  * parchemin du <body>, d'où du texte blanc sur fond blanc. On fixe donc
  * explicitement fond, couleur et color-scheme sur chaque champ.
  */
+/** Libellé d'un champ de la fiche rapide. */
+const etiquetteFiche: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.78rem',
+  color: '#4B5563',
+  fontWeight: 600,
+  marginBottom: '10px',
+  fontFamily: SANS,
+};
 const champ: React.CSSProperties = {
   padding: '9px 12px',
   border: '1px solid #D8D2E4',
@@ -183,8 +218,53 @@ export default function LapsMediaPage() {
   const [paiements, setPaiements] = useState<LapsPaiement[]>([]);
   const [bilan, setBilan] = useState<Bilan | null>(null);
   const [taches, setTaches] = useState<TacheTodo[]>([]);
-  // Fiche rapide (notes signées + fichiers) ouverte sur place, sans quitter la page.
+  // Fiche complète ouverte sur place, sans quitter la page : infos de la tâche
+  // (titre, priorité, étape, assignée, dates) + notes signées + fichiers.
   const [tacheOuverte, setTacheOuverte] = useState<TacheTodo | null>(null);
+  const [fiche, setFiche] = useState<FicheTache | null>(null);
+  const [ficheBusy, setFicheBusy] = useState(false);
+  const [ficheMsg, setFicheMsg] = useState<string | null>(null);
+  function ouvrirFiche(t: TacheTodo) {
+    setTacheOuverte(t);
+    setFiche(ficheDepuis(t));
+    setFicheMsg(null);
+  }
+  function fermerFiche() {
+    setTacheOuverte(null);
+    setFiche(null);
+  }
+  async function enregistrerFiche() {
+    if (!tacheOuverte || !fiche) return;
+    if (!fiche.title.trim()) return setFicheMsg('Le titre est obligatoire.');
+    setFicheBusy(true);
+    setFicheMsg(null);
+    try {
+      const res = await fetch(`/api/admin/todos/${tacheOuverte.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: fiche.title.trim(),
+          description: fiche.description,
+          status: fiche.status,
+          priority: fiche.priority,
+          label: fiche.label,
+          assignee: fiche.assignee,
+          startsOn: fiche.startsOn || null,
+          dueOn: fiche.dueOn || null,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'Enregistrement impossible.');
+      }
+      await charger();
+      setFicheMsg('Enregistré.');
+    } catch (e) {
+      setFicheMsg(e instanceof Error ? e.message : 'Enregistrement impossible.');
+    } finally {
+      setFicheBusy(false);
+    }
+  }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -551,7 +631,7 @@ export default function LapsMediaPage() {
                               {/* Fiche rapide sur place : notes signées + fichiers joints. */}
                               <button
                                 type="button"
-                                onClick={() => setTacheOuverte(t)}
+                                onClick={() => ouvrirFiche(t)}
                                 style={{
                                   padding: '4px 12px',
                                   background: '#6B3FA0',
@@ -977,34 +1057,78 @@ export default function LapsMediaPage() {
           )}
         </>
       )}
-      {tacheOuverte && typeof document !== 'undefined' && createPortal(
+      {tacheOuverte && fiche && typeof document !== 'undefined' && createPortal(
         <div
-          onClick={() => setTacheOuverte(null)}
+          onClick={fermerFiche}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', zIndex: 1000, overflowY: 'auto' }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            style={{ background: '#fff', borderRadius: '12px', padding: '22px 24px', width: '100%', maxWidth: '520px', fontFamily: SANS, boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}
+            style={{ background: '#fff', borderRadius: '12px', padding: '22px 24px', width: '100%', maxWidth: '560px', fontFamily: SANS, boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
               <h2 style={{ fontFamily: 'var(--font-cinzel, serif)', fontSize: '1.1rem', color: '#2D1B4E', margin: 0, lineHeight: 1.3 }}>
-                {tacheOuverte.title}
+                Fiche de la tâche
               </h2>
-              <button type="button" onClick={() => setTacheOuverte(null)} aria-label="Fermer" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '1.3rem', lineHeight: 1 }}>×</button>
+              <button type="button" onClick={fermerFiche} aria-label="Fermer" style={{ background: 'none', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '1.3rem', lineHeight: 1 }}>×</button>
             </div>
-            {tacheOuverte.description && (
-              <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: '#4B5563', whiteSpace: 'pre-line' }}>{tacheOuverte.description}</p>
-            )}
-            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '14px', marginTop: '8px' }}>
+
+            {/* Infos de la tâche — mêmes champs que la fiche de /admin/todo, pour ne plus avoir à y aller. */}
+            <label style={etiquetteFiche}>Titre *
+              <input value={fiche.title} onChange={(e) => setFiche({ ...fiche, title: e.target.value })} style={{ ...champ, marginTop: '4px' }} />
+            </label>
+            <label style={etiquetteFiche}>Description
+              <textarea value={fiche.description} onChange={(e) => setFiche({ ...fiche, description: e.target.value })} rows={3} style={{ ...champ, marginTop: '4px', resize: 'vertical' }} />
+            </label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <label style={{ ...etiquetteFiche, flex: 1, minWidth: '140px' }}>Priorité
+                <select value={fiche.priority} onChange={(e) => setFiche({ ...fiche, priority: e.target.value })} style={{ ...champ, marginTop: '4px' }}>
+                  <option value="URGENTE">Urgente</option>
+                  <option value="HAUTE">Haute</option>
+                  <option value="MOYENNE">Moyenne</option>
+                  <option value="BASSE">Basse</option>
+                </select>
+              </label>
+              <label style={{ ...etiquetteFiche, flex: 1, minWidth: '140px' }}>Étape
+                <select value={fiche.status} onChange={(e) => setFiche({ ...fiche, status: e.target.value })} style={{ ...champ, marginTop: '4px' }}>
+                  {COLONNES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+                </select>
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <label style={{ ...etiquetteFiche, flex: 1, minWidth: '140px' }}>Étiquette
+                <input value={fiche.label} onChange={(e) => setFiche({ ...fiche, label: e.target.value })} placeholder="Site web, Boutique…" style={{ ...champ, marginTop: '4px' }} />
+              </label>
+              <label style={{ ...etiquetteFiche, flex: 1, minWidth: '140px' }}>Assignée à
+                <select value={fiche.assignee} onChange={(e) => setFiche({ ...fiche, assignee: e.target.value })} style={{ ...champ, marginTop: '4px' }}>
+                  <option value="">— Personne —</option>
+                  {AUTEURS_NOTES.map((nom) => <option key={nom} value={nom}>{nom}</option>)}
+                  {fiche.assignee && !AUTEURS_NOTES.includes(fiche.assignee) && <option value={fiche.assignee}>{fiche.assignee}</option>}
+                </select>
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <label style={{ ...etiquetteFiche, flex: 1, minWidth: '140px' }}>Date de début
+                <input type="date" value={fiche.startsOn} onChange={(e) => setFiche({ ...fiche, startsOn: e.target.value })} style={{ ...champ, marginTop: '4px' }} />
+              </label>
+              <label style={{ ...etiquetteFiche, flex: 1, minWidth: '140px' }}>Échéance
+                <input type="date" value={fiche.dueOn} onChange={(e) => setFiche({ ...fiche, dueOn: e.target.value })} style={{ ...champ, marginTop: '4px' }} />
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+              <button type="button" onClick={() => void enregistrerFiche()} disabled={ficheBusy} style={{ padding: '9px 18px', background: '#6B3FA0', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: ficheBusy ? 'wait' : 'pointer', opacity: ficheBusy ? 0.7 : 1 }}>
+                {ficheBusy ? 'Enregistrement…' : 'Enregistrer les modifications'}
+              </button>
+              {ficheMsg && <span style={{ fontSize: '0.8rem', color: ficheMsg === 'Enregistré.' ? '#065F46' : '#DC2626' }}>{ficheMsg}</span>}
+            </div>
+
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '14px', marginTop: '14px' }}>
               <NotesEtFichiersTache taskId={tacheOuverte.id} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '18px', gap: '8px', flexWrap: 'wrap' }}>
-              <Link href={`/admin/todo?tache=${tacheOuverte.id}`} style={{ fontSize: '0.78rem', color: '#6B3FA0', fontWeight: 600, textDecoration: 'none' }}>
-                Modifier la tâche (titre, priorité, dates…) →
-              </Link>
-              <button type="button" onClick={() => setTacheOuverte(null)} style={{ padding: '8px 16px', background: '#6B3FA0', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px' }}>
+              <button type="button" onClick={fermerFiche} style={{ padding: '8px 16px', background: '#fff', color: '#4B5563', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
                 Fermer
               </button>
             </div>
