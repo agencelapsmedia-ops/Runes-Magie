@@ -113,6 +113,7 @@ model TodoNote {
   taskId    String
   task      TodoTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
   content   String
+  author    String   @default("") // qui a écrit la note (Noctura, Odlaguir…) — libre, vide pour les anciennes notes
   createdAt DateTime @default(now())
 
   @@index([taskId, createdAt])

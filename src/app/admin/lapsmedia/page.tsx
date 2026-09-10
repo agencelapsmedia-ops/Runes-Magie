@@ -544,6 +544,10 @@ export default function LapsMediaPage() {
                               >
                                 Consigner une action
                               </button>
+                              {/* Fiche complète (notes signées, fichiers joints) sur la page To-do. */}
+                              <Link href={`/admin/todo?tache=${t.id}`} style={{ ...lienAction('#6B3FA0'), fontSize: '0.74rem', textDecoration: 'none' }}>
+                                Ouvrir
+                              </Link>
                               <select
                                 value={t.status}
                                 onChange={(e) => deplacerTache(t.id, e.target.value)}

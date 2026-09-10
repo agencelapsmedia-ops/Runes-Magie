@@ -6,8 +6,17 @@ import { uploadFile } from '@/lib/supabase';
 interface TodoNote {
   id: string;
   content: string;
+  author: string;
   createdAt: string;
 }
+
+/**
+ * Qui peut signer une note. Demande d'Annabelle (2026-09-10) : savoir d'un coup
+ * d'œil si la note vient de Noctura ou d'Odlaguir. Liste volontairement courte et
+ * modifiable ici ; le dernier choix est mémorisé dans le navigateur.
+ */
+const AUTEURS_NOTES = ['Noctura', 'Odlaguir'];
+const CLE_AUTEUR = 'todo-note-auteur';
 interface TodoAttachment {
   id: string;
   name: string;
@@ -83,7 +92,20 @@ export default function TodoAdminPage() {
   const [notes, setNotes] = useState<TodoNote[]>([]);
   const [attachments, setAttachments] = useState<TodoAttachment[]>([]);
   const [noteText, setNoteText] = useState('');
+  const [noteAuthor, setNoteAuthor] = useState<string>(AUTEURS_NOTES[0]);
   const [uploading, setUploading] = useState(false);
+
+  // Auteur mémorisé d'une visite à l'autre (chaque poste garde le sien).
+  useEffect(() => {
+    try {
+      const memo = window.localStorage.getItem(CLE_AUTEUR);
+      if (memo && AUTEURS_NOTES.includes(memo)) setNoteAuthor(memo);
+    } catch { /* stockage indisponible : on garde le défaut */ }
+  }, []);
+  function choisirAuteur(nom: string) {
+    setNoteAuthor(nom);
+    try { window.localStorage.setItem(CLE_AUTEUR, nom); } catch { /* idem */ }
+  }
 
   async function loadDetails(id: string) {
     try {
@@ -102,7 +124,7 @@ export default function TodoAdminPage() {
     const res = await fetch(`/api/admin/todos/${editing.id}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: noteText.trim() }),
+      body: JSON.stringify({ content: noteText.trim(), author: noteAuthor }),
     });
     if (res.ok) {
       setNoteText('');
@@ -157,6 +179,20 @@ export default function TodoAdminPage() {
     }
   }
   useEffect(() => { load(); }, []);
+
+  // Lien profond `/admin/todo?tache=ID` (depuis la page Laps Media, par exemple) :
+  // on ouvre la fiche de cette tâche dès que la liste est chargée, une seule fois.
+  const [tacheDemandee] = useState<string | null>(() =>
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('tache'),
+  );
+  const [tacheOuverteAuto, setTacheOuverteAuto] = useState(false);
+  useEffect(() => {
+    if (!tacheDemandee || tacheOuverteAuto || loading) return;
+    const t = todos.find((x) => x.id === tacheDemandee);
+    if (t) openEdit(t);
+    setTacheOuverteAuto(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tacheDemandee, tacheOuverteAuto, loading, todos]);
 
   const labels = useMemo(
     () => [...new Set(todos.map((t) => t.label).filter(Boolean))] as string[],
@@ -414,11 +450,41 @@ export default function TodoAdminPage() {
                     <div key={n.id} style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '8px 10px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: '#1F2937', whiteSpace: 'pre-line' }}>{n.content}</p>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.68rem', color: '#9CA3AF' }}>{fmtDate(n.createdAt)}</p>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.68rem', color: '#9CA3AF' }}>
+                          {n.author && <span style={{ color: '#6B3FA0', fontWeight: 700 }}>{n.author} · </span>}
+                          {fmtDate(n.createdAt)}
+                        </p>
                       </div>
                       <button type="button" onClick={() => removeNote(n.id)} aria-label="Supprimer la note" style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '0.9rem', lineHeight: 1 }}>×</button>
                     </div>
                   ))}
+                </div>
+                {/* Qui signe la note : un tap sur le nom, mémorisé pour les prochaines. */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#6B7280' }}>Note ajoutée par</span>
+                  {AUTEURS_NOTES.map((nom) => {
+                    const actif = nom === noteAuthor;
+                    return (
+                      <button
+                        key={nom}
+                        type="button"
+                        onClick={() => choisirAuteur(nom)}
+                        aria-pressed={actif}
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: '9999px',
+                          border: `1px solid ${actif ? '#6B3FA0' : '#D1D5DB'}`,
+                          background: actif ? '#6B3FA0' : '#fff',
+                          color: actif ? '#fff' : '#4B5563',
+                          fontSize: '0.74rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {nom}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <textarea
