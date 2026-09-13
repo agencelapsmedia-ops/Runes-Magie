@@ -1,5 +1,6 @@
 /**
- * ROUTE TEMPORAIRE — diffusion du courriel d'invitation au Rituel des Justes de voix.
+ * ROUTE TEMPORAIRE — diffusion du courriel d'invitation au rituel de la saison
+ * (édition courante : Équinoxe d'Automne, 19 septembre 2026).
  * Le contenu du courriel vit dans src/lib/courriel-invitation-rituel.ts.
  * À SUPPRIMER une fois la diffusion terminée, ou à remplacer par une vraie
  * fonction d'infolettre dans l'administration.
