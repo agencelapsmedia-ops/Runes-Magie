@@ -4,9 +4,11 @@ import { cache } from 'react';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { formaterDateEvenement } from '@/lib/evenements';
+import { SITE_URL } from '@/lib/constants';
 import SectionTitle from '@/components/ui/SectionTitle';
 import RuneDivider from '@/components/ui/RuneDivider';
 import FormulaireInscription from './FormulaireInscription';
+import BoutonPartager from './BoutonPartager';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,6 +119,14 @@ export default async function PageEvenement({
           as="h1"
         />
         <RuneDivider />
+
+        {/* Lien canonique (pas window.location) : partagé depuis un aperçu
+            Vercel ou en local, le lien reçu pointe quand même sur le site. */}
+        <BoutonPartager
+          url={`${SITE_URL}/evenements/${slug}`}
+          titre={evenement.title}
+          sousTitre={formaterDateEvenement(evenement.startsAt)}
+        />
 
         {evenement.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
