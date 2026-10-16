@@ -1,20 +1,24 @@
 /**
- * Courriel d'avis — le rituel du samedi 3 octobre 2026 n'a pas lieu, le Cercle
- * se reprend le samedi 17 octobre (cadence habituelle d'un samedi sur deux).
+ * Courriel d'invitation — Rituel Énergisant du samedi 17 octobre 2026, officié
+ * par Oksanna, membre du Cercle.
  *
- * Remplace l'édition précédente (invitation au Rituel de l'Équinoxe d'Automne,
- * 19 septembre 2026) — le fichier est réécrit à chaque diffusion, l'historique
- * vit dans git. L'enveloppe ne change pas : entête, encadré de date, signature
- * et pied de page conforme à la Loi 25 avec désabonnement.
+ * Remplace l'édition précédente (avis d'annulation du rituel du 3 octobre) —
+ * le fichier est réécrit à chaque diffusion, l'historique vit dans git.
+ * L'enveloppe ne change pas : entête, encadré de date, bouton, signature et
+ * pied de page conforme à la Loi 25 avec désabonnement.
  *
- * Pas de bouton « Réserver ma place » cette fois : aucune fiche d'événement
- * n'existe pour le 17 octobre, un bouton mènerait à une page vide.
+ * Le corps reprend le texte de la fiche de l'événement tel qu'il paraît sur le
+ * site (présentation, « À apporter », adresse complète) : le courriel et la
+ * page racontent la même chose. Deux coquilles du site sont corrigées ici
+ * (« dinamiser » → « dynamiser », « rapelle » → « rappelle »).
+ *
+ * Le bouton pointe vers la fiche publique /evenements/rituel-energisant.
  *
  * Utilisé par /api/cron/envoi-invitation (envoi de test + diffusion).
  */
 
 export const SUJET_INVITATION =
-  'Pas de rituel aujourd’hui — on se reprend le samedi 17 octobre';
+  'Rituel Énergisant — samedi 17 octobre, rallumons la lumière';
 
 /** Construit le courriel avec le lien de désabonnement propre au destinataire. */
 export function htmlInvitationRituel(lienDesabonnement: string): string {
@@ -26,17 +30,24 @@ export function htmlInvitationRituel(lienDesabonnement: string): string {
   </div>
   <div style="background:#1A1A2E;border:1px solid rgba(74,45,122,0.4);border-radius:8px;padding:32px;">
     <p style="color:#2EC4B6;font-size:12px;letter-spacing:2px;margin:0 0 8px;text-transform:uppercase;">Temple des Arcanes</p>
-    <h2 style="color:#C9A84C;margin:0 0 8px;font-size:24px;line-height:1.3;">Pas de rituel aujourd&rsquo;hui</h2>
-    <p style="color:#E8DCC8;font-style:italic;margin:0 0 24px;line-height:1.6;">Le Cercle ne se réunit pas ce samedi 3 octobre. La roue tourne, elle ne s&rsquo;arrête pas : on se reprend dans deux semaines.</p>
+    <h2 style="color:#C9A84C;margin:0 0 8px;font-size:24px;line-height:1.3;">Rituel Énergisant</h2>
+    <p style="color:#E8DCC8;font-style:italic;margin:0 0 24px;line-height:1.6;">La saison de la noirceur tente de nous ralentir. Le Cercle se réunit pour rallumer la lumière.</p>
     <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:6px;padding:16px;margin:0 0 24px;">
-      <p style="margin:0 0 8px;color:#2EC4B6;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Prochain rituel</p>
+      <p style="margin:0 0 8px;color:#2EC4B6;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Quand et où</p>
       <p style="margin:4px 0;color:#C9A84C;font-size:17px;"><strong>Samedi 17 octobre, de 13 h à 15 h</strong></p>
       <p style="margin:4px 0;color:#E8DCC8;">Le Temple des Arcanes — Boutique Runes &amp; Magie <em>(sous-sol)</em></p>
       <p style="margin:4px 0;color:#E8DCC8;">149 rue Saint-Eustache, Saint-Eustache, J7R 2L5, Qc</p>
     </div>
-    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 16px;">Merci de votre compréhension à celles et ceux qui avaient prévu de se joindre à nous aujourd&rsquo;hui. Le détail du prochain rituel — son thème, ses points et ce qu&rsquo;il faudra apporter — vous parviendra dans les jours qui viennent.</p>
-    <p style="color:#E8DCC8;line-height:1.7;margin:0 0 24px;">D&rsquo;ici là, la boutique vous accueille comme à l&rsquo;habitude, et vous pouvez toujours réserver un soin ou une consultation sur <a href="https://www.runesetmagie.ca" style="color:#C9A84C;text-decoration:none;">runesetmagie.ca</a>.</p>
-    <p style="color:#E8DCC8;line-height:1.7;margin:0 0 16px;text-align:center;font-style:italic;">Rallume ton feu intérieur, tout est possible, nous te voyons…<br>— Noctura )O(</p>
+    <p style="color:#F5F0E8;line-height:1.7;margin:0 0 24px;">Officié cette fois par <strong style="color:#C9A84C;">Oksanna</strong>, membre à part entière du Cercle, ce rituel saura vous dynamiser et vous éveiller alors que la saison de la noirceur tente de nous ralentir&hellip; Venez en profiter !</p>
+    <div style="background:rgba(46,196,182,0.08);border-left:3px solid #2EC4B6;border-radius:4px;padding:16px;margin:0 0 24px;">
+      <p style="margin:0 0 8px;color:#2EC4B6;font-size:12px;letter-spacing:2px;text-transform:uppercase;">À apporter — votre offrande</p>
+      <p style="margin:0;color:#E8DCC8;line-height:1.7;">Une tranche d&rsquo;agrume séchée, un morceau de tissu rouge, jaune ou orange, une fleur dans les mêmes teintes, des morceaux de pot-pourri dans les mêmes couleurs&hellip; ou une petite chose de votre imagination qui vous rappelle le soleil et la lumière.</p>
+    </div>
+    <div style="text-align:center;margin:0 0 24px;">
+      <a href="https://www.runesetmagie.ca/evenements/rituel-energisant" style="display:inline-block;background:linear-gradient(135deg,#C41D6E,#8B2F8B);color:#F8F6F2;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:15px;letter-spacing:1px;">Réserver ma place</a>
+      <p style="margin:12px 0 0;color:rgba(245,240,232,0.5);font-size:12px;">Les places sont limitées. Un compte gratuit est nécessaire pour réserver.</p>
+    </div>
+    <p style="color:#E8DCC8;line-height:1.7;margin:0 0 16px;text-align:center;font-style:italic;">Rallume ton feu intérieur, tout est possible, nous te voyons&hellip;<br>— Noctura )O(</p>
     <p style="color:rgba(245,240,232,0.6);font-size:13px;text-align:center;margin:0;">Une question ? Appelez Noctura au <a href="tel:+15143487705" style="color:#C9A84C;text-decoration:none;">(514) 348-7705</a>.</p>
   </div>
   <div style="text-align:center;margin-top:32px;color:rgba(245,240,232,0.4);font-size:13px;">
