@@ -9,7 +9,8 @@
  * convention d'authentification ; elle n'est PAS déclarée dans vercel.json et
  * ne s'exécute donc jamais automatiquement.
  *
- * POST { to: "adresse" }                    → envoi unitaire (test)
+ * POST { to: "adresse" }                    → envoi unitaire (lien perso si abonné ;
+ *   ajouter exigerAbonne: true pour refuser une adresse non abonnée)
  * POST { audience: "infolettre", debut, taille } → diffusion par tranches
  * GET  ?id=<identifiant Resend>             → état de livraison d'un envoi
  *
@@ -72,23 +73,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'RESEND_API_KEY absente' }, { status: 500 });
   }
 
-  let corps: { to?: unknown; audience?: unknown; debut?: unknown; taille?: unknown };
+  let corps: { to?: unknown; audience?: unknown; debut?: unknown; taille?: unknown; exigerAbonne?: unknown };
   try {
     corps = (await req.json()) as typeof corps;
   } catch {
     return NextResponse.json({ error: 'Corps JSON invalide.' }, { status: 400 });
   }
 
-  // Mode 1 : envoi unitaire de test.
+  // Mode 1 : envoi unitaire (test, ou rattrapage d'un abonné).
+  // Si l'adresse est un abonné actif, le courriel porte son lien de
+  // désabonnement personnel ; sinon, lien générique vers la page Infolettre.
   if (typeof corps.to === 'string' && corps.to.trim()) {
+    const to = corps.to.trim();
+    const abonne = await prisma.newsletterSubscriber.findFirst({
+      where: {
+        email: { equals: to, mode: 'insensitive' },
+        unsubscribedAt: null,
+        consentEmail: true,
+      },
+      select: { unsubscribeToken: true },
+    });
+    // `exigerAbonne: true` : n'envoyer que si l'adresse est un abonné actif.
+    if (corps.exigerAbonne === true && !abonne) {
+      return NextResponse.json({ ok: false, erreur: 'Adresse absente des abonnés actifs', to }, { status: 409 });
+    }
+    const lien = abonne
+      ? unsubscribeUrl(abonne.unsubscribeToken)
+      : 'https://www.runesetmagie.ca/infolettre';
     const { data, error } = await resend.emails.send({
       from: FROM,
-      to: corps.to.trim(),
+      to,
       subject: SUJET,
-      html: html('https://www.runesetmagie.ca/infolettre'),
+      html: html(lien),
     });
     if (error) return NextResponse.json({ ok: false, erreur: error.message }, { status: 502 });
-    return NextResponse.json({ ok: true, id: data?.id, to: corps.to.trim() });
+    return NextResponse.json({ ok: true, id: data?.id, to, abonne: Boolean(abonne) });
   }
 
   // Mode 2 : diffusion par tranches à l'infolettre.
